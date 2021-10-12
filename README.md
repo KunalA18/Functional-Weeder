@@ -1,2 +1,3 @@
 # FunctionalWeeder-VJTI
-E-yantra
+## Team Members
+- Kunal, Toshan, Om, Sagar
