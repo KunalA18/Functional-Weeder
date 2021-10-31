@@ -6,6 +6,8 @@ defmodule ToyRobot do
   # mapping of y-coordinates
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5}
 
+  @dir_to_num %{:north => 1, :east => 2, :south => 3, :west => 4}
+
   @doc """
   Places the robot to the default position of (1, A, North)
 
@@ -52,15 +54,10 @@ defmodule ToyRobot do
   """
   def start(x, y, facing) do
     ToyRobot.place(x, y, facing)
-
-    ###########################
-    ## complete this funcion ##
-    ###########################
   end
 
   def start() do
     ToyRobot.place(1,:a,:NORTH)
-
   end
 
   def stop(_robot, goal_x, goal_y, _cli_proc_name) when goal_x < 1 or goal_y < :a or goal_x > @table_top_x or goal_y > @table_top_y do
@@ -76,7 +73,7 @@ defmodule ToyRobot do
     {x, y, facing} = report(robot) #puts the robot's current co-ordinates into x,y,facing
     diff_x = goal_x - x #+ve implies moving right
                         #-ve implies moving left
-    IO.inspect(diff_x, label: "Diff X")
+
     diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
     #+ve implies that it needs to go up
     #-ve implies that it needs to go down
@@ -84,30 +81,41 @@ defmodule ToyRobot do
     should_face_y = if diff_y >=0, do: :north, else: :south
     should_face_x = if diff_x >= 0, do: :east, else: :west
 
-    #first let's eliminate X
 
-    robot = rotate(robot, should_face_x, cli_proc_name)
+    #here determine the direction of rotation
+    face_diff = @dir_to_num[facing] - @dir_to_num[should_face_x]
+
+    send_robot_status(robot, cli_proc_name)
+
+    robot = rotate(robot, should_face_x, face_diff, cli_proc_name)
 
     # IO.inspect(report(robot), label: "Current Dir OUT")
     {_, robot} = navigate(robot, diff_x, cli_proc_name)
 
+    {x, y, facing} = report(robot)
+    face_diff = @dir_to_num[facing] - @dir_to_num[should_face_y]
 
-    robot = rotate(robot, should_face_y, cli_proc_name)
+    #IO.inspect(face_diff, label: "face diff" )
+
+    robot = rotate(robot, should_face_y, face_diff, cli_proc_name)
 
     {_, robot} = navigate(robot, diff_y, cli_proc_name)
 
-    ###########################
-    ## complete this funcion ##
-    ###########################
   end
 
-  def rotate(%ToyRobot.Position{facing: facing} = robot, should_face, cli_proc_name) do
+  def rotate(%ToyRobot.Position{facing: facing} = robot, should_face, face_diff, cli_proc_name) do
     case should_face == facing do
       false ->
-        robot = right(robot)
-        #{:ok, robot} #tuple that is needed to be returned
-        send_robot_status(robot, cli_proc_name)
-        rotate(robot, should_face, cli_proc_name)
+        if (face_diff == -3 or face_diff == 1) do
+          robot = left(robot)
+          send_robot_status(robot, cli_proc_name)
+          rotate(robot, should_face, face_diff, cli_proc_name)
+        else
+          robot = right(robot)
+          #{:ok, robot} #tuple that is needed to be returned
+          send_robot_status(robot, cli_proc_name)
+          rotate(robot, should_face, face_diff, cli_proc_name)
+        end
       true ->
         #{:ok, robot} #tuple that is needed to be returned
         #send_robot_status(robot, cli_proc_name)
