@@ -142,6 +142,9 @@ defmodule ToyRobot.CLI do
       {:toyrobot_status, robot_x, robot_y, robot_face} ->
         IO.puts("Received by CLI Server: #{robot_x}, #{robot_y}, #{robot_face}")
         IO.binwrite(out_file, "#{robot_x}, #{robot_y}, #{robot_face}\n")
+        #line added by me
+        IO.inspect(Process.whereis(:client_toyrobot), label: "Where is")
+        #-------------
         send(:client_toyrobot, {:obstacle_presence, Enum.member?(list_obs, {robot_x, robot_y, robot_face})})
         listen_from_client([{robot_x, robot_y, robot_face} | state], list_obs, out_file)
     end

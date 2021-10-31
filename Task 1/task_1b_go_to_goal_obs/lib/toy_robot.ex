@@ -5,15 +5,17 @@ defmodule ToyRobot do
   @table_top_y :e
   # mapping of y-coordinates
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5}
+  # maps directions to numbers
+  @dir_to_num %{:north => 1, :east => 2, :south => 3, :west => 4}
 
   @doc """
   Places the robot to the default position of (1, A, North)
 
   Examples:
-
       iex> ToyRobot.place
       {:ok, %ToyRobot.Position{facing: :north, x: 1, y: :a}}
   """
+
   def place do
     {:ok, %ToyRobot.Position{}}
   end
@@ -51,9 +53,11 @@ defmodule ToyRobot do
   Provide START position to the robot as given location of (x, y, facing) and place it.
   """
   def start(x, y, facing) do
-    ###########################
-    ## complete this funcion ##
-    ###########################
+    ToyRobot.place(x, y, facing)
+  end
+
+  def start() do
+    ToyRobot.place(1,:a,:NORTH)
   end
 
   def stop(_robot, goal_x, goal_y, _cli_proc_name) when goal_x < 1 or goal_y < :a or goal_x > @table_top_x or goal_y > @table_top_y do
@@ -67,10 +71,102 @@ defmodule ToyRobot do
   indication for the presence of obstacle ahead of robot's current position and facing.
   """
   def stop(robot, goal_x, goal_y, cli_proc_name) do
-    ###########################
-    ## complete this funcion ##
-    ###########################
+    #We need to plan the robot's route from start to end
+    {x, y, facing} = report(robot) #puts the robot's current co-ordinates into x,y,facing
+    diff_x = goal_x - x #+ve implies moving right
+                        #-ve implies moving left
+
+    diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
+    #+ve implies that it needs to go up
+    #-ve implies that it needs to go down
+
+    should_face_y = if diff_y >=0, do: :north, else: :south
+    should_face_x = if diff_x >= 0, do: :east, else: :west
+
+    pid = spawn_link(fn -> listen_from_server() end)
+    # pid = spawn_link(fn -> send_robot_status(robot, cli_proc_name) end)
+    Process.register(pid, :client_toyrobot)
+    IO.inspect(Process.whereis(:client_toyrobot), label: "Where is")
+    IO.inspect(self(), label: "Where is self")
+    # Process.alive?(pid)
+    #  t = send_robot_status(robot, cli_proc_name)
+    # pid = spawn(fn -> 1 + 2 end)
+    # IO.inspect(Process.alive?(pid), label: "pid")
+
+    #here determine the direction of rotation
+    face_diff = @dir_to_num[facing] - @dir_to_num[should_face_x]
+
+    IO.inspect("", label: "before 102")
+    IO.inspect(Process.alive?(pid), label: "pid")
+    send_robot_status(robot, cli_proc_name)
+    IO.inspect("", label: "after 102")
+
+    if diff_x > 0 do
+    robot = rotate(robot, should_face_x, face_diff, cli_proc_name)
+    {_, robot} = navigate(robot, diff_x, cli_proc_name)
+    end
+
+    {x, y, facing} = report(robot)
+
+    face_diff = @dir_to_num[facing] - @dir_to_num[should_face_y]
+
+    #IO.inspect(face_diff, label: "face diff" )
+    if diff_y > 0 do
+      robot = rotate(robot, should_face_y, face_diff, cli_proc_name)
+      {_, robot} = navigate(robot, diff_y, cli_proc_name)
+    end
+
   end
+
+  def rotate(%ToyRobot.Position{facing: facing} = robot, should_face, face_diff, cli_proc_name) do
+    obs_ahead = send_robot_status(robot, cli_proc_name)
+    case should_face == facing do
+      false ->
+        if (face_diff == -3 or face_diff == 1) do
+          robot = left(robot)
+
+          rotate(robot, should_face, face_diff, cli_proc_name)
+        else
+          robot = right(robot)
+          #{:ok, robot} #tuple that is needed to be returned
+          #send_robot_status(robot, cli_proc_name)
+          rotate(robot, should_face, face_diff, cli_proc_name)
+        end
+      true ->
+        #{:ok, robot} #tuple that is needed to be returned
+        #send_robot_status(robot, cli_proc_name)
+        robot
+    end
+  end
+
+  def navigate(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, diff, cli_proc_name) do
+    #obstacle avoidance code will be here
+    obs_ahead = send_robot_status(robot, cli_proc_name)
+    #IO.inspect(obs_ahead, label: "Is obstacle ahead?")
+    if diff != 0 do
+      case diff > 0 do
+        true ->
+          diff = diff - 1
+          robot = move(robot)
+          # IO.inspect(report(robot), label: "Current pos")
+          #{:ok, robot}
+
+          navigate(robot, diff, cli_proc_name)
+        false ->
+          diff = diff + 1
+          robot = move(robot)
+          # IO.inspect(report(robot), label: "Current pos")
+          #{:ok, robot}
+          #send_robot_status(robot, cli_proc_name)
+          navigate(robot, diff, cli_proc_name)
+      end
+    else
+      {:ok, robot}
+      #send_robot_status(robot, cli_proc_name)
+    end
+
+  end
+
 
   @doc """
   Send Toy Robot's current status i.e. location (x, y) and facing
@@ -81,16 +177,20 @@ defmodule ToyRobot do
   def send_robot_status(%ToyRobot.Position{x: x, y: y, facing: facing} = _robot, cli_proc_name) do
     send(cli_proc_name, {:toyrobot_status, x, y, facing})
     # IO.puts("Sent by Toy Robot Client: #{x}, #{y}, #{facing}")
-    listen_from_server()
+    #IO.inspect("Execute", label: "abc")
+    #listen_from_server()
   end
 
   @doc """
   Listen to the CLI Server and wait for the message indicating the presence of obstacle.
   The message with the format: '{:obstacle_presence, < true or false >}'.
   """
-  def listen_from_server() do
+  def listen_from_server do
     receive do
-      {:obstacle_presence, is_obs_ahead} -> is_obs_ahead
+      {:obstacle_presence, is_obs_ahead} ->
+        IO.puts("listen_from_server executed")
+        is_obs_ahead
+        listen_from_server()
     end
   end
 
