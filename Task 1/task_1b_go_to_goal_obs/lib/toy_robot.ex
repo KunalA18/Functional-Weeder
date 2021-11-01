@@ -85,7 +85,7 @@ defmodule ToyRobot do
 
     #pid = spawn_link(fn -> listen_from_server() end)
     #pid = spawn_link(fn -> send_robot_status(robot, cli_proc_name) end)
-    Process.register(self(), :client_toyrobot)
+    Process.register(self(), :client_toyrobot) #the process that is currently being executed is :client_toyrobot
 
     #here determine the direction of rotation
     face_diff = @dir_to_num[facing] - @dir_to_num[should_face_x]
@@ -135,7 +135,9 @@ defmodule ToyRobot do
 
   def navigate(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, diff, cli_proc_name) do
     #obstacle avoidance code will be here
+    # obs_ahead = send_robot_status(robot, cli_proc_name)
     obs_ahead = send_robot_status(robot, cli_proc_name)
+    IO.puts(obs_ahead)
 
     if diff != 0 do
       case diff > 0 do
@@ -252,3 +254,10 @@ defmodule ToyRobot do
     raise "Connection has been lost"
   end
 end
+
+#at a node
+# check whether the direction you are facing is the right one? If not
+# turn in the right direction
+# if there is an obstacle?
+# we have to circumvent it
+# then start from the beginning

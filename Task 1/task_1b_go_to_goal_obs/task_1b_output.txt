@@ -2,9 +2,9 @@
 1, a, north
 1, a, east
 1, a, east
-2, a, east
-2, a, east
-2, a, north
-2, a, north
-2, b, north
-2, c, north
+1, a, east
+1, a, north
+1, a, north
+1, b, north
+1, c, north
+1, d, north
