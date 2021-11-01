@@ -170,15 +170,18 @@ defmodule ToyRobot do
   #       ) :: {:ok, %ToyRobot.Position{:facing => any, :x => any, :y => any, optional(any) => any}}
 
 
-  def avoid(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, valid, goal_x, goal_y) do
+  def avoid(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, goal_x, goal_y) do
     #calculate best squares around it
     y = @robot_map_y_atom_to_num[y]
     goal_y = @robot_map_y_atom_to_num[goal_y]
-    IO.puts(y)
+
+
+
     squares = [east: distance(x+1, y, goal_x, goal_y), west: distance(x-1, y, goal_x, goal_y), north: distance(x, y+1, goal_x, goal_y), south: distance(x, y-1, goal_x, goal_y)]
     squares = squares |> List.keysort(1)
     #eliminate out of bounds options
-    squares = eliminate_out_of_bounds(squares, x, y)
+    squares = eliminate_out_of_bounds(squares, x, y) #eliminate out of bounds directions
+    {squares, prev_sq_dir} = eliminate_previous(squares, facing) #eliminate previous direction but store it just in case
     IO.inspect(squares, label: "Sorted list")
 
     sq_values = Keyword.values(squares) #getting a list of values
@@ -186,6 +189,7 @@ defmodule ToyRobot do
 
     IO.inspect(sq_values, label: "Sorted vals")
     IO.inspect(sq_keys, label: "Sorted keys")
+    IO.inspect(prev_sq_dir, label: "Direction where it came from")
     #check each one in order if it can move there
   end
 
@@ -195,6 +199,17 @@ defmodule ToyRobot do
     {_, squares} = if y+1 > 5, do: Keyword.pop(squares, :north), else: {:ok, squares}
     {_, squares} = if y-1 < 1, do: Keyword.pop(squares, :south), else: {:ok, squares}
     squares
+  end
+
+  def eliminate_previous(squares, facing) do
+    el = :north
+    el = if facing == :north, do: :south, else: el
+    el = if facing == :south, do: :north, else: el
+    el = if facing == :east, do: :west, else: el
+    el = if facing == :west, do: :east, else: el
+    {_, squares} = Keyword.pop(squares, el)
+
+    {squares, el}
   end
 
   def distance(x1, y1, x2, y2) do
@@ -207,31 +222,30 @@ defmodule ToyRobot do
     IO.puts(obs_ahead)
 
     if obs_ahead do
-      avoid(robot, [], goal_x, goal_y)
-    end
-
-
-    if diff != 0 do
-      case diff > 0 do
-        true ->
-          diff = diff - 1
-          robot = move(robot)
-          # IO.inspect(report(robot), label: "Current pos")
-          #{:ok, robot}
-
-          navigate(robot, diff, goal_x, goal_y, cli_proc_name)
-        false ->
-          diff = diff + 1
-          robot = move(robot)
-          # IO.inspect(report(robot), label: "Current pos")
-          #{:ok, robot}
-          #send_robot_status(robot, cli_proc_name)
-          navigate(robot, diff, goal_x, goal_y, cli_proc_name)
-      end
+      avoid(robot, goal_x, goal_y) #we haven't returned {:ok, robot} in this if
     else
-      {:ok, robot}
-      #send_robot_status(robot, cli_proc_name)
-    end
+      if diff != 0 do
+        case diff > 0 do
+          true ->
+            diff = diff - 1
+            robot = move(robot)
+            # IO.inspect(report(robot), label: "Current pos")
+            #{:ok, robot}
+
+            navigate(robot, diff, goal_x, goal_y, cli_proc_name)
+          false ->
+            diff = diff + 1
+            robot = move(robot)
+            # IO.inspect(report(robot), label: "Current pos")
+            #{:ok, robot}
+            #send_robot_status(robot, cli_proc_name)
+            navigate(robot, diff, goal_x, goal_y, cli_proc_name)
+        end
+      else
+        {:ok, robot}
+        #send_robot_status(robot, cli_proc_name)
+      end
+  end
 
   end
 
