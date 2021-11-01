@@ -88,32 +88,62 @@ defmodule ToyRobot do
     Process.register(self(), :client_toyrobot) #the process that is currently being executed is :client_toyrobot
 
     #here determine the direction of rotation
-    face_diff = @dir_to_num[facing] - @dir_to_num[should_face_x]
+    # face_diff = @dir_to_num[facing] - @dir_to_num[should_face_x]
 
     IO.puts("Something Before")
     send_robot_status(robot, cli_proc_name)
     IO.puts("Something")
 
 
-      robot = rotate(robot, should_face_x, face_diff, cli_proc_name)
-      {_, robot} = navigate(robot, diff_x, cli_proc_name)
+    # robot = rotate(robot, should_face_x, face_diff, cli_proc_name)
+    # {_, robot} = navigate(robot, diff_x, cli_proc_name)
 
 
-    {x, y, facing} = report(robot)
+    # {x, y, facing} = report(robot)
 
-    face_diff = @dir_to_num[facing] - @dir_to_num[should_face_y]
+    # face_diff = @dir_to_num[facing] - @dir_to_num[should_face_y]
 
-    #IO.inspect(face_diff, label: "face diff" )
 
-      robot = rotate(robot, should_face_y, face_diff, cli_proc_name)
-      {_, robot} = navigate(robot, diff_y, cli_proc_name)
+    # robot = rotate(robot, should_face_y, face_diff, cli_proc_name)
+    # {_, robot} = navigate(robot, diff_y, cli_proc_name)
+    robot = loop(robot, diff_x, diff_y, should_face_x, should_face_y, facing, goal_x, goal_y, cli_proc_name)
+    send_robot_status(robot, cli_proc_name)
 
+  end
+
+  def loop(robot, diff_x, diff_y, should_face_x, should_face_y, facing, goal_x, goal_y, cli_proc_name) do
+    case diff_y == 0 and diff_x == 0 do
+      false ->
+        {x, y, facing} = report(robot)
+        diff_x = goal_x - x #+ve implies moving right
+                        #-ve implies moving left
+        diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
+        #+ve implies that it needs to go up
+
+        face_diff = @dir_to_num[facing] - @dir_to_num[should_face_x]
+
+        robot = rotate(robot, should_face_x, face_diff, cli_proc_name)
+        {_, robot} = navigate(robot, diff_x, goal_x, goal_y, cli_proc_name)
+
+
+        {x, y, facing} = report(robot)
+
+        face_diff = @dir_to_num[facing] - @dir_to_num[should_face_y]
+
+
+        robot = rotate(robot, should_face_y, face_diff, cli_proc_name)
+        {_, robot} = navigate(robot, diff_y, goal_x, goal_y, cli_proc_name)
+
+        loop(robot, diff_x, diff_y, should_face_x, should_face_y, facing, goal_x, goal_y, cli_proc_name)
+      true ->
+        robot
+    end
 
   end
 
   def rotate(%ToyRobot.Position{facing: facing} = robot, should_face, face_diff, cli_proc_name) do
-    obs_ahead = send_robot_status(robot, cli_proc_name)
-    IO.puts(obs_ahead)
+    #obs_ahead = send_robot_status(robot, cli_proc_name)
+    #IO.puts(obs_ahead)
     case should_face == facing do
       false ->
         if (face_diff == -3 or face_diff == 1) do
@@ -133,11 +163,53 @@ defmodule ToyRobot do
     end
   end
 
-  def navigate(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, diff, cli_proc_name) do
+  # @spec navigate(
+  #         %ToyRobot.Position{:facing => any, :x => any, :y => any, optional(any) => any},
+  #         any,
+  #         atom | pid | port | reference | {atom, atom}
+  #       ) :: {:ok, %ToyRobot.Position{:facing => any, :x => any, :y => any, optional(any) => any}}
+
+
+  def avoid(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, valid, goal_x, goal_y) do
+    #calculate best squares around it
+    y = @robot_map_y_atom_to_num[y]
+    goal_y = @robot_map_y_atom_to_num[goal_y]
+    IO.puts(y)
+    squares = [east: distance(x+1, y, goal_x, goal_y), west: distance(x-1, y, goal_x, goal_y), north: distance(x, y+1, goal_x, goal_y), south: distance(x, y-1, goal_x, goal_y)]
+    squares = squares |> List.keysort(1)
+    #eliminate out of bounds options
+    squares = eliminate_out_of_bounds(squares, x, y)
+    IO.inspect(squares, label: "Sorted list")
+
+    sq_values = Keyword.values(squares) #getting a list of values
+    sq_keys = Keyword.keys(squares) #getting a corresponding list of keys
+
+    IO.inspect(sq_values, label: "Sorted vals")
+    IO.inspect(sq_keys, label: "Sorted keys")
+    #check each one in order if it can move there
+  end
+
+  def eliminate_out_of_bounds(squares, x, y) do
+    {_, squares} = if x+1 > 5, do: Keyword.pop(squares, :east), else: {:ok, squares}
+    {_, squares} = if x-1 < 1, do: Keyword.pop(squares, :west), else: {:ok, squares}
+    {_, squares} = if y+1 > 5, do: Keyword.pop(squares, :north), else: {:ok, squares}
+    {_, squares} = if y-1 < 1, do: Keyword.pop(squares, :south), else: {:ok, squares}
+    squares
+  end
+
+  def distance(x1, y1, x2, y2) do
+    (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2)
+  end
+
+  def navigate(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, diff, goal_x, goal_y, cli_proc_name) do
     #obstacle avoidance code will be here
-    # obs_ahead = send_robot_status(robot, cli_proc_name)
     obs_ahead = send_robot_status(robot, cli_proc_name)
     IO.puts(obs_ahead)
+
+    if obs_ahead do
+      avoid(robot, [], goal_x, goal_y)
+    end
+
 
     if diff != 0 do
       case diff > 0 do
@@ -147,14 +219,14 @@ defmodule ToyRobot do
           # IO.inspect(report(robot), label: "Current pos")
           #{:ok, robot}
 
-          navigate(robot, diff, cli_proc_name)
+          navigate(robot, diff, goal_x, goal_y, cli_proc_name)
         false ->
           diff = diff + 1
           robot = move(robot)
           # IO.inspect(report(robot), label: "Current pos")
           #{:ok, robot}
           #send_robot_status(robot, cli_proc_name)
-          navigate(robot, diff, cli_proc_name)
+          navigate(robot, diff, goal_x, goal_y, cli_proc_name)
       end
     else
       {:ok, robot}
@@ -183,7 +255,6 @@ defmodule ToyRobot do
   def listen_from_server() do
     receive do
       {:obstacle_presence, is_obs_ahead} -> is_obs_ahead
-        #listen_from_server()
     end
   end
 
