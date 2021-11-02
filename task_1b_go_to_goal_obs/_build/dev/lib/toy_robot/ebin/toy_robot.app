@@ -1,0 +1,9 @@
+{application,toy_robot,
+             [{applications,[kernel,stdlib,elixir,logger]},
+              {description,"toy_robot"},
+              {modules,['Elixir.ToyRobot','Elixir.ToyRobot.AgentRobot',
+                        'Elixir.ToyRobot.CLI','Elixir.ToyRobot.ControlPanel',
+                        'Elixir.ToyRobot.OtpRobot','Elixir.ToyRobot.Position',
+                        'Elixir.ToyRobot.StatefulRobot']},
+              {registered,[]},
+              {vsn,"0.1.0"}]}.
