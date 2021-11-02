@@ -168,12 +168,12 @@ defmodule ToyRobot do
       false ->
         if (face_diff == -3 or face_diff == 1) do
           robot = left(robot)
-
+          send_robot_status(robot, cli_proc_name)
           rotate(robot, should_face, face_diff, cli_proc_name)
         else
           robot = right(robot)
           #{:ok, robot} #tuple that is needed to be returned
-          #send_robot_status(robot, cli_proc_name)
+          send_robot_status(robot, cli_proc_name)
           rotate(robot, should_face, face_diff, cli_proc_name)
         end
       true ->
@@ -314,6 +314,7 @@ defmodule ToyRobot do
       else
         #IO.puts("Ending else of navigate")
         #IO.inspect(report(robot), label: "Current pos after ending else")
+        send_robot_status(robot, cli_proc_name)
         {_c_x,_c_y,c_f} = report(robot)
         robot = if obs_ahead, do: rotate(robot, facing, @dir_to_num[facing]-@dir_to_num[c_f] ,cli_proc_name), else: robot
         {robot,prev} = if obs_ahead, do: navigate(robot, diff, goal_x, goal_y, prev, cli_proc_name), else: {robot,prev}
