@@ -5,8 +5,7 @@ defmodule ToyRobot do
   @table_top_y :e
   # mapping of y-coordinates
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5}
-  # maps directions to numbers
-  @dir_to_num %{:north => 1, :east => 2, :south => 3, :west => 4}
+
 
   @doc """
   Places the robot to the default position of (1, A, North)
@@ -70,7 +69,7 @@ defmodule ToyRobot do
     ## complete this funcion ##
     ###########################
     {x, y, facing} = report(robot)
-    send_robot_status(robot, cli_proc_name)
+
     diff_x = goal_x - x
     diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
 
@@ -86,6 +85,7 @@ defmodule ToyRobot do
     end
 
     Process.register(self(), :client_toyrobot)
+    send_robot_status(robot, cli_proc_name)
 
     robot = turn(robot,face_y, cli_proc_name)
     {_, robot,diff_y} = path_y(robot, diff_y, cli_proc_name)
@@ -93,29 +93,58 @@ defmodule ToyRobot do
     robot = turn(robot, face_x, cli_proc_name)
     {_, robot,diff_x} = path_x(robot, diff_x, cli_proc_name)
 
-    robot = loop(robot,diff_x,diff_y,cli_proc_name,face_x,face_y)
+    robot = loop(robot,diff_x,diff_y,cli_proc_name,face_x,face_y,goal_x,goal_y)
   end
 
-  def loop(robot,diff_x,diff_y,cli_proc_name,face_x,face_y) do
+  def loop(robot,diff_x,diff_y,cli_proc_name,face_x,face_y,goal_x,goal_y) do
 
     cond do
-      diff_x==0 and diff_y==0 ->
+      diff_x == 0 and diff_y != 0 ->
 
-      robot = turn(robot,face_y, cli_proc_name)
-      {_, robot} = path_y(robot, diff_y, cli_proc_name)
-      robot = turn(robot, face_x, cli_proc_name)
-      {_, robot} = path_x(robot, diff_x, cli_proc_name)
-      loop(robot,diff_x,diff_y,cli_proc_name,face_x,face_y)
+        obs_ahead = send_robot_status(robot, cli_proc_name)
+        if obs_ahead do
+          diff_x =1
+        else
+          diff_x=0
+        end
 
-      true ->
+        robot = turn(robot, face_x, cli_proc_name)
+        {_, robot,diff_x} = path_x(robot, diff_x, cli_proc_name)
+        robot = turn(robot,face_y, cli_proc_name)
+        {_, robot,diff_y} = path_y(robot, diff_y, cli_proc_name)
+        {x, y, facing} = report(robot)
+        diff_x = goal_x - x
+        diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
+        loop(robot,diff_x,diff_y,cli_proc_name,face_x,face_y,goal_x,goal_y)
+
+      diff_x != 0 and diff_y == 0 ->
+        obs_ahead = send_robot_status(robot, cli_proc_name)
+        if obs_ahead do
+          diff_y = 1
+        else
+          diff_y = 0
+        end
+        robot = turn(robot,face_y, cli_proc_name)
+        {_, robot,diff_y} = path_y(robot, diff_y, cli_proc_name)
+        robot = turn(robot, face_x, cli_proc_name)
+        {_, robot,diff_x} = path_x(robot, diff_x, cli_proc_name)
+        {x, y, facing} = report(robot)
+        diff_x = goal_x - x
+        diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
+        loop(robot,diff_x,diff_y,cli_proc_name,face_x,face_y,goal_x,goal_y)
+
+      #diff_x!=0 and diff_y!=0 ->
+      diff_x == 0 and diff_y == 0 ->
         robot
+
+
     end
 
   end
 
   def turn(%ToyRobot.Position{facing: facing} = robot, current_face, cli_proc_name) do
     obs_ahead = send_robot_status(robot, cli_proc_name)
-    IO.puts(obs_ahead)
+
 
     if (current_face == facing and obs_ahead==false) do
       robot
@@ -130,7 +159,7 @@ defmodule ToyRobot do
 
   def path_x(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, difference, cli_proc_name) do
     obs_ahead = send_robot_status(robot, cli_proc_name)
-    IO.puts(obs_ahead)
+
 
     if difference != 0 do
 
@@ -160,7 +189,7 @@ defmodule ToyRobot do
 
   def path_y(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, difference, cli_proc_name) do
     obs_ahead = send_robot_status(robot, cli_proc_name)
-    IO.puts(obs_ahead)
+
 
     if difference != 0 do
 
