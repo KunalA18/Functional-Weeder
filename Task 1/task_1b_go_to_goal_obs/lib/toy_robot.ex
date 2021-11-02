@@ -126,8 +126,8 @@ defmodule ToyRobot do
         face_diff = @dir_to_num[facing] - @dir_to_num[should_face_x]
 
         robot = rotate(robot, should_face_x, face_diff, cli_proc_name)
-        {robot, prev} = navigate(robot, diff_x, goal_x, goal_y, [x,y], cli_proc_name)
-
+        # {robot, prev} = navigate(robot, diff_x, goal_x, goal_y, [x,y], cli_proc_name)
+        {robot,prev} = navigate(robot, diff_x, goal_x, goal_y, [x,y], cli_proc_name)
         IO.inspect(robot, label: "robot after x")
 
         {x, y, facing} = report(robot)
@@ -143,8 +143,9 @@ defmodule ToyRobot do
 
 
         robot = rotate(robot, should_face_y, face_diff, cli_proc_name)
-        {robot, prev} = navigate(robot, diff_y, goal_x, goal_y, [x,y], cli_proc_name)
+        {robot,prev} = navigate(robot, diff_y, goal_x, goal_y, [x,y], cli_proc_name)
 
+        IO.inspect(robot, label: "robot after Y")
 
 
         {x, y, facing} = report(robot)
@@ -274,7 +275,7 @@ defmodule ToyRobot do
     obs_ahead = send_robot_status(robot, cli_proc_name)
     IO.puts(obs_ahead)
     aex = obs_ahead
-    diff = if obs_ahead, do: 0, else: diff
+
     {robot,prev} = call_avoid(robot, obs_ahead, goal_x, goal_y, prev, cli_proc_name)
 
     # if obs_ahead do
@@ -311,8 +312,12 @@ defmodule ToyRobot do
         end
       else
         IO.puts("Ending else of navigate")
-        # IO.inspect(report(robot), label: "Current pos")
-        {robot, prev}
+        IO.inspect(report(robot), label: "Current pos after ending else")
+        {c_x,c_y,c_f} = report(robot)
+        robot = if obs_ahead, do: rotate(robot, facing, @dir_to_num[facing]-@dir_to_num[c_f] ,cli_proc_name), else: robot
+        {robot,prev} = if obs_ahead, do: navigate(robot, diff, goal_x, goal_y, prev, cli_proc_name), else: {robot,prev}
+
+        {robot,prev}
         #send_robot_status(robot, cli_proc_name)
       end
 
