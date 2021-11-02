@@ -90,9 +90,9 @@ defmodule ToyRobot do
     #here determine the direction of rotation
     # face_diff = @dir_to_num[facing] - @dir_to_num[should_face_x]
 
-    IO.puts("Something Before")
+    # IO.puts("Something Before")
     send_robot_status(robot, cli_proc_name)
-    IO.puts("Something")
+    # IO.puts("Something")
 
 
     # robot = rotate(robot, should_face_x, face_diff, cli_proc_name)
@@ -107,7 +107,7 @@ defmodule ToyRobot do
     # robot = rotate(robot, should_face_y, face_diff, cli_proc_name)
     # {_, robot} = navigate(robot, diff_y, cli_proc_name)
     robot = loop(robot, diff_x, diff_y, should_face_x, should_face_y, facing, goal_x, goal_y, cli_proc_name)
-    send_robot_status(robot, cli_proc_name)
+    #send_robot_status(robot, cli_proc_name)
 
   end
 
@@ -128,7 +128,8 @@ defmodule ToyRobot do
         robot = rotate(robot, should_face_x, face_diff, cli_proc_name)
         # {robot, prev} = navigate(robot, diff_x, goal_x, goal_y, [x,y], cli_proc_name)
         {robot,prev} = navigate(robot, diff_x, goal_x, goal_y, [x,y], cli_proc_name)
-        IO.inspect(robot, label: "robot after x")
+
+        #IO.inspect(robot, label: "robot after x")
 
         {x, y, facing} = report(robot)
         diff_x = goal_x - x #+ve implies moving right
@@ -145,7 +146,7 @@ defmodule ToyRobot do
         robot = rotate(robot, should_face_y, face_diff, cli_proc_name)
         {robot,prev} = navigate(robot, diff_y, goal_x, goal_y, [x,y], cli_proc_name)
 
-        IO.inspect(robot, label: "robot after Y")
+        #IO.inspect(robot, label: "robot after Y")
 
 
         {x, y, facing} = report(robot)
@@ -227,7 +228,7 @@ defmodule ToyRobot do
       {x,y,_} = report(robot)
       prev = [x,y]
       robot = move(robot)
-      IO.puts("move with priority executed")
+      #IO.puts("move with priority executed")
       {robot, prev}
     end
   end
@@ -269,11 +270,11 @@ defmodule ToyRobot do
 
   def navigate(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, diff, goal_x, goal_y, prev, cli_proc_name) do
     #obstacle avoidance code will be here
-    IO.inspect(report(robot), label: "Current pos at first obs of navigate")
-    IO.puts("First obs of navigate executed")
+    #IO.inspect(report(robot), label: "Current pos at first obs of navigate")
+    #IO.puts("First obs of navigate executed")
 
     obs_ahead = send_robot_status(robot, cli_proc_name)
-    IO.puts(obs_ahead)
+    #IO.puts(obs_ahead)
     aex = obs_ahead
 
     {robot,prev} = call_avoid(robot, obs_ahead, goal_x, goal_y, prev, cli_proc_name)
@@ -301,7 +302,7 @@ defmodule ToyRobot do
             diff = diff + 1
             {x,y,_} = report(robot)
             prev = [x,y]
-            IO.puts("robot being moved by the diff function")
+            #IO.puts("robot being moved by the diff function")
             #IO.inspect(report(robot), label: "Current pos")
             robot = move(robot)
 
@@ -311,9 +312,9 @@ defmodule ToyRobot do
 
         end
       else
-        IO.puts("Ending else of navigate")
-        IO.inspect(report(robot), label: "Current pos after ending else")
-        {c_x,c_y,c_f} = report(robot)
+        #IO.puts("Ending else of navigate")
+        #IO.inspect(report(robot), label: "Current pos after ending else")
+        {_c_x,_c_y,c_f} = report(robot)
         robot = if obs_ahead, do: rotate(robot, facing, @dir_to_num[facing]-@dir_to_num[c_f] ,cli_proc_name), else: robot
         {robot,prev} = if obs_ahead, do: navigate(robot, diff, goal_x, goal_y, prev, cli_proc_name), else: {robot,prev}
 

@@ -8,4 +8,3 @@
 4, b, north
 4, c, north
 4, d, north
-4, d, north
