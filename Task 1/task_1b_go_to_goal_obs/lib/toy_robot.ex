@@ -182,7 +182,7 @@ defmodule ToyRobot do
       end
   end
 
-  def avoid(%ToyRobot.Position{x: x, y: y} = robot, goal_x, goal_y, prev, cli_proc_name) do
+  def avoid(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, goal_x, goal_y, prev, cli_proc_name) do
     #calculate best squares around it
     y = @robot_map_y_atom_to_num[y]
     goal_y = @robot_map_y_atom_to_num[goal_y]
@@ -191,11 +191,18 @@ defmodule ToyRobot do
     #eliminate out of bounds options
     squares = eliminate_out_of_bounds(squares, x, y) #eliminate out of bounds directions
     prev_dir = calculate_old_direction(x, y, Enum.at(prev,0), Enum.at(prev,1))
+    opp = opposite_facing(facing)
     {_, squares} = Keyword.pop(squares, prev_dir) #eliminate old direction
+    # {_, squares} = Keyword.pop(squares, facing)
+    {_, squares} = Keyword.pop(squares, opp) #lets remove the directions that move away from the obstacle
+    #let best be first pref, momentum be second pref
+
 
     sq_keys = Keyword.keys(squares) #getting a corresponding list of keys
-    sq_keys = sq_keys ++ [prev_dir] #add old direction as the last member of the list
 
+    sq_keys = sq_keys ++ [opp] ++ [prev_dir] #add old direction as the last member of the list
+    IO.inspect(opp, label: "Direction Opposite")
+    IO.inspect(facing, label: "Direction Facing")
     #move the robot according to the generated list
     move_with_priority(robot, sq_keys, 0, cli_proc_name)
   end
@@ -216,6 +223,17 @@ defmodule ToyRobot do
       robot = move(robot)
       {robot, prev}
     end
+  end
+
+  def opposite_facing(facing) do
+    ans = :north
+    ans = if facing == :west, do: :east, else: ans
+    ans = if facing == :east, do: :west, else: ans
+
+    ans = if facing == :north, do: :south, else: ans
+    ans = if facing == :south, do: :north, else: ans
+    ans
+
   end
 
   def calculate_old_direction(x1,y1,x2,y2) do
