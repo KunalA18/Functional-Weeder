@@ -194,7 +194,7 @@ defmodule ToyRobot do
     {_, squares} = Keyword.pop(squares, prev_dir) #eliminate old direction
 
     sq_keys = Keyword.keys(squares) #getting a corresponding list of keys
-    sq_keys = sq_keys ++ prev_dir #add old direction as the last member of the list
+    sq_keys = sq_keys ++ [prev_dir] #add old direction as the last member of the list
 
     #move the robot according to the generated list
     move_with_priority(robot, sq_keys, 0, cli_proc_name)
