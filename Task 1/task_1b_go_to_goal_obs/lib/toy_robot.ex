@@ -53,10 +53,12 @@ defmodule ToyRobot do
   Provide START position to the robot as given location of (x, y, facing) and place it.
   """
   def start(x, y, facing) do
+    #Process.register(self(), :client_toyrobot)
     ToyRobot.place(x, y, facing)
   end
 
   def start() do
+    #Process.register(self(), :client_toyrobot)
     ToyRobot.place(1,:a,:NORTH)
   end
 
@@ -80,17 +82,34 @@ defmodule ToyRobot do
     #+ve implies that it needs to go up
     #-ve implies that it needs to go down
 
-    Process.register(self(), :client_toyrobot) #the process that is currently being executed is :client_toyrobot
+    #Process.register(self(), :client_toyrobot) #the process that is currently being executed is :client_toyrobot
 
-    send_robot_status(robot, cli_proc_name) # send status of the start location
+    #spawn a process that recieves from server
+    #recieve a message then send the message to self()
+    parent = self()
+    pid = spawn_link(fn -> roundabout(parent) end)
+    Process.register(pid, :client_toyrobot)
+
+
+    #IO.puts(ans)
+    obs_ahead = send_robot_status(robot, cli_proc_name) # send status of the start location
+
     visited = []
     #start the obstacle avoidance and navigation loop
     goal_y = @robot_map_y_atom_to_num[goal_y]
-    loop(robot, visited, diff_x, diff_y, goal_x, goal_y, cli_proc_name)
+    loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
 
   end
 
-  def loop(robot, visited, diff_x, diff_y, goal_x, goal_y, cli_proc_name) do
+  def roundabout(parent) do
+    receive do
+      {:obstacle_presence, is_obs_ahead} ->
+        send(parent, {:obstacle_presence, is_obs_ahead})
+    end
+  end
+
+
+  def loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name) do
     case diff_y == 0 and diff_x == 0 do
       false ->
         #say you visit an old square or you're at the old square
@@ -122,7 +141,7 @@ defmodule ToyRobot do
         sq_keys = arrange_by_visited(x, y, sq_keys, visited)
 
         #navigate according to the list
-        robot = move_with_priority(robot, sq_keys, 0, cli_proc_name)
+        {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, cli_proc_name)
         #start again
         {x, y, _facing} = report(robot)
         diff_x = goal_x - x # +ve implies east and -ve implies west
@@ -130,9 +149,12 @@ defmodule ToyRobot do
 
 
         #IO.puts("--------------------")
-        loop(robot, visited, diff_x, diff_y, goal_x, goal_y, cli_proc_name)
+        loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
       true ->
-        send_robot_status(robot, cli_proc_name)
+        # parent = self()
+        # pid = spawn_link(fn -> roundabout(parent) end)
+        # Process.register(pid, :client_toyrobot)
+        # send_robot_status(robot, cli_proc_name)
         robot
     end
 
@@ -175,120 +197,53 @@ defmodule ToyRobot do
     visited ++ [{x,y}] #adds the tuple to the end of the visited list
   end
 
-  def rotate(%ToyRobot.Position{facing: facing} = robot, should_face, face_diff, cli_proc_name) do
+  def rotate(%ToyRobot.Position{facing: facing} = robot, should_face, face_diff, obs_ahead, cli_proc_name) do
     case should_face == facing do
       false ->
+        parent = self()
+        pid = spawn_link(fn -> roundabout(parent) end)
+        Process.register(pid, :client_toyrobot)
         if (face_diff == -3 or face_diff == 1) do
+
           robot = left(robot) #rotate left
-          send_robot_status(robot, cli_proc_name)
-          rotate(robot, should_face, face_diff, cli_proc_name)
+          obs_ahead = send_robot_status(robot, cli_proc_name)
+          rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         else
+
           robot = right(robot) #rotate right
-          send_robot_status(robot, cli_proc_name)
-          rotate(robot, should_face, face_diff, cli_proc_name)
+          obs_ahead = send_robot_status(robot, cli_proc_name)
+          rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         end
       true ->
-        robot #return the robot object/struct
+        {robot, obs_ahead} #return the robot object/struct
     end
   end
 
-  def navigate(%ToyRobot.Position{facing: facing} = robot, diff, goal_x, goal_y, prev, cli_proc_name) do
-    obs_ahead = send_robot_status(robot, cli_proc_name) #check if there's an obstacle ahead in the current direction of the robot
-    #if there is an obstacle ahead, avoid it
-    {robot,prev} = if obs_ahead, do: avoid(robot, goal_x, goal_y, prev, cli_proc_name), else: {robot, prev}
 
-      if (diff != 0 and !obs_ahead) do
-        case diff > 0 do #if no obstacle exists, continue with normal program
-          true ->
-            diff = diff - 1
-            {x,y,_} = report(robot)
-            prev = [x,y]
-            robot = move(robot)
-            navigate(robot, diff, goal_x, goal_y, prev, cli_proc_name)
-          false ->
-            diff = diff + 1
-            {x,y,_} = report(robot)
-            prev = [x,y]
-            robot = move(robot)
-            navigate(robot, diff, goal_x, goal_y, prev, cli_proc_name)
-
-        end
-      else
-        send_robot_status(robot, cli_proc_name)
-        #these will be the co-ords after the robot has moved to avoid the obstacle
-        {_c_x,_c_y,c_f} = report(robot) #get current robot co-ords
-
-        #if the robot has avoided an obstacle in this iteration then run the normal navigate program again
-        robot = if obs_ahead, do: rotate(robot, facing, @dir_to_num[facing]-@dir_to_num[c_f] ,cli_proc_name), else: robot #rotate to face its original direction
-        {robot,prev} = if obs_ahead, do: navigate(robot, diff, goal_x, goal_y, prev, cli_proc_name), else: {robot,prev}
-        #otherwise just keep the values as they are
-
-        {robot,prev} #return this tuple
-      end
-  end
-
-  def avoid(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, goal_x, goal_y, prev, cli_proc_name) do
-    #calculate best squares around it
-    y = @robot_map_y_atom_to_num[y]
-    goal_y = @robot_map_y_atom_to_num[goal_y]
-    squares = [east: distance(x+1, y, goal_x, goal_y), west: distance(x-1, y, goal_x, goal_y), north: distance(x, y+1, goal_x, goal_y), south: distance(x, y-1, goal_x, goal_y)]
-    squares = squares |> List.keysort(1)
-    #eliminate out of bounds options
-    squares = eliminate_out_of_bounds(squares, x, y) #eliminate out of bounds directions
-    prev_dir = calculate_old_direction(x, y, Enum.at(prev,0), Enum.at(prev,1))
-    opp = opposite_facing(facing)
-    {_, squares} = Keyword.pop(squares, prev_dir) #eliminate old direction
-    # {_, squares} = Keyword.pop(squares, facing)
-    {_, squares} = Keyword.pop(squares, opp) #lets remove the directions that move away from the obstacle
-    #let best be first pref, momentum be second pref
-
-
-    sq_keys = Keyword.keys(squares) #getting a corresponding list of keys
-
-    sq_keys = sq_keys ++ [opp] ++ [prev_dir] #add old direction as the last member of the list
-    IO.inspect(opp, label: "Direction Opposite")
-    IO.inspect(facing, label: "Direction Facing")
-    #move the robot according to the generated list
-    move_with_priority(robot, sq_keys, 0, cli_proc_name)
-  end
-
-  def move_with_priority(%ToyRobot.Position{facing: facing} = robot, sq_keys, i, cli_proc_name) do
+  def move_with_priority(%ToyRobot.Position{facing: facing} = robot, sq_keys, obs_ahead, i, cli_proc_name) do
     #rotate to the defined direction
+    # parent = self()
+    # pid = spawn_link(fn -> roundabout(parent) end)
+    # Process.register(pid, :client_toyrobot)
+
     should_face = Enum.at(sq_keys, i)
     face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
-    robot = rotate(robot, should_face, face_diff, cli_proc_name)
+    {robot, obs_ahead} = if face_diff != 0, do: rotate(robot, should_face, face_diff, false, cli_proc_name), else: {robot, obs_ahead}
 
-    obs_ahead = send_robot_status(robot, cli_proc_name) #check if there's an obstacle ahead of the current dir
+    #obs_ahead = send_robot_status(robot, cli_proc_name) #check if there's an obstacle ahead of the current dir
     if obs_ahead do
       i = i+1
-      move_with_priority(robot, sq_keys, i, cli_proc_name)
+      move_with_priority(robot, sq_keys, obs_ahead, i, cli_proc_name)
     else
-
       robot = move(robot)
-      robot
+      parent = self()
+      pid = spawn_link(fn -> roundabout(parent) end)
+      Process.register(pid, :client_toyrobot)
+      obs_ahead = send_robot_status(robot, cli_proc_name)
+      {robot, obs_ahead}
     end
   end
 
-  def opposite_facing(facing) do
-    ans = :north
-    ans = if facing == :west, do: :east, else: ans
-    ans = if facing == :east, do: :west, else: ans
-
-    ans = if facing == :north, do: :south, else: ans
-    ans = if facing == :south, do: :north, else: ans
-    ans
-
-  end
-
-  def calculate_old_direction(x1,y1,x2,y2) do
-    y2 = @robot_map_y_atom_to_num[y2]
-    ans = :x
-    ans = if x1 - x2 > 0, do: :west, else: ans
-    ans = if x1 - x2 < 0, do: :east, else: ans
-    ans = if y1 - y2 > 0, do: :south, else: ans
-    ans = if y1 - y2 < 0, do: :north, else: ans
-    ans
-  end
   def eliminate_out_of_bounds(squares, x, y) do
     {_, squares} = if x+1 > 5, do: Keyword.pop(squares, :east), else: {:ok, squares}
     {_, squares} = if x-1 < 1, do: Keyword.pop(squares, :west), else: {:ok, squares}
