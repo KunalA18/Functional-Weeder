@@ -1,0 +1,6 @@
+2, c, east
+2, c, south
+2, c, west
+1, c, west
+1, c, north
+1, d, north
