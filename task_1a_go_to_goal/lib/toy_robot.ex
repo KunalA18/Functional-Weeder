@@ -5,8 +5,7 @@ defmodule ToyRobot do
   @table_top_y :e
   # mapping of y-coordinates
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5}
-  # mapping of directions to numbers
-  @robot_map_direction_atom_to_num %{:north => 1, :east => 2, :south => 3, :west => 4}
+  @robot_map_dir_to_num %{:north => 1, :east => 2, :south => 3, :west => 4}
 
   @doc """
   Places the robot to the default position of (1, A, North)
@@ -65,44 +64,57 @@ defmodule ToyRobot do
   Passing the CLI Server process name that will be used to send robot's current status after each action is taken.
   """
   def stop(robot, goal_x, goal_y, cli_proc_name) do
-    # if goal is 5,C and current position is 3,A then robot shall
-    # go up first and then to the right
-    # i.e. from A to C first, then from 3 to 5
+    {x,y,facing} = report(robot)
+    dist_x = goal_x - x
+    dist_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
 
-    dist_x = goal_x - x #if negative, move to the left, else to the right
-    dist_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y] #if negative, move down, else move up
-
-    dir_currently_facing = @robot_map_direction_atom_to_num[facing]
-
-    if dist_y > 0 do
-      dir_to_be_facing = :north
-    else
-      dir_to_be_facing = :south
-    end
-
-    if dist_x > 0 do
-      dir_to_be_facing = :east
-    else
-      dir_to_be_facing = :west
-    end
-
-    # in order for the robot to change direction, it must be rotated.
-    # direction of rotation is to be determined
-
-    # if dir_currently_facing != @robot_map_direction_atom_to_num[dir_to_be_facing] do
-    # write code for left/right rotation
+    x_desired_dir = if dist_x >= 0, do: :east, else: :west
+    y_desired_dir = if dist_y >= 0, do: :north, else: :south
 
 
+    {x,y,facing} = report(robot)
     send_robot_status(robot, cli_proc_name)
 
+    robot = rotate(robot, x_desired_dir, cli_proc_name)
+    {_, robot} = navigate_path(robot, dist_x, cli_proc_name)
+    {x, y, facing} = report(robot)
 
-
-
+    robot = rotate(robot, y_desired_dir, cli_proc_name)
+    {_, robot} = navigate_path(robot, dist_y, cli_proc_name)
+    {x, y, facing} = report(robot)
 
   end
 
+  def rotate(%ToyRobot.Position{facing: facing} = robot, face, cli_proc_name) do
+    if face == facing do
+      robot
+    else
+      robot = right(robot)
+      send_robot_status(robot, cli_proc_name)
+      rotate(robot, face, cli_proc_name)
+    end
+  end
 
-  def rotate(%ToyRobot.Position{facing: facing} = robot, )
+  def navigate_path(%ToyRobot.Position{x: x, y: y, facing: facing} = robot, diff, cli_proc_name) do
+    if diff != 0 do
+      cond do
+        diff > 0 ->
+          robot = move(robot)
+          send_robot_status(robot, cli_proc_name)
+          diff = diff-1
+          navigate_path(robot, diff, cli_proc_name)
+        diff <= 0 ->
+          robot = move(robot)
+          send_robot_status(robot, cli_proc_name)
+          diff = diff+1
+          navigate_path(robot, diff, cli_proc_name)
+      end
+    else
+      {:ok, robot}
+    end
+
+  end
+
   @doc """
   Send Toy Robot's current status i.e. location (x, y) and facing
   to the CLI Server process after each action is taken.
