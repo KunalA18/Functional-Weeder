@@ -54,6 +54,8 @@ defmodule ToyRobot do
     ###########################
     ## complete this funcion ##
     ###########################
+    Process.register(self(),:client_toyrobot)
+    ToyRobot.place(x,y,facing)
   end
 
   def stop(_robot, goal_x, goal_y, _cli_proc_name) when goal_x < 1 or goal_y < :a or goal_x > @table_top_x or goal_y > @table_top_y do
@@ -70,6 +72,66 @@ defmodule ToyRobot do
     ###########################
     ## complete this funcion ##
     ###########################
+    {x,y,facing} = report(robot)
+    dist_x = goal_x - x
+    dist_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
+
+    x_desired_dir = if dist_x >= 0, do: :east, else: :west
+    y_desired_dir = if dist_y >= 0, do: :north, else: :south
+
+
+    {x,y,facing} = report(robot)
+    send_robot_status(robot, cli_proc_name)
+
+    robot = rotate(robot, x_desired_dir, cli_proc_name)
+    {_, robot} = navigate_path(robot, dist_x, cli_proc_name)
+    {x, y, facing} = report(robot)
+
+    robot = rotate(robot, y_desired_dir, cli_proc_name)
+    {_, robot} = navigate_path(robot, dist_y, cli_proc_name)
+    {x, y, facing} = report(robot)
+
+    #adding the current cell to a visited list
+    current_cell = [x,y]
+    visited_cells = [current_cell]
+    obstacle_presence = send_robot_status(robot, cli_proc_name)
+
+    #generating a list of the possible cells it could travel to
+    
+  end
+  
+  def possible_cells{robot, } do
+
+  end
+
+  def rotate(%ToyRobot.Position{facing: facing} = robot, face, cli_proc_name) do
+    if face == facing do
+      robot
+    else
+      robot = right(robot)
+      send_robot_status(robot, cli_proc_name)
+      rotate(robot, face, cli_proc_name)
+    end
+  end
+
+  def navigate_path(robot, diff, cli_proc_name) do
+    if diff != 0 do
+      cond do
+        diff > 0 ->
+          robot = move(robot)
+          send_robot_status(robot, cli_proc_name)
+          diff = diff-1
+          navigate_path(robot, diff, cli_proc_name)
+        diff <= 0 ->
+          robot = move(robot)
+          send_robot_status(robot, cli_proc_name)
+          diff = diff+1
+          navigate_path(robot, diff, cli_proc_name)
+      end
+    else
+      {:ok, robot}
+    end
+
   end
 
   @doc """
