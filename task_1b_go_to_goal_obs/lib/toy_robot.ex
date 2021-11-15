@@ -100,9 +100,9 @@ defmodule ToyRobot do
     
   end
   
-  def possible_cells{robot, } do
-
-  end
+  # define a function to store the possible cells that the robot can travel to inside a list
+  # after that, arrange those cells using their absolute distance from the goal 
+  
 
   def rotate(%ToyRobot.Position{facing: facing} = robot, face, cli_proc_name) do
     if face == facing do
