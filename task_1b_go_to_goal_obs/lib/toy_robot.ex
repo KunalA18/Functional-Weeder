@@ -97,13 +97,28 @@ defmodule ToyRobot do
     obstacle_presence = send_robot_status(robot, cli_proc_name)
 
     #generating a list of the possible cells it could travel to
-    
+    cell_list = []
+    cell_list = possible_cells(robot, x, y, dist_x, dist_y, goal_x, goal_y, facing, visited_cells, cell_list)
+  
   end
   
-  # define a function to store the possible cells that the robot can travel to inside a list
-  # after that, arrange those cells using their absolute distance from the goal 
+  def possible_cells(robot, x, y, x_diff, y_diff, goal_x, goal_y, facing, visited_cells, cells) do
+    #visited cells contains the coordinates of the current cell
+    #if the robot is on (3,a) then it can go to (2,a),(3,b) and (4,a) but it can't go south
+    #if the robot is on (3,c) then it can travel in all 4 directions
+    cond do
+      x_diff == 0 and y_diff == 0 ->
+        robot
+      true->
+        y = @robot_map_y_atom_to_num[y] #converting y to a number
+        cells = [east: absolute_distance(x+1, y, goal_x, goal_y), west: absolute_distance(x-1, y, goal_x, goal_y), north: absolute_distance(x, y+1, goal_x, goal_y), south: absolute_distance(x, y-1, goal_x, goal_y)]
+        cells = cells |> List.keysort(1)
+        
+    end
+  end
   
-
+  # arrange cells using their absolute distance from the goal 
+  
   def rotate(%ToyRobot.Position{facing: facing} = robot, face, cli_proc_name) do
     if face == facing do
       robot
@@ -134,6 +149,10 @@ defmodule ToyRobot do
 
   end
 
+  def absolute_distance(a,b,c,d) do
+    abs(a-c) + abs(b-d)
+  end
+  
   @doc """
   Send Toy Robot's current status i.e. location (x, y) and facing
   to the CLI Server process after each action is taken.
