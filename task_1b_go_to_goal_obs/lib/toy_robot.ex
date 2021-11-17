@@ -103,6 +103,7 @@ defmodule ToyRobot do
   end
   
   def possible_cells(robot, x, y, x_diff, y_diff, goal_x, goal_y, facing, visited_cells, cells) do
+    {x, y, facing} = report(robot)
     #visited cells contains the coordinates of the current cell
     #if the robot is on (3,a) then it can go to (2,a),(3,b) and (4,a) but it can't go south
     #if the robot is on (3,c) then it can travel in all 4 directions
@@ -111,9 +112,32 @@ defmodule ToyRobot do
         robot
       true->
         y = @robot_map_y_atom_to_num[y] #converting y to a number
-        cells = [east: absolute_distance(x+1, y, goal_x, goal_y), west: absolute_distance(x-1, y, goal_x, goal_y), north: absolute_distance(x, y+1, goal_x, goal_y), south: absolute_distance(x, y-1, goal_x, goal_y)]
-        cells = cells |> List.keysort(1)
-        
+
+        for x <- [2,3,4], y <- [2,3,4] do
+          cells = [north: absolute_distance(x, y+1, goal_x, goal_y), east: absolute_distance(x+1, y, goal_x, goal_y), south: absolute_distance(x, y-1, goal_x, goal_y), west: absolute_distance(x-1, y, goal_x, goal_y)]
+        end
+        for x <- 1, y <- 1 do
+          cells = [north: absolute_distance(x, y+1, goal_x, goal_y), east: absolute_distance(x+1, y, goal_x, goal_y)]
+        end
+        for x <- 1, y <- 5 do
+          cells = [east: absolute_distance(x+1, y, goal_x, goal_y),south: absolute_distance(x, y-1, goal_x, goal_y)]
+        end
+        for x <- 5, y <- 5 do
+          cells = [south: absolute_distance(x, y-1, goal_x, goal_y), west: absolute_distance(x-1, y, goal_x, goal_y)]
+        end
+        for x <- 5, y <- 1 do
+          cells = [north: absolute_distance(x, y+1, goal_x, goal_y),west: absolute_distance(x-1, y, goal_x, goal_y)]
+        end
+    end
+    cells = cells |> List.keysort(1)
+
+    #here we need to remove the cells that have an obstacle and hence can't be traversed to
+
+    cells = avoid_obstacles(x, y, facing, cells, cli_proc_name)
+
+    {x, y, _facing} = report(robot)
+    x_diff = goal_x - x
+    y_diff = goal_y - @robot_map_y_atom_to_num[y]
     end
   end
   
@@ -146,12 +170,13 @@ defmodule ToyRobot do
     else
       {:ok, robot}
     end
-
   end
 
   def absolute_distance(a,b,c,d) do
     abs(a-c) + abs(b-d)
   end
+  
+  #here, define the function avoid_obstacles for obstacle avoidance
   
   @doc """
   Send Toy Robot's current status i.e. location (x, y) and facing
