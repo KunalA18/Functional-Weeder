@@ -25,6 +25,7 @@ defmodule ToyRobot.PhoenixSocketClient do
 
     {:ok, socket} = PhoenixClient.Socket.start_link(socket_opts)
 
+    Process.sleep(1000)
     {:ok, _response, channel} = PhoenixClient.Channel.join(socket, "robot:status")
 
     {:ok, _response, channel}
@@ -48,18 +49,17 @@ defmodule ToyRobot.PhoenixSocketClient do
     ###########################
     ## complete this funcion ##
     ###########################
-    # message = %ToyRobot.Position{x: x, y: y, facing: facing}
+    message = %ToyRobot.Position{x: x, y: y, facing: facing}
 
-    message = %PhoenixClient.Message{
+    {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
+
+    %PhoenixClient.Message{
       channel_pid: channel,
       event: "new_msg",
       payload: %ToyRobot.Position{x: x, y: y, facing: facing},
       ref: nil,
       topic: "robot:status"
     }
-
-    {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
-    # flush
 
     {:obstacle_presence, obstaclePresence}
   end
