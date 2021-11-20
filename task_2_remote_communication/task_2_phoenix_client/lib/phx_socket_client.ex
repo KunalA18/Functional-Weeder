@@ -50,7 +50,7 @@ defmodule ToyRobot.PhoenixSocketClient do
     ###########################
     # message = %ToyRobot.Position{x: x, y: y, facing: facing}
 
-    messsage = %PhoenixClient.Message{
+    message = %PhoenixClient.Message{
       channel_pid: channel,
       event: "new_msg",
       payload: %ToyRobot.Position{x: x, y: y, facing: facing},

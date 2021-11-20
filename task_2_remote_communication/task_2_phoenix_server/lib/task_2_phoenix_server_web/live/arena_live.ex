@@ -1,5 +1,5 @@
 defmodule Task2PhoenixServerWeb.ArenaLive do
-  use Task2PhoenixServerWeb,:live_view
+  use Task2PhoenixServerWeb, :live_view
 
   @doc """
   Mount the Dashboard when this module is called with requesting for the Arena view from the client like browser.
@@ -14,7 +14,7 @@ defmodule Task2PhoenixServerWeb.ArenaLive do
     socket = assign(socket, :bottom, 0)
     socket = assign(socket, :left, 0)
 
-    {:ok,socket}
+    {:ok, socket}
   end
 
   @doc """
@@ -24,7 +24,7 @@ defmodule Task2PhoenixServerWeb.ArenaLive do
   in the values of any of these 3 variables => "img", "bottom", "left".
   """
   def render(assigns) do
-
+    ~H"""
     <h1> Grid view</h1>
 
     <div class="grid-container">
@@ -71,7 +71,7 @@ defmodule Task2PhoenixServerWeb.ArenaLive do
       </div>
 
     </div>
-
+    """
   end
 
   @doc """
@@ -80,13 +80,11 @@ defmodule Task2PhoenixServerWeb.ArenaLive do
   Assign the values to the variables => "img", "bottom", "left"
   based on the data recevied.
   """
-  def handle_info(data ,socket) do
-
+  def handle_info(data, socket) do
     ###########################
     ## complete this funcion ##
     ###########################
 
     {:noreply, socket}
   end
-
 end
