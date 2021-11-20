@@ -67,6 +67,8 @@ defmodule Task2PhoenixServerWeb.RobotChannel do
         message["face"]
       )
 
+    IO.inspect(is_obs_ahead, label: "Obs Ahead status")
+
     # file object to write each action taken by Toy Robot
     {:ok, out_file} = File.open("task_2_output.txt", [:append])
     # write the robot actions to a text file

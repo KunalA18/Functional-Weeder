@@ -93,7 +93,8 @@ defmodule ToyRobot do
 
     # IO.puts(ans)
     # send status of the start location
-    obs_ahead = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
+    {:obstacle_presence, obs_ahead} = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
+    IO.inspect(robot, label: "Sending status")
 
     visited = []
     # start the obstacle avoidance and navigation loop
@@ -146,7 +147,7 @@ defmodule ToyRobot do
         # add it to the old list of squares
 
         sq_keys = arrange_by_visited(x, y, sq_keys, visited)
-
+        IO.inspect(sq_keys, label: "Sq_keys in loop")
         # navigate according to the list
         {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, channel)
         # start again
@@ -170,20 +171,20 @@ defmodule ToyRobot do
   def arrange_by_visited(x, y, sq_keys, visited) do
     # get a list of tuples with the corresponding directions
     coords =
-      Enum.reduce(sq_keys, [], fn dir, acc ->
+      Enum.reduce(sq_keys, [], fn (dir, acc) ->
         coord = []
         coord = if dir == :north, do: {x, y + 1}, else: coord
         coord = if dir == :south, do: {x, y - 1}, else: coord
-        coord = if dir == :east, do: {x + 1, y}, else: coord
-        coord = if dir == :west, do: {x - 1, y}, else: coord
+        coord = if dir == :east, do:  {x + 1, y}, else: coord
+        coord = if dir == :west, do:  {x - 1, y}, else: coord
         acc ++ [coord]
       end)
 
     # co-ords are in the order of distance function
     # final list should be in the order of visited list
     dirs_in_order =
-      Enum.reduce(visited, [], fn {x_v, y_v}, acc ->
-        i = Enum.find_index(coords, fn {x, y} -> x == x_v and y == y_v end)
+      Enum.reduce(visited, [], fn ({x_v, y_v}, acc) ->
+        i = Enum.find_index(coords, fn {x, y} -> (x == x_v and y == y_v) end)
 
         if i != nil do
           {_, buff} = Enum.fetch(sq_keys, i)
@@ -204,7 +205,7 @@ defmodule ToyRobot do
   def check_for_existing(x, y, visited) do
     # function is working !
     # removes the x,y tuple from the list if it exists in it
-    visited = Enum.reject(visited, fn {x_v, y_v} -> x_v == x and y_v == y end)
+    visited = Enum.reject(visited, fn {x_v, y_v} -> (x_v == x and y_v == y) end)
     # adds the tuple to the end of the visited list
     visited ++ [{x, y}]
   end
@@ -224,12 +225,14 @@ defmodule ToyRobot do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
-          obs_ahead = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
+          {:obstacle_presence, obs_ahead} = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
+          IO.inspect(robot, label: "Sending status")
           rotate(robot, should_face, face_diff, obs_ahead, channel)
         else
           # rotate right
           robot = right(robot)
-          obs_ahead = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
+          {:obstacle_presence, obs_ahead} = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
+          IO.inspect(robot, label: "Sending status")
           rotate(robot, should_face, face_diff, obs_ahead, channel)
         end
 
@@ -252,6 +255,7 @@ defmodule ToyRobot do
     # Process.register(pid, :client_toyrobot)
 
     should_face = Enum.at(sq_keys, i)
+    IO.inspect(should_face, label: "Should Face")
     face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
 
     {robot, obs_ahead} =
@@ -260,6 +264,7 @@ defmodule ToyRobot do
         else: {robot, obs_ahead}
 
     # obs_ahead = send_robot_status(robot, cli_proc_name) #check if there's an obstacle ahead of the current dir
+    IO.inspect(obs_ahead, label: "Is obs ahead?")
     if obs_ahead do
       i = i + 1
       move_with_priority(robot, sq_keys, obs_ahead, i, channel)
@@ -268,7 +273,8 @@ defmodule ToyRobot do
       # parent = self()
       # pid = spawn_link(fn -> roundabout(parent) end)
       # Process.register(pid, :client_toyrobot)
-      obs_ahead = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
+      IO.inspect(robot, label: "Exiting movement here")
+      {:obstacle_presence, obs_ahead} = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
       {robot, obs_ahead}
     end
   end
