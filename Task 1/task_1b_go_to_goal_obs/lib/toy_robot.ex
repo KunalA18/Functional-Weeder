@@ -82,8 +82,6 @@ defmodule ToyRobot do
     #+ve implies that it needs to go up
     #-ve implies that it needs to go down
 
-    #Process.register(self(), :client_toyrobot) #the process that is currently being executed is :client_toyrobot
-
     #spawn a process that recieves from server
     #recieve a message then send the message to self()
     parent = self()
@@ -142,19 +140,13 @@ defmodule ToyRobot do
 
         #navigate according to the list
         {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, cli_proc_name)
-        #start again
+
         {x, y, _facing} = report(robot)
         diff_x = goal_x - x # +ve implies east and -ve implies west
         diff_y = goal_y - @robot_map_y_atom_to_num[y]
 
-
-        #IO.puts("--------------------")
         loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
       true ->
-        # parent = self()
-        # pid = spawn_link(fn -> roundabout(parent) end)
-        # Process.register(pid, :client_toyrobot)
-        # send_robot_status(robot, cli_proc_name)
         robot
     end
 
@@ -183,12 +175,12 @@ defmodule ToyRobot do
       end
     end)
 
-    #IO.inspect(dirs_in_order, label: "Directions in order") # Directions which are arranged in old -> new
+    #dirs_in_order => Directions which are arranged in old -> new
 
     sq_keys = sq_keys -- dirs_in_order
     sq_keys = sq_keys ++ dirs_in_order
-    sq_keys
-    # IO.inspect(sq_keys, label: "Final list of all directions with old ones at the end")
+    sq_keys #sq_keys now has the keys with the visited ones at the end
+
   end
 
   def check_for_existing(x, y, visited) do
@@ -222,15 +214,11 @@ defmodule ToyRobot do
 
   def move_with_priority(%ToyRobot.Position{facing: facing} = robot, sq_keys, obs_ahead, i, cli_proc_name) do
     #rotate to the defined direction
-    # parent = self()
-    # pid = spawn_link(fn -> roundabout(parent) end)
-    # Process.register(pid, :client_toyrobot)
 
     should_face = Enum.at(sq_keys, i)
     face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
     {robot, obs_ahead} = if face_diff != 0, do: rotate(robot, should_face, face_diff, false, cli_proc_name), else: {robot, obs_ahead}
 
-    #obs_ahead = send_robot_status(robot, cli_proc_name) #check if there's an obstacle ahead of the current dir
     if obs_ahead do
       i = i+1
       move_with_priority(robot, sq_keys, obs_ahead, i, cli_proc_name)
@@ -347,34 +335,3 @@ defmodule ToyRobot do
     raise "Connection has been lost"
   end
 end
-
-
-# {x, y, facing} = report(robot)
-# diff_x = goal_x - x # +ve implies east and -ve implies west
-# diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y] #+ve implies north and -ve implies south
-
-# should_face_y = if diff_y >=0, do: :north, else: :south
-# should_face_x = if diff_x >= 0, do: :east, else: :west
-
-# face_diff = @dir_to_num[facing] - @dir_to_num[should_face_x]
-
-# robot = unless diff_x == 0, do: rotate(robot, should_face_x, face_diff, cli_proc_name), else: robot
-# #execute the navigate function only if the robot is not on the desired x co-ord
-# {robot, prev} = unless diff_x == 0, do: navigate(robot, diff_x, goal_x, goal_y, [x,y], cli_proc_name), else: {robot,[x,y]} #navigate for X direction
-
-# {x, y, facing} = report(robot) #get current position of the robot
-# diff_x = goal_x - x # +ve implies east and -ve implies west
-# diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
-# face_diff = @dir_to_num[facing] - @dir_to_num[should_face_y]
-
-# should_face_y = if diff_y >=0, do: :north, else: :south
-# # should_face_x = if diff_x >= 0, do: :east, else: :west
-
-# robot =  unless diff_y == 0, do: rotate(robot, should_face_y, face_diff, cli_proc_name), else: robot
-# #execute the navigate function only if the robot is not on the desired y co-ord
-# {robot, prev} = unless diff_y == 0, do: navigate(robot, diff_y, goal_x, goal_y, prev, cli_proc_name), else: {robot, prev} #navigate for Y direction
-
-# # these three lines ensure an extra loop is avoided by setting the diff_x and diff_y
-# {x, y, _facing} = report(robot)
-# diff_x = goal_x - x # +ve implies east and -ve implies west
-# diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
