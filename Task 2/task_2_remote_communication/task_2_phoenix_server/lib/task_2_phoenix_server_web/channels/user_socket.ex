@@ -11,6 +11,7 @@ defmodule Task2PhoenixServerWeb.UserSocket do
   # pointing to the `Task2PhoenixServerWeb.RoomChannel`:
   #
   # channel "room:*", Task2PhoenixServerWeb.RoomChannel
+  channel "robot:*", Task2PhoenixServerWeb.RoomChannel
   #
   # To create a channel file, use the mix task:
   #
