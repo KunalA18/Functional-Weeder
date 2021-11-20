@@ -22,7 +22,7 @@ use Mix.Config
 #
 
 # config :phoenix_server, url: "ws://<-ngrok_url->:80/socket/websocket"
-# config :phoenix_server, url: "ws://localhost:4000/socket/websocket"
+config :phoenix_server, url: "ws://localhost:4000/socket/websocket"
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment
