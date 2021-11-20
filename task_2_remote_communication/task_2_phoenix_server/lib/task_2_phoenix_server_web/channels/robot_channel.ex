@@ -6,6 +6,7 @@ defmodule Task2PhoenixServerWeb.RobotChannel do
   Reply or Acknowledge with socket PID received from the Client.
   """
   def join("robot:status", _params, socket) do
+    IO.puts("Client Connected")
     {:ok, socket}
   end
 
@@ -24,15 +25,23 @@ defmodule Task2PhoenixServerWeb.RobotChannel do
   Based on the message from the Client, determine the obstacle's presence in front of the robot
   and return the boolean value in this format {:ok, < true OR false >}.
   """
+
+  # mapping of y-coordinates
+  @robot_map_y_string_to_num %{"a" => 1, "b" => 2, "c" => 3, "d" => 4, "e" => 5}
+
   def handle_in("new_msg", message, socket) do
-    {x, y, facing} = message
+    IO.inspect(message, label: "Message")
+    x = message["x"]
+    y = message["y"]
+    facing = message["face"]
     # pixel values and facing
+    y = @robot_map_y_string_to_num[y]
     left_value = 150 * (x - 1)
     bottom_value = 150 * (y - 1)
     face_value = facing
     # parsing function
-    %{"left" => left_value, "bottom" => bottom_value, "face" => face_value} =
-      Integer.parse(message)
+    # %{"left" => left_value, "bottom" => bottom_value, "face" => face_value} =
+    #   Integer.parse(message)
 
     IO.inspect(x, label: "x")
     IO.inspect(y, label: "y")

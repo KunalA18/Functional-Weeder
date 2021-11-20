@@ -25,7 +25,13 @@ defmodule ToyRobot.PhoenixSocketClient do
 
     {:ok, socket} = PhoenixClient.Socket.start_link(socket_opts)
 
+    IO.inspect(socket)
+    #wait_for_socket(socket)
+    Process.sleep(1000)
+
     {:ok, _response, channel} = PhoenixClient.Channel.join(socket, "robot:status")
+
+    IO.inspect(channel)
 
     {:ok, _response, channel}
 
@@ -35,6 +41,13 @@ defmodule ToyRobot.PhoenixSocketClient do
     #   ref: term(),
     #   topic: robot
     # }
+  end
+
+  def wait_for_socket(socket) do
+    unless Socket.connected?(socket) do
+      wait_for_socket(socket)
+    end
+    #IO.puts("Connected")
   end
 
   @doc """
@@ -48,15 +61,15 @@ defmodule ToyRobot.PhoenixSocketClient do
     ###########################
     ## complete this funcion ##
     ###########################
-    # message = %ToyRobot.Position{x: x, y: y, facing: facing}
+    message = %{x: x, y: y, face: facing}
 
-    message = %PhoenixClient.Message{
-      channel_pid: channel,
-      event: "new_msg",
-      payload: %ToyRobot.Position{x: x, y: y, facing: facing},
-      ref: nil,
-      topic: "robot:status"
-    }
+    # message = %PhoenixClient.Message{
+    #   channel_pid: channel,
+    #   event: "new_msg",
+    #   payload: %ToyRobot.Position{x: x, y: y, facing: facing},
+    #   ref: nil,
+    #   topic: "robot:status"
+    # }
 
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
     # flush
