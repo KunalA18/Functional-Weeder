@@ -25,13 +25,35 @@ defmodule Task2PhoenixServerWeb.RobotChannel do
   and return the boolean value in this format {:ok, < true OR false >}.
   """
   def handle_in("new_msg", message, socket) do
+    {x, y, facing} = message
+    # pixel values and facing
+    left_value = 150 * (x - 1)
+    bottom_value = 150 * (y - 1)
+    face_value = facing
+    # parsing function
+    %{"left" => left_value, "bottom" => bottom_value, "face" => face_value} =
+      Integer.parse(message)
+
+    # subscribe to the topic "robot:update"
+    :ok = Phoenix.PubSub.subscribe(Task2PhoenixServer.PubSub, "robot:update")
+    # broadcast the map of pixel locations for ArenaLive
+    broadcast!(socket, "new_msg", %{
+      "left" => left_value,
+      "bottom" => bottom_value,
+      "face" => face_value
+    })
 
     ###########################
     ## complete this funcion ##
     ###########################
 
     # determine the obstacle's presence in front of the robot and return the boolean value
-    is_obs_ahead = Task2PhoenixServerWeb.FindObstaclePresence.is_obstacle_ahead?(message["x"], message["y"], message["face"])
+    is_obs_ahead =
+      Task2PhoenixServerWeb.FindObstaclePresence.is_obstacle_ahead?(
+        message["x"],
+        message["y"],
+        message["face"]
+      )
 
     # file object to write each action taken by Toy Robot
     {:ok, out_file} = File.open("task_2_output.txt", [:append])

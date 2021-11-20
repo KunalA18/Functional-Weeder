@@ -48,17 +48,18 @@ defmodule ToyRobot.PhoenixSocketClient do
     ###########################
     ## complete this funcion ##
     ###########################
-    message = %ToyRobot.Position{x: x, y: y, facing: facing}
+    # message = %ToyRobot.Position{x: x, y: y, facing: facing}
+
+    messsage = %PhoenixClient.Message{
+      channel_pid: channel,
+      event: "new_msg",
+      payload: %ToyRobot.Position{x: x, y: y, facing: facing},
+      ref: nil,
+      topic: "robot:status"
+    }
+
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
     # flush
-
-    # %PhoenixClient.Message{
-    #   channel_pid: channel,
-    #   event: "new_msg",
-    #   payload: %ToyRobot.Position{x: x, y: y, facing: facing},
-    #   ref: nil,
-    #   topic: "robot:status"
-    # }
 
     {:obstacle_presence, obstaclePresence}
   end
