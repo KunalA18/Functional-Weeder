@@ -84,7 +84,20 @@ defmodule Task2PhoenixServerWeb.ArenaLive do
     ###########################
     ## complete this funcion ##
     ###########################
-
+    # data = %{"bottom" => 300, "face" => "north", "left" => 300}
+    img_name = get_img(data["face"])
+    socket = assign(socket, :img, img_name)
+    socket = assign(socket, :bottom, data["bottom"])
+    socket = assign(socket, :left, data["left"])
     {:noreply, socket}
   end
+
+  def get_img(direction) do
+    ans = "robot_facing_north.png"
+    ans = if direction == "south", do: "robot_facing_south.png", else: ans
+    ans = if direction == "east", do: "robot_facing_east.png", else: ans
+    ans = if direction == "west", do: "robot_facing_west.png", else: ans
+    ans
+  end
+
 end

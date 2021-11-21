@@ -46,15 +46,12 @@ defmodule Task2PhoenixServerWeb.RobotChannel do
     IO.inspect(x, label: "x")
     IO.inspect(y, label: "y")
     IO.inspect(facing, label: "facing")
+    msg_map = %{"left" => left_value, "bottom" => bottom_value,"face" => face_value}
     # subscribe to the topic "robot:update"
     :ok = Phoenix.PubSub.subscribe(Task2PhoenixServer.PubSub, "robot:update")
     # broadcast the map of pixel locations for ArenaLive
-    broadcast!(socket, "new_msg", %{
-      "left" => left_value,
-      "bottom" => bottom_value,
-      "face" => face_value
-    })
-
+    Phoenix.PubSub.broadcast!(Task2PhoenixServer.PubSub, "robot:update", msg_map)
+    #broadcast_from!(self(), "robot:update", msg_map)
     ###########################
     ## complete this funcion ##
     ###########################
