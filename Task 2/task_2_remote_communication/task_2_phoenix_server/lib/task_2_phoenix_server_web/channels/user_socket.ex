@@ -10,8 +10,7 @@ defmodule Task2PhoenixServerWeb.UserSocket do
   # Uncomment the following line to define a "room:*" topic
   # pointing to the `Task2PhoenixServerWeb.RoomChannel`:
   #
-  # channel "room:*", Task2PhoenixServerWeb.RoomChannel
-  channel "robot:*", Task2PhoenixServerWeb.RoomChannel
+  channel "robot:*", Task2PhoenixServerWeb.RobotChannel
   #
   # To create a channel file, use the mix task:
   #
@@ -19,7 +18,6 @@ defmodule Task2PhoenixServerWeb.UserSocket do
   #
   # See the [`Channels guide`](https://hexdocs.pm/phoenix/channels.html)
   # for futher details.
-
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After
