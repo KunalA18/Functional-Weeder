@@ -6,7 +6,6 @@ defmodule Task2PhoenixServerWeb.RobotChannel do
   Reply or Acknowledge with socket PID received from the Client.
   """
   def join("robot:status", _params, socket) do
-    IO.puts("Client Connected")
     {:ok, socket}
   end
 
@@ -30,7 +29,6 @@ defmodule Task2PhoenixServerWeb.RobotChannel do
   @robot_map_y_string_to_num %{"a" => 1, "b" => 2, "c" => 3, "d" => 4, "e" => 5}
 
   def handle_in("new_msg", message, socket) do
-    IO.inspect(message, label: "Message")
     x = message["x"]
     y = message["y"]
     facing = message["face"]
@@ -39,19 +37,13 @@ defmodule Task2PhoenixServerWeb.RobotChannel do
     left_value = 150 * (x - 1)
     bottom_value = 150 * (y - 1)
     face_value = facing
-    # parsing function
-    # %{"left" => left_value, "bottom" => bottom_value, "face" => face_value} =
-    #   Integer.parse(message)
 
-    IO.inspect(x, label: "x")
-    IO.inspect(y, label: "y")
-    IO.inspect(facing, label: "facing")
     msg_map = %{"left" => left_value, "bottom" => bottom_value,"face" => face_value}
     # subscribe to the topic "robot:update"
     :ok = Phoenix.PubSub.subscribe(Task2PhoenixServer.PubSub, "robot:update")
     # broadcast the map of pixel locations for ArenaLive
     Phoenix.PubSub.broadcast!(Task2PhoenixServer.PubSub, "robot:update", msg_map)
-    #broadcast_from!(self(), "robot:update", msg_map)
+
     ###########################
     ## complete this funcion ##
     ###########################
@@ -63,8 +55,6 @@ defmodule Task2PhoenixServerWeb.RobotChannel do
         message["y"],
         message["face"]
       )
-
-    IO.inspect(is_obs_ahead, label: "Obs Ahead status")
 
     # file object to write each action taken by Toy Robot
     {:ok, out_file} = File.open("task_2_output.txt", [:append])

@@ -82,19 +82,9 @@ defmodule ToyRobot do
     # +ve implies that it needs to go up
     # -ve implies that it needs to go down
 
-    # Process.register(self(), :client_toyrobot) #the process that is currently being executed is :client_toyrobot
-
-    # spawn a process that recieves from server
-    # recieve a message then send the message to self()
-
-    # parent = self()
-    # pid = spawn_link(fn -> roundabout(parent) end)
-    # Process.register(pid, :client_toyrobot)
-
-    # IO.puts(ans)
     # send status of the start location
     {:obstacle_presence, obs_ahead} = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
-    IO.inspect(robot, label: "Sending status")
+
 
     visited = []
     # start the obstacle avoidance and navigation loop
@@ -136,7 +126,6 @@ defmodule ToyRobot do
         squares = squares |> List.keysort(1)
         squares = eliminate_out_of_bounds(squares, x, y)
 
-        # IO.inspect(squares)
         # getting a corresponding list of keys
         sq_keys = Keyword.keys(squares)
 
@@ -147,7 +136,6 @@ defmodule ToyRobot do
         # add it to the old list of squares
 
         sq_keys = arrange_by_visited(x, y, sq_keys, visited)
-        IO.inspect(sq_keys, label: "Sq_keys in loop")
         # navigate according to the list
         {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, channel)
         # start again
@@ -156,14 +144,9 @@ defmodule ToyRobot do
         diff_x = goal_x - x
         diff_y = goal_y - @robot_map_y_atom_to_num[y]
 
-        # IO.puts("--------------------")
         loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, channel)
 
       true ->
-        # parent = self()
-        # pid = spawn_link(fn -> roundabout(parent) end)
-        # Process.register(pid, :client_toyrobot)
-        # send_robot_status(robot, cli_proc_name)
         robot
     end
   end
@@ -219,20 +202,16 @@ defmodule ToyRobot do
       ) do
     case should_face == facing do
       false ->
-        # parent = self()
-        # pid = spawn_link(fn -> roundabout(parent) end)
-        # Process.register(pid, :client_toyrobot)
+
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
           {:obstacle_presence, obs_ahead} = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
-          IO.inspect(robot, label: "Sending status")
           rotate(robot, should_face, face_diff, obs_ahead, channel)
         else
           # rotate right
           robot = right(robot)
           {:obstacle_presence, obs_ahead} = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
-          IO.inspect(robot, label: "Sending status")
           rotate(robot, should_face, face_diff, obs_ahead, channel)
         end
 
@@ -255,7 +234,6 @@ defmodule ToyRobot do
     # Process.register(pid, :client_toyrobot)
 
     should_face = Enum.at(sq_keys, i)
-    IO.inspect(should_face, label: "Should Face")
     face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
 
     {robot, obs_ahead} =
@@ -263,17 +241,11 @@ defmodule ToyRobot do
         do: rotate(robot, should_face, face_diff, false, channel),
         else: {robot, obs_ahead}
 
-    # obs_ahead = send_robot_status(robot, cli_proc_name) #check if there's an obstacle ahead of the current dir
-    IO.inspect(obs_ahead, label: "Is obs ahead?")
     if obs_ahead do
       i = i + 1
       move_with_priority(robot, sq_keys, obs_ahead, i, channel)
     else
       robot = move(robot)
-      # parent = self()
-      # pid = spawn_link(fn -> roundabout(parent) end)
-      # Process.register(pid, :client_toyrobot)
-      IO.inspect(robot, label: "Exiting movement here")
       {:obstacle_presence, obs_ahead} = ToyRobot.PhoenixSocketClient.send_robot_status(channel, robot)
       {robot, obs_ahead}
     end
