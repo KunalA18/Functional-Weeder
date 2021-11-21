@@ -1,0 +1,9 @@
+{application,toy_robot,
+             [{applications,[kernel,stdlib,elixir,logger,phoenix_client,
+                             jason]},
+              {description,"toy_robot"},
+              {modules,['Elixir.ToyRobot','Elixir.ToyRobot.CLI',
+                        'Elixir.ToyRobot.PhoenixSocketClient',
+                        'Elixir.ToyRobot.Position']},
+              {registered,[]},
+              {vsn,"0.1.0"}]}.

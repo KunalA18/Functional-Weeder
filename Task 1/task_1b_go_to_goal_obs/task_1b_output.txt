@@ -1,0 +1,13 @@
+1, a, north
+1, a, east
+2, a, east
+2, a, north
+2, a, west
+1, a, west
+1, a, north
+1, b, north
+1, b, east
+2, b, east
+3, b, east
+3, b, south
+3, a, south
