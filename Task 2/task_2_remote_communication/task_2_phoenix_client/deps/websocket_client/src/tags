@@ -1,0 +1,144 @@
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted/
+#context	./websocket_client.erl	/^-\s\*record\s\*(\?\s\*context\>/;"	r	file:
+#transport	./websocket_req.hrl	/^-\s\*record\s\*(\?\s\*transport\>/;"	r
+#websocket_req	./websocket_req.hrl	/^-\s\*record\s\*(\?\s\*websocket_req\>/;"	r
+callback_mode	./websocket_client.erl	/^callback_mode\>/;"	f	file:
+cast	./websocket_client.erl	/^cast\>/;"	f	file:
+close_type	./websocket_client.erl	/^-\s\*type\s\*close_type\>/;"	t	file:
+code_change	./websocket_client.erl	/^code_change\>/;"	f	file:
+connect	./websocket_client.erl	/^connect\>/;"	f	file:
+connected	./websocket_client.erl	/^connected\>/;"	f	file:
+consume_response	./wsc_lib.erl	/^consume_response\>/;"	f	file:
+context	./websocket_client.erl	/^-\s\*record\s\*(\?\s\*context\>/;"	r	file:
+continuation	./websocket_req.erl	/^continuation\>/;"	f	file:
+continuation_opcode	./websocket_req.erl	/^continuation_opcode\>/;"	f	file:
+create_auth_header	./wsc_lib.erl	/^create_auth_header\>/;"	f	file:
+create_handshake	./wsc_lib.erl	/^create_handshake\>/;"	f	file:
+decode_frame	./wsc_lib.erl	/^decode_frame\>/;"	f	file:
+disconnect	./websocket_client.erl	/^disconnect\>/;"	f	file:
+disconnected	./websocket_client.erl	/^disconnected\>/;"	f	file:
+encode_and_send	./websocket_client.erl	/^encode_and_send\>/;"	f	file:
+encode_frame	./wsc_lib.erl	/^encode_frame\>/;"	f	file:
+fin	./websocket_req.erl	/^fin\>/;"	f	file:
+fin	./websocket_req.hrl	/^-\s\*type\s\*fin\>/;"	t	file:
+frame	./websocket_req.hrl	/^-\s\*type\s\*frame\>/;"	t	file:
+fsm_start_link	./websocket_client.erl	/^fsm_start_link\>/;"	f	file:
+g	./websocket_req.erl	/^g\>/;"	f	file:
+generate_ws_key	./wsc_lib.erl	/^generate_ws_key\>/;"	f	file:
+get	./websocket_req.erl	/^get\>/;"	f	file:
+handle_event	./websocket_client.erl	/^handle_event\>/;"	f	file:
+handle_info	./websocket_client.erl	/^handle_info\>/;"	f	file:
+handle_keepalive	./websocket_client.erl	/^handle_keepalive\>/;"	f	file:
+handle_response	./websocket_client.erl	/^handle_response\>/;"	f	file:
+handle_websocket_frame	./websocket_client.erl	/^handle_websocket_frame\>/;"	f	file:
+handshaking	./websocket_client.erl	/^handshaking\>/;"	f	file:
+host	./websocket_req.erl	/^host\>/;"	f	file:
+init	./websocket_client.erl	/^init\>/;"	f	file:
+keepalive	./websocket_client.erl	/^-\s\*type\s\*keepalive\>/;"	t	file:
+keepalive	./websocket_req.erl	/^keepalive\>/;"	f	file:
+keepalive_max_attempts	./websocket_req.erl	/^keepalive_max_attempts\>/;"	f	file:
+key	./websocket_req.erl	/^key\>/;"	f	file:
+mask_payload	./wsc_lib.erl	/^mask_payload\>/;"	f	file:
+name_to_opcode	./websocket_req.erl	/^name_to_opcode\>/;"	f	file:
+new	./websocket_req.erl	/^new\>/;"	f	file:
+opcode	./websocket_req.erl	/^opcode\>/;"	f	file:
+opcode	./websocket_req.hrl	/^-\s\*type\s\*opcode\>/;"	t	file:
+opcode_to_name	./websocket_req.erl	/^opcode_to_name\>/;"	f	file:
+path	./websocket_req.erl	/^path\>/;"	f	file:
+payload_length_to_binary	./wsc_lib.erl	/^payload_length_to_binary\>/;"	f	file:
+port	./websocket_req.erl	/^port\>/;"	f	file:
+protocol	./websocket_req.erl	/^protocol\>/;"	f	file:
+protocol	./websocket_req.hrl	/^-\s\*type\s\*protocol\>/;"	t	file:
+reason	./websocket_client.erl	/^-\s\*type\s\*reason\>/;"	t	file:
+remaining	./websocket_req.erl	/^remaining\>/;"	f	file:
+req	./websocket_req.hrl	/^-\s\*opaque\s\*req\>/;"	t	file:
+send	./websocket_client.erl	/^send\>/;"	f	file:
+send_handshake	./websocket_client.erl	/^send_handshake\>/;"	f	file:
+set	./websocket_req.erl	/^set\>/;"	f	file:
+set_continuation_if_empty	./wsc_lib.erl	/^set_continuation_if_empty\>/;"	f	file:
+socket	./websocket_req.erl	/^socket\>/;"	f	file:
+ssl_verify	./websocket_client.erl	/^ssl_verify\>/;"	f	file:
+start_link	./websocket_client.erl	/^start_link\>/;"	f	file:
+state	./websocket_client.erl	/^-\s\*type\s\*state\>/;"	t	file:
+state_name	./websocket_client.erl	/^-\s\*type\s\*state_name\>/;"	t	file:
+terminate	./websocket_client.erl	/^terminate\>/;"	f	file:
+transport	./websocket_client.erl	/^transport\>/;"	f	file:
+transport	./websocket_req.erl	/^transport\>/;"	f	file:
+transport	./websocket_req.hrl	/^-\s\*record\s\*(\?\s\*transport\>/;"	r
+unmask_frame	./wsc_lib.erl	/^unmask_frame\>/;"	f	file:
+unpack_frame	./wsc_lib.erl	/^unpack_frame\>/;"	f	file:
+validate_handshake	./wsc_lib.erl	/^validate_handshake\>/;"	f	file:
+websocket_client	./websocket_client.erl	1;"	M
+websocket_client.erl	./websocket_client.erl	1;"	F
+websocket_client:callback_mode	./websocket_client.erl	/^callback_mode\>/;"	f
+websocket_client:cast	./websocket_client.erl	/^cast\>/;"	f
+websocket_client:close_type	./websocket_client.erl	/^-\s\*type\s\*close_type\>/;"	t
+websocket_client:code_change	./websocket_client.erl	/^code_change\>/;"	f
+websocket_client:connect	./websocket_client.erl	/^connect\>/;"	f
+websocket_client:connected	./websocket_client.erl	/^connected\>/;"	f
+websocket_client:disconnect	./websocket_client.erl	/^disconnect\>/;"	f
+websocket_client:disconnected	./websocket_client.erl	/^disconnected\>/;"	f
+websocket_client:encode_and_send	./websocket_client.erl	/^encode_and_send\>/;"	f
+websocket_client:fsm_start_link	./websocket_client.erl	/^fsm_start_link\>/;"	f
+websocket_client:handle_event	./websocket_client.erl	/^handle_event\>/;"	f
+websocket_client:handle_info	./websocket_client.erl	/^handle_info\>/;"	f
+websocket_client:handle_keepalive	./websocket_client.erl	/^handle_keepalive\>/;"	f
+websocket_client:handle_response	./websocket_client.erl	/^handle_response\>/;"	f
+websocket_client:handle_websocket_frame	./websocket_client.erl	/^handle_websocket_frame\>/;"	f
+websocket_client:handshaking	./websocket_client.erl	/^handshaking\>/;"	f
+websocket_client:init	./websocket_client.erl	/^init\>/;"	f
+websocket_client:keepalive	./websocket_client.erl	/^-\s\*type\s\*keepalive\>/;"	t
+websocket_client:reason	./websocket_client.erl	/^-\s\*type\s\*reason\>/;"	t
+websocket_client:send	./websocket_client.erl	/^send\>/;"	f
+websocket_client:send_handshake	./websocket_client.erl	/^send_handshake\>/;"	f
+websocket_client:ssl_verify	./websocket_client.erl	/^ssl_verify\>/;"	f
+websocket_client:start_link	./websocket_client.erl	/^start_link\>/;"	f
+websocket_client:state	./websocket_client.erl	/^-\s\*type\s\*state\>/;"	t
+websocket_client:state_name	./websocket_client.erl	/^-\s\*type\s\*state_name\>/;"	t
+websocket_client:terminate	./websocket_client.erl	/^terminate\>/;"	f
+websocket_client:transport	./websocket_client.erl	/^transport\>/;"	f
+websocket_client:websocket_close	./websocket_client.erl	/^websocket_close\>/;"	f
+websocket_close	./websocket_client.erl	/^websocket_close\>/;"	f	file:
+websocket_req	./websocket_req.erl	1;"	M
+websocket_req	./websocket_req.hrl	/^-\s\*record\s\*(\?\s\*websocket_req\>/;"	r
+websocket_req.erl	./websocket_req.erl	1;"	F
+websocket_req.hrl	./websocket_req.hrl	1;"	F
+websocket_req:continuation	./websocket_req.erl	/^continuation\>/;"	f
+websocket_req:continuation_opcode	./websocket_req.erl	/^continuation_opcode\>/;"	f
+websocket_req:fin	./websocket_req.erl	/^fin\>/;"	f
+websocket_req:fin	./websocket_req.hrl	/^-\s\*type\s\*fin\>/;"	t
+websocket_req:frame	./websocket_req.hrl	/^-\s\*type\s\*frame\>/;"	t
+websocket_req:g	./websocket_req.erl	/^g\>/;"	f
+websocket_req:get	./websocket_req.erl	/^get\>/;"	f
+websocket_req:host	./websocket_req.erl	/^host\>/;"	f
+websocket_req:keepalive	./websocket_req.erl	/^keepalive\>/;"	f
+websocket_req:keepalive_max_attempts	./websocket_req.erl	/^keepalive_max_attempts\>/;"	f
+websocket_req:key	./websocket_req.erl	/^key\>/;"	f
+websocket_req:name_to_opcode	./websocket_req.erl	/^name_to_opcode\>/;"	f
+websocket_req:new	./websocket_req.erl	/^new\>/;"	f
+websocket_req:opcode	./websocket_req.erl	/^opcode\>/;"	f
+websocket_req:opcode	./websocket_req.hrl	/^-\s\*type\s\*opcode\>/;"	t
+websocket_req:opcode_to_name	./websocket_req.erl	/^opcode_to_name\>/;"	f
+websocket_req:path	./websocket_req.erl	/^path\>/;"	f
+websocket_req:port	./websocket_req.erl	/^port\>/;"	f
+websocket_req:protocol	./websocket_req.erl	/^protocol\>/;"	f
+websocket_req:protocol	./websocket_req.hrl	/^-\s\*type\s\*protocol\>/;"	t
+websocket_req:remaining	./websocket_req.erl	/^remaining\>/;"	f
+websocket_req:req	./websocket_req.hrl	/^-\s\*opaque\s\*req\>/;"	t
+websocket_req:set	./websocket_req.erl	/^set\>/;"	f
+websocket_req:socket	./websocket_req.erl	/^socket\>/;"	f
+websocket_req:transport	./websocket_req.erl	/^transport\>/;"	f
+wsc_lib	./wsc_lib.erl	1;"	M
+wsc_lib.erl	./wsc_lib.erl	1;"	F
+wsc_lib:consume_response	./wsc_lib.erl	/^consume_response\>/;"	f
+wsc_lib:create_auth_header	./wsc_lib.erl	/^create_auth_header\>/;"	f
+wsc_lib:create_handshake	./wsc_lib.erl	/^create_handshake\>/;"	f
+wsc_lib:decode_frame	./wsc_lib.erl	/^decode_frame\>/;"	f
+wsc_lib:encode_frame	./wsc_lib.erl	/^encode_frame\>/;"	f
+wsc_lib:generate_ws_key	./wsc_lib.erl	/^generate_ws_key\>/;"	f
+wsc_lib:mask_payload	./wsc_lib.erl	/^mask_payload\>/;"	f
+wsc_lib:payload_length_to_binary	./wsc_lib.erl	/^payload_length_to_binary\>/;"	f
+wsc_lib:set_continuation_if_empty	./wsc_lib.erl	/^set_continuation_if_empty\>/;"	f
+wsc_lib:unmask_frame	./wsc_lib.erl	/^unmask_frame\>/;"	f
+wsc_lib:unpack_frame	./wsc_lib.erl	/^unpack_frame\>/;"	f
+wsc_lib:validate_handshake	./wsc_lib.erl	/^validate_handshake\>/;"	f
