@@ -20,7 +20,7 @@ defmodule ToyRobot.PhoenixSocketClient do
     ## complete this funcion ##
     ###########################
     socket_opts = [
-      url: "ws://localhost:4000/socket/websocket"
+      url: Application.get_env(:phoenix_server, :url)
     ]
 
     {:ok, socket} = PhoenixClient.Socket.start_link(socket_opts)
