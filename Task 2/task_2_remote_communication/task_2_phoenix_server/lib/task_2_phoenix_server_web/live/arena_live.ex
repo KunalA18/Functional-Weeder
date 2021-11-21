@@ -85,10 +85,15 @@ defmodule Task2PhoenixServerWeb.ArenaLive do
     ## complete this funcion ##
     ###########################
     # data = %{"bottom" => 300, "face" => "north", "left" => 300}
+
+    #gets the corresponding image depending on the direction
     img_name = get_img(data["face"])
+
+    # assigns data to the socket to update the LiveView
     socket = assign(socket, :img, img_name)
     socket = assign(socket, :bottom, data["bottom"])
     socket = assign(socket, :left, data["left"])
+
     {:noreply, socket}
   end
 

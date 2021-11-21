@@ -29,15 +29,17 @@ defmodule Task2PhoenixServerWeb.RobotChannel do
   @robot_map_y_string_to_num %{"a" => 1, "b" => 2, "c" => 3, "d" => 4, "e" => 5}
 
   def handle_in("new_msg", message, socket) do
+    # decodes the message
     x = message["x"]
     y = message["y"]
     facing = message["face"]
     # pixel values and facing
-    y = @robot_map_y_string_to_num[y]
+    y = @robot_map_y_string_to_num[y] #converts y's string to a number
     left_value = 150 * (x - 1)
     bottom_value = 150 * (y - 1)
     face_value = facing
 
+    # creates a map for the output message
     msg_map = %{"left" => left_value, "bottom" => bottom_value,"face" => face_value}
     # subscribe to the topic "robot:update"
     :ok = Phoenix.PubSub.subscribe(Task2PhoenixServer.PubSub, "robot:update")

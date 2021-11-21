@@ -228,11 +228,8 @@ defmodule ToyRobot do
         i,
         channel
       ) do
-    # rotate to the defined direction
-    # parent = self()
-    # pid = spawn_link(fn -> roundabout(parent) end)
-    # Process.register(pid, :client_toyrobot)
 
+    # rotate to the defined direction
     should_face = Enum.at(sq_keys, i)
     face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
 

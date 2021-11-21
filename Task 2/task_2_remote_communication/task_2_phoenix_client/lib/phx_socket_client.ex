@@ -19,17 +19,19 @@ defmodule ToyRobot.PhoenixSocketClient do
     ###########################
     ## complete this funcion ##
     ###########################
+
+    # socket_opts gets the url from config
     socket_opts = [
       url: Application.get_env(:phoenix_server, :url)
     ]
 
     {:ok, socket} = PhoenixClient.Socket.start_link(socket_opts)
 
-    Process.sleep(1000)
+    Process.sleep(1000) # sleep statement is needed to avoid race condition
+    # client tries to join the server before the socket finishes establishing the connection
 
+    # joins the robot:status channel
     {:ok, _response, channel} = PhoenixClient.Channel.join(socket, "robot:status")
-
-    IO.inspect(channel)
 
     {:ok, _response, channel}
 
@@ -46,8 +48,9 @@ defmodule ToyRobot.PhoenixSocketClient do
     ###########################
     ## complete this funcion ##
     ###########################
-    message = %{x: x, y: y, face: facing}
+    message = %{x: x, y: y, face: facing} #formats the message
 
+    # pushes the message to the RobotChannel at Server on the robot:status channel with a type of "new_msg"
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
 
     {:obstacle_presence, obstaclePresence}
