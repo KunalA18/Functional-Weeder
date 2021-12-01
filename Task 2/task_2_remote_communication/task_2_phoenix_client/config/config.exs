@@ -21,7 +21,7 @@ use Mix.Config
 #     config :logger, level: :info
 #
 
- config :phoenix_server, url: "ws://fe25-49-36-103-223.ngrok.io/socket/websocket"
+ config :phoenix_server, url: "ws://b979-49-36-103-223.ngrok.io/socket/websocket"
 # config :phoenix_server, url: "ws://localhost:4000/socket/websocket"
 
 # It is also possible to import configuration files, relative to this
