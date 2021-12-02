@@ -89,7 +89,7 @@ defmodule CLI.ToyRobotB do
     #recieve a message then send the message to self()
     parent = self()
     pid = spawn_link(fn -> roundabout(parent) end)
-    Process.register(pid, :client_toyrobot)
+    Process.register(pid, :client_toyrobotB)
 
 
     #IO.puts(ans)
@@ -195,7 +195,7 @@ defmodule CLI.ToyRobotB do
       false ->
         parent = self()
         pid = spawn_link(fn -> roundabout(parent) end)
-        Process.register(pid, :client_toyrobot)
+        Process.register(pid, :client_toyrobotB)
         if (face_diff == -3 or face_diff == 1) do
 
           robot = left(robot) #rotate left
@@ -227,7 +227,7 @@ defmodule CLI.ToyRobotB do
       robot = move(robot)
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
-      Process.register(pid, :client_toyrobot)
+      Process.register(pid, :client_toyrobotB)
       obs_ahead = send_robot_status(robot, cli_proc_name)
       {robot, obs_ahead}
     end
