@@ -27,7 +27,8 @@ defmodule ToyRobot.PhoenixSocketClient do
 
     {:ok, socket} = PhoenixClient.Socket.start_link(socket_opts)
 
-    Process.sleep(1000) # sleep statement is needed to avoid race condition
+    wait_for_socket(socket)
+    #Process.sleep(1000) # sleep statement is needed to avoid race condition
     # client tries to join the server before the socket finishes establishing the connection
 
     # joins the robot:status channel
@@ -36,6 +37,14 @@ defmodule ToyRobot.PhoenixSocketClient do
     {:ok, _response, channel}
 
   end
+
+
+def wait_for_socket(socket) do
+  if !Socket.connected?(socket) do
+    Process.sleep(10)
+    wait_for_socket(socket)
+  end
+end
 
   @doc """
   Send Toy Robot's current status i.e. location (x, y) and facing
