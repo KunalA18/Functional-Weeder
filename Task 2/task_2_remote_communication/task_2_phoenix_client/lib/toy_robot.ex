@@ -90,6 +90,8 @@ defmodule ToyRobot do
     # start the obstacle avoidance and navigation loop
     goal_y = @robot_map_y_atom_to_num[goal_y]
     loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, channel)
+    {x, y, facing} = report(robot)
+    ToyRobot.place(x, y, facing)
   end
 
   # def roundabout(parent) do
