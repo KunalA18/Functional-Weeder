@@ -57,12 +57,35 @@ defmodule CLI.ToyRobotA do
     ###########################
     ## complete this funcion ##
     ###########################
-    ToyRobot.place(1,:a,:NORTH)
+
+    parent = self()
+    pid_listen = spawn_link(fn -> listen_from_robotB(parent) end)
+    Process.register(pid_listen, :listen_from_B)
+
+    CLI.ToyRobotA.place(x, y, facing)
   end
 
   def stop(_robot, goal_x, goal_y, _cli_proc_name) when goal_x < 1 or goal_y < :a or goal_x > @table_top_x or goal_y > @table_top_y do
     {:failure, "Invalid STOP position"}
   end
+
+  def listen_from_robotB(parent) do
+    receive do
+      {:position, value} ->
+        IO.puts("I got a message: #{inspect value}")
+        send(parent, {:positions, value})
+    end
+     listen_from_robotB(parent)
+  end
+
+  def get_position_of_B() do
+    receive do
+      {:positions, value} ->
+        value
+    end
+
+  end
+
 
   @doc """
   Provide GOAL positions to the robot as given location of [(x1, y1),(x2, y2),..] and plan the path from START to these locations.
@@ -75,14 +98,31 @@ defmodule CLI.ToyRobotA do
     ## complete this funcion ##
     ###########################
 
+    # goal_loc format => [["3", "d"], ["2", "c"]]
+    {r_x, r_y, _facing} = report(robot)
+
     #Sort out the goal locs
+    distance_array = sort_according_to_distance(r_x, r_y, goal_locs)
+
+    IO.inspect(distance_array)
+
+
+
+
+
+    #Enum.at()
+    #{ reduced , _} = map_reduce(distance_array)
+
+
 
     #We need to plan the robot's route from start to end
-    {x, y, _facing} = report(robot) #puts the robot's current co-ordinates into x,y,facing
-    diff_x = goal_x - x #+ve implies moving right
-                        #-ve implies moving left
+     #puts the robot's current co-ordinates into x,y,facing
 
-    diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
+    # diff_x = goal_x - x
+    #+ve implies moving right
+    #-ve implies moving left
+
+    #diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
     #+ve implies that it needs to go up
     #-ve implies that it needs to go down
 
@@ -93,13 +133,12 @@ defmodule CLI.ToyRobotA do
     Process.register(pid, :client_toyrobotA)
 
 
-    #IO.puts(ans)
     obs_ahead = send_robot_status(robot, cli_proc_name) # send status of the start location
-
+    IO.puts(obs_ahead)
     visited = []
     #start the obstacle avoidance and navigation loop
-    goal_y = @robot_map_y_atom_to_num[goal_y]
-    loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
+    #goal_y = @robot_map_y_atom_to_num[goal_y]
+    #loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
   end
 
   def roundabout(parent) do
@@ -107,6 +146,23 @@ defmodule CLI.ToyRobotA do
       {:obstacle_presence, is_obs_ahead} ->
         send(parent, {:obstacle_presence, is_obs_ahead})
     end
+  end
+
+  def sort_according_to_distance(r_x, r_y, goal_locs) do
+    distance_array = Enum.map(goal_locs, fn [x, y] ->
+      {p_x, _} = Integer.parse(x)
+      p_y = @robot_map_y_atom_to_num[String.to_atom(y)]
+      d = distance(
+        p_x,
+        p_y,
+        r_x,
+        @robot_map_y_atom_to_num[r_y])
+        s = String.to_atom(x<>y)
+        {s,d}
+      end)
+
+    #Re-arrange goal locs according to distance array
+    distance_array |> List.keysort(1)
   end
 
   def loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name) do
@@ -191,7 +247,7 @@ defmodule CLI.ToyRobotA do
     visited ++ [{x,y}] #adds the tuple to the end of the visited list
   end
 
-  def rotate(%ToyRobot.Position{facing: facing} = robot, should_face, face_diff, obs_ahead, cli_proc_name) do
+  def rotate(%CLI.Position{facing: facing} = robot, should_face, face_diff, obs_ahead, cli_proc_name) do
     case should_face == facing do
       false ->
         parent = self()
@@ -214,12 +270,22 @@ defmodule CLI.ToyRobotA do
   end
 
 
-  def move_with_priority(%ToyRobot.Position{facing: facing} = robot, sq_keys, obs_ahead, i, cli_proc_name) do
+  def move_with_priority(%CLI.Position{facing: facing} = robot, sq_keys, obs_ahead, i, cli_proc_name) do
     #rotate to the defined direction
 
     should_face = Enum.at(sq_keys, i)
     face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
     {robot, obs_ahead} = if face_diff != 0, do: rotate(robot, should_face, face_diff, false, cli_proc_name), else: {robot, obs_ahead}
+
+    send(:listen_from_A, {:position, report(robot)})
+
+    pos_robot_B = get_position_of_B()
+
+    #check if the robot is in the way
+
+    #if it is, wait for 1 iteration
+
+    #if not, continue
 
     if obs_ahead do
       i = i+1

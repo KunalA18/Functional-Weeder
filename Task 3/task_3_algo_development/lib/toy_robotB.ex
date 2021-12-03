@@ -57,11 +57,24 @@ defmodule CLI.ToyRobotB do
     ###########################
     ## complete this funcion ##
     ###########################
-    ToyRobot.place(5,:e,:SOUTH)
+    pid_listen = spawn_link(fn -> listen_from_robotA() end)
+    Process.register(pid_listen, :listen_from_A)
+
+    CLI.ToyRobotB.place(x, y, facing)
   end
 
   def stop(_robot, goal_x, goal_y, _cli_proc_name) when goal_x < 1 or goal_y < :a or goal_x > @table_top_x or goal_y > @table_top_y do
     {:failure, "Invalid STOP position"}
+  end
+
+  def listen_from_robotA() do
+    receive do
+      {:position, value} ->
+        IO.puts("I got a message: #{inspect value}")
+
+    end
+    listen_from_robotA()
+
   end
 
   @doc """
@@ -78,12 +91,15 @@ defmodule CLI.ToyRobotB do
 
     #We need to plan the robot's route from start to end
     {x, y, _facing} = report(robot) #puts the robot's current co-ordinates into x,y,facing
-    diff_x = goal_x - x #+ve implies moving right
+    #diff_x = goal_x - x #+ve implies moving right
                         #-ve implies moving left
 
-    diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
+    #diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
     #+ve implies that it needs to go up
     #-ve implies that it needs to go down
+
+    #send a message to listen_from_B about the robot's location
+    send(:listen_from_B, {:position, report(robot)})
 
     #spawn a process that recieves from server
     #recieve a message then send the message to self()
@@ -97,8 +113,8 @@ defmodule CLI.ToyRobotB do
 
     visited = []
     #start the obstacle avoidance and navigation loop
-    goal_y = @robot_map_y_atom_to_num[goal_y]
-    loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
+    #goal_y = @robot_map_y_atom_to_num[goal_y]
+    #loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
   end
 
   def roundabout(parent) do
@@ -190,7 +206,7 @@ defmodule CLI.ToyRobotB do
     visited ++ [{x,y}] #adds the tuple to the end of the visited list
   end
 
-  def rotate(%ToyRobot.Position{facing: facing} = robot, should_face, face_diff, obs_ahead, cli_proc_name) do
+  def rotate(%CLI.Position{facing: facing} = robot, should_face, face_diff, obs_ahead, cli_proc_name) do
     case should_face == facing do
       false ->
         parent = self()
@@ -213,7 +229,7 @@ defmodule CLI.ToyRobotB do
   end
 
 
-  def move_with_priority(%ToyRobot.Position{facing: facing} = robot, sq_keys, obs_ahead, i, cli_proc_name) do
+  def move_with_priority(%CLI.Position{facing: facing} = robot, sq_keys, obs_ahead, i, cli_proc_name) do
     #rotate to the defined direction
 
     should_face = Enum.at(sq_keys, i)

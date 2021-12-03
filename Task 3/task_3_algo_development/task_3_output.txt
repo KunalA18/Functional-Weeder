@@ -1,0 +1,2 @@
+B => 5, e, south
+A => 1, a, north
