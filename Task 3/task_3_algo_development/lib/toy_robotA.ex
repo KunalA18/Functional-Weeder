@@ -72,8 +72,11 @@ defmodule CLI.ToyRobotA do
   def listen_from_robotB(parent) do
     receive do
       {:position, value} ->
-        IO.puts("I got a message: #{inspect value}")
+        #IO.puts("I got a message: #{inspect value}")
         send(parent, {:positions, value})
+      {:goal_reached, value} ->
+        IO.puts("Goal has been reached by B: #{inspect value}")
+        send(parent, {:goal_reached, value})
     end
      listen_from_robotB(parent)
   end
@@ -83,7 +86,17 @@ defmodule CLI.ToyRobotA do
       {:positions, value} ->
         value
     end
+  end
 
+  def has_goal_been_reached_B() do
+    receive do
+      {:goal_reached, value} ->
+        {:reached, value}
+      after
+        0 ->
+          IO.puts("Robot B hasn't reached the goal yet")
+          {:not_reached, {}}
+    end
   end
 
 
@@ -103,42 +116,72 @@ defmodule CLI.ToyRobotA do
 
     #Sort out the goal locs
     distance_array = sort_according_to_distance(r_x, r_y, goal_locs)
-
+    # ["2d":4]
     IO.inspect(distance_array)
 
+    #Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
+    loop_through_goal_locs(distance_array, robot, cli_proc_name)
+
+  end
+
+  def loop_through_goal_locs(distance_array, robot, cli_proc_name) do
+
+    {at, goal_pos} = has_goal_been_reached_B()
+
+    #Change goal_pos into "xy"
+
+    distance_array = if at == :reached do
+      {x,y,_} = goal_pos
+      goal_pos = Integer.to_string(x)<>Atom.to_string(y)
+      IO.inspect(goal_pos, label: "Stringified goal")
+      IO.inspect(distance_array, label: "Before deletion")
+      Keyword.delete(distance_array, String.to_atom(goal_pos))
+      IO.inspect(distance_array, label: "After deletion")
+      distance_array
+    else
+      distance_array
+    end
+
+    if length(distance_array) > 0 do
+      #Extract the current position from the KeyWord List
+      {tup, distance_array} = List.pop_at(distance_array, 0)
+      # tup = {:"2a", 1}
+      {pos, _} = tup
+      pos = Atom.to_string(pos)
+
+      {goal_x, goal_y} = {String.at(pos, 0), String.at(pos, 1)}
+      goal_x = String.to_integer(goal_x)
+      goal_y = String.to_atom(goal_y)
+
+      #We need to plan the robot's route from start to end
+      {x, y, _facing} = report(robot)
+
+      diff_x = goal_x - x
+      #+ve implies moving right
+      #-ve implies moving left
+
+      diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
+      #+ve implies that it needs to go up
+      #-ve implies that it needs to go down
+
+      #spawn a process that recieves from server
+      #recieve a message then send the message to self()
+      parent = self()
+      pid = spawn_link(fn -> roundabout(parent) end)
+      Process.register(pid, :client_toyrobotA)
+
+      obs_ahead = send_robot_status(robot, cli_proc_name) # send status of the start location
+      send(:listen_from_A, {:position, report(robot)})
+
+      visited = []
+
+      #start the obstacle avoidance and navigation loop
+      goal_y = @robot_map_y_atom_to_num[goal_y]
+      robot = loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
 
 
-
-
-    #Enum.at()
-    #{ reduced , _} = map_reduce(distance_array)
-
-
-
-    #We need to plan the robot's route from start to end
-     #puts the robot's current co-ordinates into x,y,facing
-
-    # diff_x = goal_x - x
-    #+ve implies moving right
-    #-ve implies moving left
-
-    #diff_y = @robot_map_y_atom_to_num[goal_y] - @robot_map_y_atom_to_num[y]
-    #+ve implies that it needs to go up
-    #-ve implies that it needs to go down
-
-    #spawn a process that recieves from server
-    #recieve a message then send the message to self()
-    parent = self()
-    pid = spawn_link(fn -> roundabout(parent) end)
-    Process.register(pid, :client_toyrobotA)
-
-
-    obs_ahead = send_robot_status(robot, cli_proc_name) # send status of the start location
-    IO.puts(obs_ahead)
-    visited = []
-    #start the obstacle avoidance and navigation loop
-    #goal_y = @robot_map_y_atom_to_num[goal_y]
-    #loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
+      loop_through_goal_locs(distance_array, robot, cli_proc_name)
+    end
   end
 
   def roundabout(parent) do
@@ -160,7 +203,6 @@ defmodule CLI.ToyRobotA do
         s = String.to_atom(x<>y)
         {s,d}
       end)
-
     #Re-arrange goal locs according to distance array
     distance_array |> List.keysort(1)
   end
@@ -202,6 +244,10 @@ defmodule CLI.ToyRobotA do
         {x, y, _facing} = report(robot)
         diff_x = goal_x - x # +ve implies east and -ve implies west
         diff_y = goal_y - @robot_map_y_atom_to_num[y]
+
+        if diff_x == 0 && diff_y == 0 do
+          send(:listen_from_A, {:goal_reached, report(robot)})
+        end
 
         loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
       true ->
@@ -279,7 +325,7 @@ defmodule CLI.ToyRobotA do
 
     send(:listen_from_A, {:position, report(robot)})
 
-    pos_robot_B = get_position_of_B()
+    #pos_robot_B = get_position_of_B()
 
     #check if the robot is in the way
 
