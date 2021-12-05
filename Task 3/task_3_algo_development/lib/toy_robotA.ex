@@ -62,43 +62,16 @@ defmodule CLI.ToyRobotA do
     pid_listen = spawn_link(fn -> listen_from_robotB(parent) end)
     Process.register(pid_listen, :listen_from_B)
 
+    {:ok, pid} = Agent.start_link(fn -> %{} end)
+    Process.register(pid, :coords_store)
+
     CLI.ToyRobotA.place(x, y, facing)
   end
+
 
   def stop(_robot, goal_x, goal_y, _cli_proc_name) when goal_x < 1 or goal_y < :a or goal_x > @table_top_x or goal_y > @table_top_y do
     {:failure, "Invalid STOP position"}
   end
-
-  def listen_from_robotB(parent) do
-    receive do
-      {:position, value} ->
-        #IO.puts("I got a message: #{inspect value}")
-        send(parent, {:positions, value})
-      {:goal_reached, value} ->
-        IO.puts("Goal has been reached by B: #{inspect value}")
-        send(parent, {:goal_reached, value})
-    end
-     listen_from_robotB(parent)
-  end
-
-  def get_position_of_B() do
-    receive do
-      {:positions, value} ->
-        value
-    end
-  end
-
-  def has_goal_been_reached_B() do
-    receive do
-      {:goal_reached, value} ->
-        {:reached, value}
-      after
-        0 ->
-          IO.puts("Robot B hasn't reached the goal yet")
-          {:not_reached, {}}
-    end
-  end
-
 
   @doc """
   Provide GOAL positions to the robot as given location of [(x1, y1),(x2, y2),..] and plan the path from START to these locations.
@@ -126,21 +99,21 @@ defmodule CLI.ToyRobotA do
 
   def loop_through_goal_locs(distance_array, robot, cli_proc_name) do
 
-    {at, goal_pos} = has_goal_been_reached_B()
+    # {at, goal_pos} = has_goal_been_reached_B()
 
-    #Change goal_pos into "xy"
+    # #Change goal_pos into "xy"
 
-    distance_array = if at == :reached do
-      {x,y,_} = goal_pos
-      goal_pos = Integer.to_string(x)<>Atom.to_string(y)
-      IO.inspect(goal_pos, label: "Stringified goal")
-      IO.inspect(distance_array, label: "Before deletion")
-      Keyword.delete(distance_array, String.to_atom(goal_pos))
-      IO.inspect(distance_array, label: "After deletion")
-      distance_array
-    else
-      distance_array
-    end
+    # distance_array = if at == :reached do
+    #   {x,y,_} = goal_pos
+    #   goal_pos = Integer.to_string(x)<>Atom.to_string(y)
+    #   IO.inspect(goal_pos, label: "Stringified goal")
+    #   IO.inspect(distance_array, label: "Before deletion")
+    #   Keyword.delete(distance_array, String.to_atom(goal_pos))
+    #   IO.inspect(distance_array, label: "After deletion")
+    #   distance_array
+    # else
+    #   distance_array
+    # end
 
     if length(distance_array) > 0 do
       #Extract the current position from the KeyWord List
@@ -171,13 +144,14 @@ defmodule CLI.ToyRobotA do
       Process.register(pid, :client_toyrobotA)
 
       obs_ahead = send_robot_status(robot, cli_proc_name) # send status of the start location
-      send(:listen_from_A, {:position, report(robot)})
+
+      #send_robot_position(robot, :position)
 
       visited = []
 
       #start the obstacle avoidance and navigation loop
       goal_y = @robot_map_y_atom_to_num[goal_y]
-      robot = loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
+      {robot, distance_array} = loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, cli_proc_name)
 
 
       loop_through_goal_locs(distance_array, robot, cli_proc_name)
@@ -207,7 +181,7 @@ defmodule CLI.ToyRobotA do
     distance_array |> List.keysort(1)
   end
 
-  def loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name) do
+  def loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, cli_proc_name) do
     case diff_y == 0 and diff_x == 0 do
       false ->
         #say you visit an old square or you're at the old square
@@ -215,12 +189,16 @@ defmodule CLI.ToyRobotA do
 
         #add the square it is at to the list
         {x, y, _facing} = report(robot)
+
+        #Update position in :coords_store
+        Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+
         y = @robot_map_y_atom_to_num[y] #NOTE: y and goal_y are NUMBERS HEREAFTER
         visited = check_for_existing(x, y, visited)
 
         #generate the list of squares
         #arrange the list based on abs dist function
-        # abs (goal_y - y) + abs(goal_x - x)
+        # abs(goal_y - y) + abs(goal_x - x)
         #remove the squares which are out of bounds
         #squares = [:north, :south]
         squares = [east: distance(x+1, y, goal_x, goal_y), west: distance(x-1, y, goal_x, goal_y), north: distance(x, y+1, goal_x, goal_y), south: distance(x, y-1, goal_x, goal_y)]
@@ -241,17 +219,30 @@ defmodule CLI.ToyRobotA do
         #navigate according to the list
         {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, cli_proc_name)
 
+        #get co-ordinates of B
+        {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
+        #If B has reached a goal position then delete it from the distance_array
+        k = Integer.to_string(x_b) <> Atom.to_string(y_b)
+        distance_array = Keyword.delete(distance_array, String.to_atom(k))
+        IO.inspect(distance_array, label: "A's distance array")
+        IO.puts("x_b = #{x_b} and y_b = #{y_b}")
+
+
         {x, y, _facing} = report(robot)
         diff_x = goal_x - x # +ve implies east and -ve implies west
         diff_y = goal_y - @robot_map_y_atom_to_num[y]
 
-        if diff_x == 0 && diff_y == 0 do
-          send(:listen_from_A, {:goal_reached, report(robot)})
+        #If A is in the process of navigating to whatever x_b or y_b are
+        # i.e A's goal is to go to x_b , y_b then stop by setting diff_x, diff_y to 0
+        {diff_x, diff_y} = if x_b == goal_x and @robot_map_y_atom_to_num[y_b] == goal_y do
+          {0, 0}
+        else
+          {diff_x, diff_y}
         end
 
-        loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, cli_proc_name)
+        loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, cli_proc_name)
       true ->
-        robot
+        {robot, distance_array}
     end
 
   end
@@ -305,7 +296,6 @@ defmodule CLI.ToyRobotA do
           obs_ahead = send_robot_status(robot, cli_proc_name)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         else
-
           robot = right(robot) #rotate right
           obs_ahead = send_robot_status(robot, cli_proc_name)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
@@ -323,7 +313,7 @@ defmodule CLI.ToyRobotA do
     face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
     {robot, obs_ahead} = if face_diff != 0, do: rotate(robot, should_face, face_diff, false, cli_proc_name), else: {robot, obs_ahead}
 
-    send(:listen_from_A, {:position, report(robot)})
+
 
     #pos_robot_B = get_position_of_B()
 
@@ -342,6 +332,10 @@ defmodule CLI.ToyRobotA do
       pid = spawn_link(fn -> roundabout(parent) end)
       Process.register(pid, :client_toyrobotA)
       obs_ahead = send_robot_status(robot, cli_proc_name)
+
+      Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+      #send_robot_position(robot, :position)
+
       {robot, obs_ahead}
     end
   end
@@ -354,11 +348,51 @@ defmodule CLI.ToyRobotA do
     squares
   end
 
-
   def distance(x1, y1, x2, y2) do
     abs(x1 - x2) + abs(y1 - y2)
   end
 
+  def listen_from_robotB(parent) do
+    receive do
+      {:position, value} ->
+        #IO.puts("I got a message: #{inspect value}")
+        send(parent, {:positions, value})
+      {:goal_reached, value} ->
+        IO.puts("Goal has been reached by B: #{inspect value}")
+        send(parent, {:goal_reached, value})
+    end
+     listen_from_robotB(parent)
+  end
+
+  # def send_robot_position(%CLI.Position{x: x, y: y, facing: facing} = robot, message_atom) do
+  #   case message_atom do
+  #     :position ->
+  #       send(:listen_from_A, {message_atom, report(robot)})
+  #     :goal_reached ->
+  #       send(:listen_from_A, {message_atom, report(robot)})
+  #   end
+  #   get_position_of_B()
+  # end
+
+  # def get_position_of_B() do
+  #   receive do
+  #     {:positions, value} ->
+  #       value
+  #   after
+  #     0 -> IO.puts("No message recieved from B")
+  #   end
+  # end
+
+  # def has_goal_been_reached_B() do
+  #   receive do
+  #     {:goal_reached, value} ->
+  #       {:reached, value}
+  #     after
+  #       0 ->
+  #         IO.puts("Robot B hasn't reached the goal yet")
+  #         {:not_reached, {}}
+  #   end
+  # end
 
   @doc """
   Send Toy Robot's current status i.e. location (x, y) and facing
