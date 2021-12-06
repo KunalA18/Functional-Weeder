@@ -84,6 +84,10 @@ defmodule CLI.ToyRobotB do
   def stop(robot, goal_locs, cli_proc_name) do
     #Wait for the Agent to be created
     wait_for_agent()
+
+    {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
+    Process.register(pid_prev, :previous_store_B)
+
     ###########################
     ## complete this funcion ##
     ###########################
@@ -314,6 +318,22 @@ defmodule CLI.ToyRobotB do
       wait_for_movement(nxt_x, nxt_y)
     end
 
+    #Get previous location of this robot
+    prev = Agent.get(:previous_store_B, fn map -> Map.get(map, :prev) end, 1)
+    # If the robot is at the same place for two moves in a row
+    # i.e. wait_for_movement() makes no difference
+    # basically, the other robot has stopped in front of this one
+    # then treat the other robot as an obstacle
+    # and try to navigate around it
+    obs_ahead = if prev!=nil do
+      {prev_x, prev_y, prev_facing} = prev
+      if prev_x == x and prev_y == y do
+        true
+      end
+    else
+      obs_ahead
+    end
+
     if obs_ahead do
       i = i+1
       move_with_priority(robot, sq_keys, obs_ahead, i, cli_proc_name)
@@ -338,6 +358,8 @@ defmodule CLI.ToyRobotB do
       end
 
       Agent.update(:coords_store, fn map -> Map.put(map, :B, report(robot)) end)
+      Agent.update(:previous_store_B, fn map -> Map.put(map, :prev, report(robot)) end)
+
 
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)

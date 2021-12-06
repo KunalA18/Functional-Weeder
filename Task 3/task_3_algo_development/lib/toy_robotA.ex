@@ -77,6 +77,9 @@ defmodule CLI.ToyRobotA do
     {:ok, pid} = Agent.start_link(fn -> %{} end)
     Process.register(pid, :coords_store)
 
+    {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
+    Process.register(pid_prev, :previous_store_A)
+
     ###########################
     ## complete this funcion ##
     ###########################
@@ -310,9 +313,21 @@ defmodule CLI.ToyRobotA do
     end
     #if not, continue
 
-    # Possible problems
-    # What if the two robots are facing each other?
-    #If both robots want to go to the same position, let B go there : DONE
+    #Get previous location of this robot
+    prev = Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end, 1)
+    # If the robot is at the same place for two moves in a row
+    # i.e. wait_for_movement() makes no difference
+    # basically, the other robot has stopped in front of this one
+    # then treat the other robot as an obstacle
+    # and try to navigate around it
+    obs_ahead = if prev!=nil do
+      {prev_x, prev_y, prev_facing} = prev
+      if prev_x == x and prev_y == y do
+        true
+      end
+    else
+      obs_ahead
+    end
 
 
     if obs_ahead do
@@ -341,6 +356,7 @@ defmodule CLI.ToyRobotA do
 
 
       Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+      Agent.update(:previous_store_A, fn map -> Map.put(map, :prev, report(robot)) end)
 
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
