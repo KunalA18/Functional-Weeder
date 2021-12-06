@@ -57,15 +57,8 @@ defmodule CLI.ToyRobotA do
     ###########################
     ## complete this funcion ##
     ###########################
-
-    parent = self()
-    pid_listen = spawn_link(fn -> listen_from_robotB(parent) end)
-    Process.register(pid_listen, :listen_from_B)
-
-    {:ok, pid} = Agent.start_link(fn -> %{} end)
-    Process.register(pid, :coords_store)
-
     CLI.ToyRobotA.place(x, y, facing)
+
   end
 
 
@@ -80,9 +73,14 @@ defmodule CLI.ToyRobotA do
   indication for the presence of obstacle ahead of robot's current position and facing.
   """
   def stop(robot, goal_locs, cli_proc_name) do
+
+    {:ok, pid} = Agent.start_link(fn -> %{} end)
+    Process.register(pid, :coords_store)
+
     ###########################
     ## complete this funcion ##
     ###########################
+    Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
 
     # goal_loc format => [["3", "d"], ["2", "c"]]
     {r_x, r_y, _facing} = report(robot)
@@ -92,29 +90,18 @@ defmodule CLI.ToyRobotA do
     # ["2d":4]
     IO.inspect(distance_array)
 
+    #get co-ordinates of B
+    {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
+    #If B has reached a goal position then delete it from the distance_array
+    k = Integer.to_string(x_b) <> Atom.to_string(y_b)
+    distance_array = Keyword.delete(distance_array, String.to_atom(k))
+
     #Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
     loop_through_goal_locs(distance_array, robot, cli_proc_name)
 
   end
 
   def loop_through_goal_locs(distance_array, robot, cli_proc_name) do
-
-    # {at, goal_pos} = has_goal_been_reached_B()
-
-    # #Change goal_pos into "xy"
-
-    # distance_array = if at == :reached do
-    #   {x,y,_} = goal_pos
-    #   goal_pos = Integer.to_string(x)<>Atom.to_string(y)
-    #   IO.inspect(goal_pos, label: "Stringified goal")
-    #   IO.inspect(distance_array, label: "Before deletion")
-    #   Keyword.delete(distance_array, String.to_atom(goal_pos))
-    #   IO.inspect(distance_array, label: "After deletion")
-    #   distance_array
-    # else
-    #   distance_array
-    # end
-
     if length(distance_array) > 0 do
       #Extract the current position from the KeyWord List
       {tup, distance_array} = List.pop_at(distance_array, 0)
@@ -144,8 +131,6 @@ defmodule CLI.ToyRobotA do
       Process.register(pid, :client_toyrobotA)
 
       obs_ahead = send_robot_status(robot, cli_proc_name) # send status of the start location
-
-      #send_robot_position(robot, :position)
 
       visited = []
 
@@ -205,7 +190,6 @@ defmodule CLI.ToyRobotA do
         squares = squares |> List.keysort(1)
         squares = eliminate_out_of_bounds(squares, x, y)
 
-        #IO.inspect(squares)
         sq_keys = Keyword.keys(squares) #getting a corresponding list of keys
 
         #list of visited squares [{1,1}, {1,3}, {1,2}]
@@ -224,9 +208,6 @@ defmodule CLI.ToyRobotA do
         #If B has reached a goal position then delete it from the distance_array
         k = Integer.to_string(x_b) <> Atom.to_string(y_b)
         distance_array = Keyword.delete(distance_array, String.to_atom(k))
-        IO.inspect(distance_array, label: "A's distance array")
-        IO.puts("x_b = #{x_b} and y_b = #{y_b}")
-
 
         {x, y, _facing} = report(robot)
         diff_x = goal_x - x # +ve implies east and -ve implies west
@@ -315,29 +296,77 @@ defmodule CLI.ToyRobotA do
 
 
 
-    #pos_robot_B = get_position_of_B()
+    {x_b, y_b, facing_b} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
+    {x, y, facing} = report(robot)
+    {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
+    {nxt_x_b, nxt_y_b} = calculate_next_position(x_b, y_b, facing_b)
+    IO.puts("Next X A: #{nxt_x} Next Y A: #{nxt_y}")
+    y_b = @robot_map_y_atom_to_num[y_b]
 
     #check if the robot is in the way
-
     #if it is, wait for 1 iteration
-
+    if (x_b == nxt_x and y_b == nxt_y) and !obs_ahead or (nxt_x == nxt_x_b and nxt_y == nxt_y_b) do
+      wait_for_movement(nxt_x, nxt_y)
+    end
     #if not, continue
+
+    # Possible problems
+    # What if the two robots are facing each other?
+    #If both robots want to go to the same position, let B go there : DONE
+
 
     if obs_ahead do
       i = i+1
       move_with_priority(robot, sq_keys, obs_ahead, i, cli_proc_name)
     else
-      robot = move(robot)
+
+      {x_b, y_b, facing_b} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
+      {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
+
+      y_b = @robot_map_y_atom_to_num[y_b]
+
+      robot_ahead = if (x_b == nxt_x and y_b == nxt_y) do
+        true
+      else
+        false
+      end
+
+      IO.inspect(robot_ahead, label: "Is the robot ahead of A")
+
+      robot = if !robot_ahead do
+        move(robot)
+      else
+        robot
+      end
+
+
+      Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
       Process.register(pid, :client_toyrobotA)
       obs_ahead = send_robot_status(robot, cli_proc_name)
 
-      Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
-      #send_robot_position(robot, :position)
-
       {robot, obs_ahead}
     end
+  end
+
+  def wait_for_movement(nxt_x, nxt_y) do
+    {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
+    IO.puts("Waiting for movement")
+    if x_b == nxt_x and y_b == nxt_y do
+       wait_for_movement(nxt_x, nxt_y)
+    end
+  end
+
+  def calculate_next_position(x, y, facing) do
+      y = @robot_map_y_atom_to_num[y]
+      coord = {x, y}
+      coord = if facing == :north, do: {x ,  y+1}, else: coord
+      coord = if facing == :south, do: {x ,  y-1}, else: coord
+      coord = if facing == :east,  do: {x+1, y  }, else: coord
+      coord = if facing == :west,  do: {x-1, y  }, else: coord
+      coord
   end
 
   def eliminate_out_of_bounds(squares, x, y) do
