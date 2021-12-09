@@ -438,7 +438,7 @@ defmodule CLI.ToyRobotA do
 
   def wait_for_movement(nxt_x, nxt_y) do
     {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
-    IO.puts("Waiting for movement")
+    #IO.puts("Waiting for movement")
 
     if x_b == nxt_x and y_b == nxt_y do
       wait_for_movement(nxt_x, nxt_y)
@@ -474,7 +474,7 @@ defmodule CLI.ToyRobotA do
         send(parent, {:positions, value})
 
       {:goal_reached, value} ->
-        IO.puts("Goal has been reached by B: #{inspect(value)}")
+        #IO.puts("Goal has been reached by B: #{inspect(value)}")
         send(parent, {:goal_reached, value})
     end
 

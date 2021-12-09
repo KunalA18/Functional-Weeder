@@ -482,7 +482,7 @@ defmodule CLI.ToyRobotB do
         send(parent, {:positions, value})
 
       {:goal_reached, value} ->
-        IO.puts("Goal has been reached by A: #{inspect(value)}")
+        #IO.puts("Goal has been reached by A: #{inspect(value)}")
         send(parent, {:goal_reached, value})
     end
 
