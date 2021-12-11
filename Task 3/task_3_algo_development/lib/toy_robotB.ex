@@ -58,9 +58,6 @@ defmodule CLI.ToyRobotB do
     ###########################
 
     # Robot B need to listen to A
-    parent = self()
-    pid_listen = spawn_link(fn -> listen_from_robotA(parent) end)
-    Process.register(pid_listen, :listen_from_A)
 
     CLI.ToyRobotB.place(x, y, facing)
   end
@@ -71,7 +68,7 @@ defmodule CLI.ToyRobotB do
   end
 
   def wait_for_agent() do
-    if Process.whereis(:coords_store) == nil do
+    if Process.whereis(:coords_store) == nil or Process.whereis(:goal_store) == nil do
       wait_for_agent()
     end
   end
@@ -86,7 +83,7 @@ defmodule CLI.ToyRobotB do
     # Wait for the Agent to be created
     wait_for_agent()
 
-    {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
+    {:ok, pid_prev} = Agent.start(fn -> %{} end)
     Process.register(pid_prev, :previous_store_B)
 
     ###########################
@@ -247,7 +244,7 @@ defmodule CLI.ToyRobotB do
         sq_keys = arrange_by_visited(x, y, sq_keys, visited)
 
         # navigate according to the list
-        {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, cli_proc_name)
+        {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, false, cli_proc_name)
 
         # get co-ordinates of A
         {x_a, y_a, _} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end)
@@ -365,6 +362,7 @@ defmodule CLI.ToyRobotB do
         sq_keys,
         obs_ahead,
         i,
+        prev_loop,
         cli_proc_name
       ) do
     # rotate to the defined direction
@@ -392,17 +390,24 @@ defmodule CLI.ToyRobotB do
 
     # Get previous location of this robot
     prev = Agent.get(:previous_store_B, fn map -> Map.get(map, :prev) end, 1)
+
+
+    #IO.inspect(prev)
     # If the robot is at the same place for two moves in a row
     # i.e. wait_for_movement() makes no difference
     # basically, the other robot has stopped in front of this one
     # then treat the other robot as an obstacle
     # and try to navigate around it
     obs_ahead =
-      if prev! = nil do
+      if prev != nil and !prev_loop do
         {prev_x, prev_y, prev_facing} = prev
+        #IO.puts("prev_x = #{prev_x} prev_y = #{prev_y}  ")
+        #IO.puts("x = #{x} y = #{y} ")
 
         if prev_x == x and prev_y == y do
           true
+        else
+          obs_ahead
         end
       else
         obs_ahead
@@ -410,7 +415,8 @@ defmodule CLI.ToyRobotB do
 
     if obs_ahead do
       i = i + 1
-      move_with_priority(robot, sq_keys, obs_ahead, i, cli_proc_name)
+      IO.puts("Entered the retry loop")
+      move_with_priority(robot, sq_keys, obs_ahead, i, true, cli_proc_name)
     else
       {x_a, y_a, facing_a} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end, 10)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
@@ -420,12 +426,13 @@ defmodule CLI.ToyRobotB do
       robot_ahead =
         if x_a == nxt_x and y_a == nxt_y do
           true
+
         else
           false
         end
 
       # IO.inspect(robot_ahead, label: "Is the robot ahead of B")
-
+      Agent.update(:previous_store_B, fn map -> Map.put(map, :prev, report(robot)) end)
       robot =
         if !robot_ahead do
           move(robot)
@@ -434,7 +441,7 @@ defmodule CLI.ToyRobotB do
         end
 
       Agent.update(:coords_store, fn map -> Map.put(map, :B, report(robot)) end)
-      Agent.update(:previous_store_B, fn map -> Map.put(map, :prev, report(robot)) end)
+
 
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
@@ -488,36 +495,6 @@ defmodule CLI.ToyRobotB do
 
     listen_from_robotA(parent)
   end
-
-  # def send_robot_position(%CLI.Position{x: x, y: y, facing: facing} = robot, message_atom) do
-  #   case message_atom do
-  #     :position ->
-  #       send(:listen_from_B, {message_atom, report(robot)})
-  #     :goal_reached ->
-  #       send(:listen_from_B, {message_atom, report(robot)})
-  #   end
-  #   get_position_of_A()
-  # end
-
-  # def get_position_of_A() do
-  #   receive do
-  #     {:positions, value} ->
-  #       value
-  #     after
-  #       0 -> IO.puts("No message recieved from A")
-  #   end
-  # end
-
-  # def has_goal_been_reached_A() do
-  #   receive do
-  #     {:goal_reached, value} ->
-  #       {:reached, value}
-  #     after
-  #       0 ->
-  #         IO.puts("Robot A hasn't reached the goal yet")
-  #         {:not_reached, {}}
-  #   end
-  # end
 
   @doc """
   Send Toy Robot's current status i.e. location (x, y) and facing
