@@ -77,30 +77,44 @@ defmodule CLI.ToyRobotA do
     {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
     Process.register(pid_prev, :previous_store_A)
 
-    {:ok, pid_goal} = Agent.start_link(fn -> %{} end)
-    Process.register(pid_goal, :goal_store)
-
     ###########################
     ## complete this funcion ##
     ###########################
     Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+    # Agent.update(:goal_store, fn list -> [goal_locs | list] end)
+    # list = Agent.get(:goal_store, fn list -> list end)
 
     # goal_loc format => [["3", "d"], ["2", "c"]]
     {r_x, r_y, _facing} = report(robot)
 
     # Sort out the goal locs
     distance_array = sort_according_to_distance(r_x, r_y, goal_locs)
-    # ["2d":4]
-    # IO.inspect(distance_array)
 
-    # get co-ordinates of B
-    {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
-    # If B has reached a goal position then delete it from the distance_array
-    k = Integer.to_string(x_b) <> Atom.to_string(y_b)
-    distance_array = Keyword.delete(distance_array, String.to_atom(k))
+    {:ok, pid_goal} = Agent.start_link(fn -> Keyword.keys(distance_array) end)
+    Process.register(pid_goal, :goal_store)
+
+    #IO.inspect(Agent.get(:goal_store, fn list -> list end))
+
+    # ["2d":4]
+    k_a = Integer.to_string(r_x) <> Atom.to_string(r_y)
+
+    #IO.inspect(k_a, label: "Key A")
+
+    Agent.update(:goal_store, &List.delete(&1, String.to_atom(k_a)))
+
+    #function to compare the agent with the current and return only vals that satisy
+    distance_array = compare_with_store(distance_array)
+
+    #IO.inspect(distance_array, label: "Updated distance array A")
 
     # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
     loop_through_goal_locs(distance_array, robot, cli_proc_name)
+  end
+
+  def compare_with_store(distance_array) do
+    key_list = Agent.get(:goal_store, fn list -> list end)
+
+    Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
   end
 
   def loop_through_goal_locs(distance_array, robot, cli_proc_name) do
@@ -186,17 +200,7 @@ defmodule CLI.ToyRobotA do
     distance_array |> List.keysort(1)
   end
 
-  def loop(
-        robot,
-        visited,
-        diff_x,
-        diff_y,
-        goal_x,
-        goal_y,
-        obs_ahead,
-        distance_array,
-        cli_proc_name
-      ) do
+  def loop( robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, cli_proc_name) do
     case diff_y == 0 and diff_x == 0 do
       false ->
         # say you visit an old square or you're at the old square
@@ -241,13 +245,18 @@ defmodule CLI.ToyRobotA do
         # navigate according to the list
         {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, false, cli_proc_name)
 
-        # get co-ordinates of B
-        {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
-        # If B has reached a goal position then delete it from the distance_array
-        k = Integer.to_string(x_b) <> Atom.to_string(y_b)
-        distance_array = Keyword.delete(distance_array, String.to_atom(k))
+        {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
 
         {x, y, _facing} = report(robot)
+
+        #Update the goal store to delete the goal entry if A has reached a goal
+        key_current = Integer.to_string(x) <> Atom.to_string(y)
+        Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
+
+        #get the updated distance array
+        distance_array = compare_with_store(distance_array)
+        #IO.inspect(distance_array, label: "A's distance array")
+
         # +ve implies east and -ve implies west
         diff_x = goal_x - x
         diff_y = goal_y - @robot_map_y_atom_to_num[y]
@@ -261,7 +270,7 @@ defmodule CLI.ToyRobotA do
             {diff_x, diff_y}
           end
 
-        loop( robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, cli_proc_name)
+        loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, cli_proc_name)
 
       true ->
         {robot, distance_array}
