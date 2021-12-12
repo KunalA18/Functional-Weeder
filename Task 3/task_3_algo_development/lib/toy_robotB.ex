@@ -99,14 +99,10 @@ defmodule CLI.ToyRobotB do
 
     k_b = Integer.to_string(r_x) <> Atom.to_string(r_y)
 
-    #IO.inspect(k_b, label: "Key b")
-
     Agent.update(:goal_store, &List.delete(&1, String.to_atom(k_b)))
 
     #function to compare the agent with the current and return only vals that satisy
     distance_array = compare_with_store(distance_array)
-
-    #IO.inspect(distance_array, label: "Updated distance array B")
 
     # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
     loop_through_goal_locs(distance_array, robot, cli_proc_name)
@@ -120,10 +116,10 @@ defmodule CLI.ToyRobotB do
 
   def loop_through_goal_locs(distance_array, robot, cli_proc_name) do
     if length(distance_array) > 0 do
+      IO.inspect(distance_array)
       # Extract the current position from the KeyWord List
-      {tup, distance_array} = List.pop_at(distance_array, 0)
+      {pos, _} = Enum.at(distance_array, 0)
       # tup = {:"2a", 1}
-      {pos, _} = tup
       pos = Atom.to_string(pos)
 
       {goal_x, goal_y} = {String.at(pos, 0), String.at(pos, 1)}
@@ -260,25 +256,50 @@ defmodule CLI.ToyRobotB do
         distance_array = compare_with_store(distance_array)
         #IO.inspect(distance_array, label: "B's distance array")
 
+        #Re-sort the list and change the goals
+        {distance_array, goal_x, goal_y}= if length(distance_array) > 0 do
+          reorder_by_distance(x, y, distance_array)
+        else
+          {distance_array, goal_x, goal_y}
+        end
+
+        IO.inspect(distance_array, label: "Distance array of B")
+
         # +ve implies east and -ve implies west
         diff_x = goal_x - x
         diff_y = goal_y - @robot_map_y_atom_to_num[y]
 
-        # If B is in the process of navigating to whatever x_a or y_a are
-        # i.e B's goal is to go to x_a , y_a then stop by setting diff_x, diff_y to 0
+        {diff_x, diff_y} = if length(distance_array) == 0, do: {0,0}, else: {diff_x, diff_y}
 
-        {diff_x, diff_y} =
-          if x_a == goal_x and @robot_map_y_atom_to_num[y_a] == goal_y do
-            {0, 0}
-          else
-            {diff_x, diff_y}
-          end
 
         loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, cli_proc_name)
 
       true ->
         {robot, distance_array}
     end
+  end
+
+  def reorder_by_distance(r_x, r_y, distance_array) do
+    distance_array = Enum.map(distance_array, fn {pos, d} ->
+      s = Atom.to_string(pos)
+      {g_x, g_y} = {String.at(s, 0), String.at(s, 1)}
+      g_x = String.to_integer(g_x)
+      g_y = String.to_atom(g_y)
+      d = distance(g_x, @robot_map_y_atom_to_num[g_y], r_x, @robot_map_y_atom_to_num[r_y])
+      {pos, d}
+
+    end)
+
+    distance_array = distance_array |> List.keysort(1)
+
+    {pos, _} = Enum.at(distance_array, 0)
+    # tup = {:"2a", 1}
+    pos = Atom.to_string(pos)
+    {goal_x, goal_y} = {String.at(pos, 0), String.at(pos, 1)}
+    goal_x = String.to_integer(goal_x)
+    goal_y = String.to_atom(goal_y)
+
+    {distance_array, goal_x, @robot_map_y_atom_to_num[goal_y]}
   end
 
   def arrange_by_visited(x, y, sq_keys, visited) do
