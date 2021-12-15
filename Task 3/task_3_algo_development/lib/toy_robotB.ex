@@ -68,7 +68,7 @@ defmodule CLI.ToyRobotB do
   end
 
   def wait_for_agent() do
-    if Process.whereis(:coords_store) == nil or Process.whereis(:goal_store) == nil do
+    if Process.whereis(:coords_store) == nil or Process.whereis(:goal_store) == nil or Process.whereis(:turns) == nil do
       wait_for_agent()
     end
   end
@@ -144,7 +144,7 @@ defmodule CLI.ToyRobotB do
       Process.register(pid, :client_toyrobotB)
 
       # send status of the start location
-      obs_ahead = send_robot_status(robot, cli_proc_name)
+      obs_ahead = wait_and_send(robot, cli_proc_name)
       # send_robot_position(robot, :position)
 
       visited = []
@@ -166,6 +166,21 @@ defmodule CLI.ToyRobotB do
         )
 
       loop_through_goal_locs(distance_array, robot, cli_proc_name)
+    end
+  end
+
+  def wait_and_send(robot, cli_proc_name) do
+    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+
+    if b_turn == true and a_turn == false do
+      obs_ahead = send_robot_status(robot, cli_proc_name)
+      #Now update it to show that it is B's turn
+      Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+      Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+      obs_ahead
+    else
+      wait_and_send(robot, cli_proc_name)
     end
   end
 
@@ -360,12 +375,12 @@ defmodule CLI.ToyRobotB do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
-          obs_ahead = send_robot_status(robot, cli_proc_name)
+          obs_ahead = wait_and_send(robot, cli_proc_name)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         else
           # rotate right
           robot = right(robot)
-          obs_ahead = send_robot_status(robot, cli_proc_name)
+          obs_ahead = wait_and_send(robot, cli_proc_name)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         end
 
@@ -436,6 +451,7 @@ defmodule CLI.ToyRobotB do
       #IO.puts("Entered the retry loop")
       move_with_priority(robot, sq_keys, obs_ahead, i, true, cli_proc_name)
     else
+      wait_for_a()
       {x_a, y_a, facing_a} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end, 10)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
 
@@ -464,11 +480,21 @@ defmodule CLI.ToyRobotB do
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
       Process.register(pid, :client_toyrobotB)
-      obs_ahead = send_robot_status(robot, cli_proc_name)
+      obs_ahead = wait_and_send(robot, cli_proc_name)
 
       {robot, obs_ahead}
     end
   end
+
+  def wait_for_a() do
+    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+
+    if a_turn == true and b_turn == false do
+      wait_for_a()
+    end
+  end
+
 
   def wait_for_movement(nxt_x, nxt_y) do
     {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)

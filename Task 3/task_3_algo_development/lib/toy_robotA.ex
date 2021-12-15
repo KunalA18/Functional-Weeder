@@ -77,6 +77,11 @@ defmodule CLI.ToyRobotA do
     {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
     Process.register(pid_prev, :previous_store_A)
 
+    {:ok, pid_turns} = Agent.start_link(fn -> %{} end)
+    Process.register(pid_turns, :turns)
+    # These inputs signify that it is A's turn
+    Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+    Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
     ###########################
     ## complete this funcion ##
     ###########################
@@ -143,7 +148,7 @@ defmodule CLI.ToyRobotA do
       Process.register(pid, :client_toyrobotA)
 
       # send status of the start location
-      obs_ahead = send_robot_status(robot, cli_proc_name)
+      obs_ahead = wait_and_send(robot, cli_proc_name)
 
       visited = []
 
@@ -174,6 +179,21 @@ defmodule CLI.ToyRobotA do
     end
   end
 
+  def wait_and_send(robot, cli_proc_name) do
+    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+
+    if a_turn == true and b_turn == false do
+      obs_ahead = send_robot_status(robot, cli_proc_name)
+      #Now update it to show that it is B's turn
+      Agent.update(:turns, fn map -> Map.put(map, :A, false) end)
+      Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
+      obs_ahead
+    else
+      wait_and_send(robot, cli_proc_name)
+    end
+  end
+
   def sort_according_to_distance(r_x, r_y, goal_locs) do
     distance_array =
       Enum.map(goal_locs, fn [x, y] ->
@@ -196,7 +216,7 @@ defmodule CLI.ToyRobotA do
     distance_array |> List.keysort(1)
   end
 
-  def loop( robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, cli_proc_name) do
+  def loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, cli_proc_name) do
     case diff_y == 0 and diff_x == 0 do
       false ->
         # say you visit an old square or you're at the old square
@@ -237,6 +257,9 @@ defmodule CLI.ToyRobotA do
         # add it to the old list of squares
 
         sq_keys = arrange_by_visited(x, y, sq_keys, visited)
+
+
+
 
         # navigate according to the list
         {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, false, cli_proc_name)
@@ -358,12 +381,12 @@ defmodule CLI.ToyRobotA do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
-          obs_ahead = send_robot_status(robot, cli_proc_name)
+          obs_ahead = wait_and_send(robot, cli_proc_name)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         else
           # rotate right
           robot = right(robot)
-          obs_ahead = send_robot_status(robot, cli_proc_name)
+          obs_ahead = wait_and_send(robot, cli_proc_name)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         end
 
@@ -394,15 +417,19 @@ defmodule CLI.ToyRobotA do
     {x_b, y_b, facing_b} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
     {x, y, facing} = report(robot)
     {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
-    {nxt_x_b, nxt_y_b} = calculate_next_position(x_b, y_b, facing_b)
+    #{nxt_x_b, nxt_y_b} = calculate_next_position(x_b, y_b, facing_b)
     # IO.puts("Next X A: #{nxt_x} Next Y A: #{nxt_y}")
     y_b = @robot_map_y_atom_to_num[y_b]
 
     # check if the robot is in the way
     # if it is, wait for 1 iteration
-    if (x_b == nxt_x and y_b == nxt_y and !obs_ahead) or (nxt_x == nxt_x_b and nxt_y == nxt_y_b) do
-      wait_for_movement(nxt_x, nxt_y)
-      wait_for_movement(nxt_x, nxt_y)
+    if (x_b == nxt_x and y_b == nxt_y and !obs_ahead) do #or (nxt_x == nxt_x_b and nxt_y == nxt_y_b) do
+      # wait_for_movement(nxt_x, nxt_y)
+      # wait_for_movement(nxt_x, nxt_y)
+
+      # If B is ahead, wait a turn
+      #If B is ahead and facing us, then treat it as an obstacle
+      obs_ahead = true
     end
 
     # if not, continue
@@ -431,6 +458,7 @@ defmodule CLI.ToyRobotA do
       i = i + 1
       move_with_priority(robot, sq_keys, obs_ahead, i, true, cli_proc_name)
     else
+      wait_for_b()
       {x_b, y_b, facing_b} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
 
@@ -459,9 +487,18 @@ defmodule CLI.ToyRobotA do
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
       Process.register(pid, :client_toyrobotA)
-      obs_ahead = send_robot_status(robot, cli_proc_name)
+      obs_ahead = wait_and_send(robot, cli_proc_name)
 
       {robot, obs_ahead}
+    end
+  end
+
+  def wait_for_b() do
+    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+
+    if a_turn == false and b_turn == true do
+      wait_for_b()
     end
   end
 
