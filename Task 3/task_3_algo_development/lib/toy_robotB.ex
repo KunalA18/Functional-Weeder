@@ -417,8 +417,9 @@ defmodule CLI.ToyRobotB do
     # check if the robot is in the way
     # if it is, wait for 1 iteration
     if x_a == nxt_x and y_a == nxt_y and !obs_ahead do
-      wait_for_movement(nxt_x, nxt_y)
       # wait_for_movement(nxt_x, nxt_y)
+      # wait_for_movement(nxt_x, nxt_y)
+      obs_ahead = true
     end
 
     # Get previous location of this robot
