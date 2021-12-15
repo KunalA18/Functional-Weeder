@@ -108,8 +108,17 @@ defmodule CLI.ToyRobotA do
     #function to compare the agent with the current and return only vals that satisy
     distance_array = compare_with_store(distance_array)
 
-    # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
-    loop_through_goal_locs(distance_array, robot, cli_proc_name)
+    if length(distance_array) == 0 do
+      parent = self()
+      pid = spawn_link(fn -> roundabout(parent) end)
+      Process.register(pid, :client_toyrobotA)
+
+      # send status of the start location
+      obs_ahead = wait_and_send(robot, cli_proc_name)
+    else
+      # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
+      loop_through_goal_locs(distance_array, robot, cli_proc_name)
+    end
   end
 
   def compare_with_store(distance_array) do
