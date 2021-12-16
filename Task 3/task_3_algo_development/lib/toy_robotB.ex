@@ -125,7 +125,7 @@ defmodule CLI.ToyRobotB do
 
   def loop_through_goal_locs(distance_array, robot, cli_proc_name) do
     if length(distance_array) > 0 do
-      IO.inspect(distance_array)
+      #IO.inspect(distance_array)
       # Extract the current position from the KeyWord List
       {pos, _} = Enum.at(distance_array, 0)
       # tup = {:"2a", 1}
@@ -287,7 +287,7 @@ defmodule CLI.ToyRobotB do
           {distance_array, goal_x, goal_y}
         end
 
-        IO.inspect(distance_array, label: "Distance array of B")
+        #IO.inspect(distance_array, label: "Distance array of B")
 
         # +ve implies east and -ve implies west
         diff_x = goal_x - x
