@@ -110,7 +110,7 @@ defmodule CLI.ToyRobotB do
       Process.register(pid, :client_toyrobotB)
 
       # send status of the start location
-      obs_ahead = wait_and_send(robot, cli_proc_name)
+      obs_ahead = send_robot_status(robot, cli_proc_name)
     else
       Agent.update(:goal_choice, fn map -> Map.put(map, :B, {Enum.at(distance_array, 0)}) end)
       # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
