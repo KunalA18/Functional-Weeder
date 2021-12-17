@@ -64,6 +64,12 @@ defmodule CLI.ToyRobotA do
     {:failure, "Invalid STOP position"}
   end
 
+  def wait_for_agent() do
+    if Process.whereis(:goal_choice_B) == nil do
+      wait_for_agent()
+    end
+  end
+
   @doc """
   Provide GOAL positions to the robot as given location of [(x1, y1),(x2, y2),..] and plan the path from START to these locations.
   Passing the CLI Server process name that will be used to send robot's current status after each action is taken.
@@ -77,11 +83,15 @@ defmodule CLI.ToyRobotA do
     {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
     Process.register(pid_prev, :previous_store_A)
 
+    {:ok, pid_choice} = Agent.start_link(fn -> %{} end)
+    Process.register(pid_choice, :goal_choice)
+
     {:ok, pid_turns} = Agent.start_link(fn -> %{} end)
     Process.register(pid_turns, :turns)
     # These inputs signify that it is A's turn
     Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
     Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+
     ###########################
     ## complete this funcion ##
     ###########################
@@ -97,8 +107,6 @@ defmodule CLI.ToyRobotA do
 
     {:ok, pid_goal} = Agent.start_link(fn -> Keyword.keys(distance_array) end)
     Process.register(pid_goal, :goal_store)
-
-    #IO.inspect(Agent.get(:goal_store, fn list -> list end))
 
     # ["2d":4]
     k_a = Integer.to_string(r_x) <> Atom.to_string(r_y)
@@ -116,6 +124,7 @@ defmodule CLI.ToyRobotA do
       # send status of the start location
       obs_ahead = wait_and_send(robot, cli_proc_name)
     else
+      Agent.update(:goal_choice, fn map -> Map.put(map, :A, {Enum.at(distance_array, 0)}) end)
       # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
       loop_through_goal_locs(distance_array, robot, cli_proc_name)
     end
@@ -127,11 +136,27 @@ defmodule CLI.ToyRobotA do
     Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
   end
 
+  def wait_for_b_choice() do
+    if Agent.get(:goal_choice, fn map -> Map.get(map, :B) end) == nil do
+      wait_for_b_choice()
+    end
+  end
+
   def loop_through_goal_locs(distance_array, robot, cli_proc_name) do
     if length(distance_array) > 0 do
       #IO.inspect(distance_array)
       # Extract the current position from the KeyWord List
-      {pos, _} = Enum.at(distance_array, 0)
+      {pos, dis_a} = Enum.at(distance_array, 0)
+      wait_for_b_choice()
+      {{b_choice, dis_b}} = Agent.get(:goal_choice, fn map -> Map.get(map, :B) end)
+
+      {pos, _} =
+        if b_choice == pos and length(distance_array) > 1 and dis_b > dis_a do
+          Enum.at(distance_array, 1)
+        else
+          {pos, nil}
+        end
+        #IO.inspect(pos, label: "A's chosen goal")
       # tup = {:"2a", 1}
       pos = Atom.to_string(pos)
 
