@@ -68,7 +68,7 @@ defmodule CLI.ToyRobotB do
   end
 
   def wait_for_agent() do
-    if Process.whereis(:coords_store) == nil or Process.whereis(:goal_store) == nil do
+    if Process.whereis(:coords_store) == nil or Process.whereis(:goal_store) == nil or Process.whereis(:turns) == nil or Process.whereis(:goal_choice) == nil do
       wait_for_agent()
     end
   end
@@ -104,8 +104,18 @@ defmodule CLI.ToyRobotB do
     #function to compare the agent with the current and return only vals that satisy
     distance_array = compare_with_store(distance_array)
 
-    # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
-    loop_through_goal_locs(distance_array, robot, cli_proc_name)
+    if length(distance_array) == 0 do
+      parent = self()
+      pid = spawn_link(fn -> roundabout(parent) end)
+      Process.register(pid, :client_toyrobotB)
+
+      # send status of the start location
+      obs_ahead = send_robot_status(robot, cli_proc_name)
+    else
+      Agent.update(:goal_choice, fn map -> Map.put(map, :B, {Enum.at(distance_array, 0)}) end)
+      # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
+      loop_through_goal_locs(distance_array, robot, cli_proc_name)
+    end
   end
 
   def compare_with_store(distance_array) do
@@ -114,11 +124,27 @@ defmodule CLI.ToyRobotB do
     Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
   end
 
+  def wait_for_a_choice() do
+    if Agent.get(:goal_choice, fn map -> Map.get(map, :A) end) == nil do
+      wait_for_a_choice()
+    end
+  end
+
   def loop_through_goal_locs(distance_array, robot, cli_proc_name) do
     if length(distance_array) > 0 do
-      IO.inspect(distance_array)
+      #IO.inspect(distance_array)
       # Extract the current position from the KeyWord List
-      {pos, _} = Enum.at(distance_array, 0)
+      {pos, dis_b} = Enum.at(distance_array, 0)
+      wait_for_a_choice()
+      {{a_choice, dis_a}} = Agent.get(:goal_choice, fn map -> Map.get(map, :A) end)
+
+      {pos, _} =
+        if a_choice == pos and length(distance_array) > 1 and dis_a > dis_b do
+          Enum.at(distance_array, 1)
+        else
+          {pos, nil}
+        end
+        #IO.inspect(pos, label: "B's chosen goal")
       # tup = {:"2a", 1}
       pos = Atom.to_string(pos)
 
@@ -144,8 +170,8 @@ defmodule CLI.ToyRobotB do
       Process.register(pid, :client_toyrobotB)
 
       # send status of the start location
+      #obs_ahead = wait_and_send(robot, cli_proc_name)
       obs_ahead = send_robot_status(robot, cli_proc_name)
-      # send_robot_position(robot, :position)
 
       visited = []
 
@@ -166,6 +192,21 @@ defmodule CLI.ToyRobotB do
         )
 
       loop_through_goal_locs(distance_array, robot, cli_proc_name)
+    end
+  end
+
+  def wait_and_send(robot, cli_proc_name) do
+    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+
+    if b_turn == true and a_turn == false do
+      obs_ahead = send_robot_status(robot, cli_proc_name)
+      #Now update it to show that it is B's turn
+      Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+      Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+      obs_ahead
+    else
+      wait_and_send(robot, cli_proc_name)
     end
   end
 
@@ -263,7 +304,7 @@ defmodule CLI.ToyRobotB do
         #   {distance_array, goal_x, goal_y}
         # end
 
-        IO.inspect(distance_array, label: "Distance array of B")
+        #IO.inspect(distance_array, label: "Distance array of B")
 
         # +ve implies east and -ve implies west
         diff_x = goal_x - x
@@ -360,11 +401,13 @@ defmodule CLI.ToyRobotB do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
+          #obs_ahead = wait_and_send(robot, cli_proc_name)
           obs_ahead = send_robot_status(robot, cli_proc_name)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         else
           # rotate right
           robot = right(robot)
+          #obs_ahead = wait_and_send(robot, cli_proc_name)
           obs_ahead = send_robot_status(robot, cli_proc_name)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         end
@@ -402,8 +445,9 @@ defmodule CLI.ToyRobotB do
     # check if the robot is in the way
     # if it is, wait for 1 iteration
     if x_a == nxt_x and y_a == nxt_y and !obs_ahead do
-      wait_for_movement(nxt_x, nxt_y)
       # wait_for_movement(nxt_x, nxt_y)
+      # wait_for_movement(nxt_x, nxt_y)
+      obs_ahead = true
     end
 
     # Get previous location of this robot
@@ -436,6 +480,7 @@ defmodule CLI.ToyRobotB do
       #IO.puts("Entered the retry loop")
       move_with_priority(robot, sq_keys, obs_ahead, i, true, cli_proc_name)
     else
+      #wait_for_a()
       {x_a, y_a, facing_a} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end, 10)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
 
@@ -464,11 +509,21 @@ defmodule CLI.ToyRobotB do
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
       Process.register(pid, :client_toyrobotB)
+      #obs_ahead = wait_and_send(robot, cli_proc_name)
       obs_ahead = send_robot_status(robot, cli_proc_name)
-
       {robot, obs_ahead}
     end
   end
+
+  def wait_for_a() do
+    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+
+    if a_turn == true and b_turn == false do
+      wait_for_a()
+    end
+  end
+
 
   def wait_for_movement(nxt_x, nxt_y) do
     {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
