@@ -461,12 +461,12 @@ defmodule CLI.ToyRobotA do
     # check if the robot is in the way
     # if it is, wait for 1 iteration
     if (x_b == nxt_x and y_b == nxt_y and !obs_ahead) do #or (nxt_x == nxt_x_b and nxt_y == nxt_y_b) do
-      # wait_for_movement(nxt_x, nxt_y)
-      # wait_for_movement(nxt_x, nxt_y)
+      wait_for_movement(nxt_x, nxt_y)
+      wait_for_movement(nxt_x, nxt_y)
 
       # If B is ahead, wait a turn
       #If B is ahead and facing us, then treat it as an obstacle
-      obs_ahead = true
+      #obs_ahead = true
     end
 
     # if not, continue
