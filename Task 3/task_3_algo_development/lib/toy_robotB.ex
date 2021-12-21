@@ -170,7 +170,7 @@ defmodule CLI.ToyRobotB do
       Process.register(pid, :client_toyrobotB)
 
       # send status of the start location
-      obs_ahead = wait_and_send(robot, cli_proc_name)
+      obs_ahead = wait_and_send(robot, cli_proc_name, 0)
       # send_robot_position(robot, :position)
 
       visited = []
@@ -195,18 +195,18 @@ defmodule CLI.ToyRobotB do
     end
   end
 
-  def wait_and_send(robot, cli_proc_name) do
+  def wait_and_send(robot, cli_proc_name, i) do
     a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
     b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
 
-    if b_turn == true and a_turn == false do
+    if (b_turn == true and a_turn == false) or (i > 10000000) do
       obs_ahead = send_robot_status(robot, cli_proc_name)
       #Now update it to show that it is B's turn
       Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
       Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
       obs_ahead
     else
-      wait_and_send(robot, cli_proc_name)
+      wait_and_send(robot, cli_proc_name, i+1)
     end
   end
 
@@ -401,12 +401,12 @@ defmodule CLI.ToyRobotB do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
-          obs_ahead = wait_and_send(robot, cli_proc_name)
+          obs_ahead = wait_and_send(robot, cli_proc_name, 0)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         else
           # rotate right
           robot = right(robot)
-          obs_ahead = wait_and_send(robot, cli_proc_name)
+          obs_ahead = wait_and_send(robot, cli_proc_name, 0)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         end
 
@@ -507,7 +507,7 @@ defmodule CLI.ToyRobotB do
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
       Process.register(pid, :client_toyrobotB)
-      obs_ahead = wait_and_send(robot, cli_proc_name)
+      obs_ahead = wait_and_send(robot, cli_proc_name, 0)
 
       {robot, obs_ahead}
     end

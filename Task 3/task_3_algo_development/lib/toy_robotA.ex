@@ -95,6 +95,7 @@ defmodule CLI.ToyRobotA do
     ###########################
     ## complete this funcion ##
     ###########################
+
     Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
     # Agent.update(:goal_store, fn list -> [goal_locs | list] end)
     # list = Agent.get(:goal_store, fn list -> list end)
@@ -182,7 +183,7 @@ defmodule CLI.ToyRobotA do
       Process.register(pid, :client_toyrobotA)
 
       # send status of the start location
-      obs_ahead = wait_and_send(robot, cli_proc_name)
+      obs_ahead = wait_and_send(robot, cli_proc_name, 0)
 
       visited = []
 
@@ -213,18 +214,18 @@ defmodule CLI.ToyRobotA do
     end
   end
 
-  def wait_and_send(robot, cli_proc_name) do
+  def wait_and_send(robot, cli_proc_name, i) do
     a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
     b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
 
-    if a_turn == true and b_turn == false do
+    if (a_turn == true and b_turn == false) or (i > 10000000) do
       obs_ahead = send_robot_status(robot, cli_proc_name)
       #Now update it to show that it is B's turn
       Agent.update(:turns, fn map -> Map.put(map, :A, false) end)
       Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
       obs_ahead
     else
-      wait_and_send(robot, cli_proc_name)
+      wait_and_send(robot, cli_proc_name, i+1)
     end
   end
 
@@ -415,12 +416,12 @@ defmodule CLI.ToyRobotA do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
-          obs_ahead = wait_and_send(robot, cli_proc_name)
+          obs_ahead = wait_and_send(robot, cli_proc_name, 0)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         else
           # rotate right
           robot = right(robot)
-          obs_ahead = wait_and_send(robot, cli_proc_name)
+          obs_ahead = wait_and_send(robot, cli_proc_name, 0)
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         end
 
@@ -521,7 +522,7 @@ defmodule CLI.ToyRobotA do
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
       Process.register(pid, :client_toyrobotA)
-      obs_ahead = wait_and_send(robot, cli_proc_name)
+      obs_ahead = wait_and_send(robot, cli_proc_name, 0)
 
       {robot, obs_ahead}
     end
