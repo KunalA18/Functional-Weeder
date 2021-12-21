@@ -298,11 +298,11 @@ defmodule CLI.ToyRobotB do
         #IO.inspect(distance_array, label: "B's distance array")
 
         #Re-sort the list and change the goals
-        # {distance_array, goal_x, goal_y}= if length(distance_array) > 0 do
-        #   reorder_by_distance(x, y, distance_array)
-        # else
-        #   {distance_array, goal_x, goal_y}
-        # end
+        {distance_array, goal_x, goal_y}= if length(distance_array) > 0 do
+          reorder_by_distance(x, y, distance_array)
+        else
+          {distance_array, goal_x, goal_y}
+        end
 
         #IO.inspect(distance_array, label: "Distance array of B")
 
