@@ -119,7 +119,9 @@ defmodule CLI.ToyRobotA do
     if length(distance_array) == 0 do
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
-      Process.register(pid, :client_toyrobotA)
+      if (Process.whereis(:client_toyrobotA) == nil ) do
+        Process.register(pid, :client_toyrobotA)
+      end
 
       # send status of the start location
       obs_ahead = send_robot_status(robot, cli_proc_name)
@@ -179,7 +181,9 @@ defmodule CLI.ToyRobotA do
       # recieve a message then send the message to self()
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
-      Process.register(pid, :client_toyrobotA)
+      if (Process.whereis(:client_toyrobotA) == nil ) do
+        Process.register(pid, :client_toyrobotA)
+      end
 
       # send status of the start location
       #obs_ahead = wait_and_send(robot, cli_proc_name)
@@ -411,7 +415,10 @@ defmodule CLI.ToyRobotA do
       false ->
         parent = self()
         pid = spawn_link(fn -> roundabout(parent) end)
-        Process.register(pid, :client_toyrobotA)
+        if (Process.whereis(:client_toyrobotA) == nil ) do
+          Process.register(pid, :client_toyrobotA)
+        end
+
 
         if face_diff == -3 or face_diff == 1 do
           # rotate left
@@ -523,7 +530,9 @@ defmodule CLI.ToyRobotA do
 
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
-      Process.register(pid, :client_toyrobotA)
+      if (Process.whereis(:client_toyrobotA) == nil ) do
+        Process.register(pid, :client_toyrobotA)
+      end
       #obs_ahead = wait_and_send(robot, cli_proc_name)
       obs_ahead = send_robot_status(robot, cli_proc_name)
 
