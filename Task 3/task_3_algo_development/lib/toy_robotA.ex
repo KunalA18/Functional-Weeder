@@ -454,13 +454,13 @@ defmodule CLI.ToyRobotA do
     {x_b, y_b, facing_b} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
     {x, y, facing} = report(robot)
     {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
-    #{nxt_x_b, nxt_y_b} = calculate_next_position(x_b, y_b, facing_b)
+    {nxt_x_b, nxt_y_b} = calculate_next_position(x_b, y_b, facing_b)
     # IO.puts("Next X A: #{nxt_x} Next Y A: #{nxt_y}")
     y_b = @robot_map_y_atom_to_num[y_b]
 
     # check if the robot is in the way
     # if it is, wait for 1 iteration
-    if (x_b == nxt_x and y_b == nxt_y and !obs_ahead) do #or (nxt_x == nxt_x_b and nxt_y == nxt_y_b) do
+    if (x_b == nxt_x and y_b == nxt_y) or (nxt_x == nxt_x_b and nxt_y == nxt_y_b) and !obs_ahead do
       wait_for_movement(nxt_x, nxt_y)
       wait_for_movement(nxt_x, nxt_y)
 
