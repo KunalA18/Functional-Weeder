@@ -444,8 +444,8 @@ defmodule CLI.ToyRobotB do
     # if it is, wait for 1 iteration
     if x_a == nxt_x and y_a == nxt_y and !obs_ahead do
       # wait_for_movement(nxt_x, nxt_y)
-      # wait_for_movement(nxt_x, nxt_y)
-      obs_ahead = true
+      wait_for_movement(robot, cli_proc_name, 0)
+      #obs_ahead = true
     end
 
     # Get previous location of this robot
@@ -522,6 +522,20 @@ defmodule CLI.ToyRobotB do
     end
   end
 
+  def wait_for_movement(robot, cli_proc_name, _) do
+    # get the status of the turns
+    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+
+    if b_turn do
+      obs_ahead = send_robot_status(robot, cli_proc_name)
+      #Now update it to show that it is A's turn
+      Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+      Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+    else
+      wait_for_a()
+    end
+  end
 
   def wait_for_movement(nxt_x, nxt_y) do
     {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
