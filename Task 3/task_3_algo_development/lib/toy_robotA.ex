@@ -475,11 +475,11 @@ defmodule CLI.ToyRobotA do
     # if it is, wait for 1 iteration
     if (x_b == nxt_x and y_b == nxt_y and !obs_ahead) do #or (nxt_x == nxt_x_b and nxt_y == nxt_y_b) do
       # wait_for_movement(nxt_x, nxt_y)
-      wait_for_movement(robot, cli_proc_name, 0)
+      #wait_for_movement(robot, cli_proc_name, 0)
       #No problems here
       # If B is ahead, wait a turn
       #If B is ahead and facing us, then treat it as an obstacle
-      #obs_ahead = true
+      obs_ahead = true
     end
 
     # if not, continue
@@ -598,20 +598,6 @@ defmodule CLI.ToyRobotA do
 
   def distance(x1, y1, x2, y2) do
     abs(x1 - x2) + abs(y1 - y2)
-  end
-
-  def listen_from_robotB(parent) do
-    receive do
-      {:position, value} ->
-        # IO.puts("I got a message: #{inspect value}")
-        send(parent, {:positions, value})
-
-      {:goal_reached, value} ->
-        #IO.puts("Goal has been reached by B: #{inspect(value)}")
-        send(parent, {:goal_reached, value})
-    end
-
-    listen_from_robotB(parent)
   end
 
   @doc """
