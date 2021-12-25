@@ -135,7 +135,7 @@ defmodule CLI.ToyRobotB do
       #IO.inspect(distance_array)
       # Extract the current position from the KeyWord List
       {pos, dis_b} = Enum.at(distance_array, 0)
-      #wait_for_a_choice()
+      wait_for_a_choice()
       {{a_choice, dis_a}} = Agent.get(:goal_choice, fn map -> Map.get(map, :A) end)
 
       {pos, _} =
@@ -485,7 +485,7 @@ defmodule CLI.ToyRobotB do
       #IO.puts("Entered the retry loop")
       move_with_priority(robot, sq_keys, obs_ahead, i, true, cli_proc_name)
     else
-      #wait_for_a()
+      wait_for_a()
       {x_a, y_a, facing_a} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end, 10)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
 
