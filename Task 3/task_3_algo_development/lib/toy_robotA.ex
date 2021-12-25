@@ -148,7 +148,7 @@ defmodule CLI.ToyRobotA do
       #IO.inspect(distance_array)
       # Extract the current position from the KeyWord List
       {pos, dis_a} = Enum.at(distance_array, 0)
-      wait_for_b_choice()
+      #wait_for_b_choice()
       {{b_choice, dis_b}} = Agent.get(:goal_choice, fn map -> Map.get(map, :B) end)
 
       {pos, _} =
@@ -508,7 +508,7 @@ defmodule CLI.ToyRobotA do
       i = i + 1
       move_with_priority(robot, sq_keys, obs_ahead, i, true, cli_proc_name)
     else
-      wait_for_b()
+      #wait_for_b()
       {x_b, y_b, facing_b} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
 
