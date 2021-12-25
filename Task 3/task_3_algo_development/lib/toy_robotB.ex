@@ -479,7 +479,6 @@ defmodule CLI.ToyRobotB do
       else
         obs_ahead
       end
-
     if obs_ahead do
       i = i + 1
       #IO.puts("Entered the retry loop")

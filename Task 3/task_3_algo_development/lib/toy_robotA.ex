@@ -494,7 +494,6 @@ defmodule CLI.ToyRobotA do
     obs_ahead =
       if prev != nil and !prev_loop do
         {prev_x, prev_y, prev_facing} = prev
-
         if prev_x == x and prev_y == y do
           true
         else
