@@ -136,14 +136,14 @@ defmodule CLI.ToyRobotB do
       # Extract the current position from the KeyWord List
       {pos, dis_b} = Enum.at(distance_array, 0)
       #wait_for_a_choice()
-      #{{a_choice, dis_a}} = Agent.get(:goal_choice, fn map -> Map.get(map, :A) end)
+      {{a_choice, dis_a}} = Agent.get(:goal_choice, fn map -> Map.get(map, :A) end)
 
-      # {pos, _} =
-      #   if a_choice == pos and length(distance_array) > 1 and dis_a > dis_b do
-      #     Enum.at(distance_array, 1)
-      #   else
-      #     {pos, nil}
-      #   end
+      {pos, _} =
+        if a_choice == pos and length(distance_array) > 1 and dis_a > dis_b do
+          Enum.at(distance_array, 1)
+        else
+          {pos, nil}
+        end
         #IO.inspect(pos, label: "B's chosen goal")
       # tup = {:"2a", 1}
       pos = Atom.to_string(pos)
