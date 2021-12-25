@@ -171,7 +171,12 @@ defmodule CLI.ToyRobotB do
 
       # send status of the start location
       obs_ahead = wait_and_send(robot, cli_proc_name, 0)
-      # send_robot_position(robot, :position)
+
+      {x, y, _facing} = report(robot)
+      key_current = Integer.to_string(x) <> Atom.to_string(y)
+
+      Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
+      distance_array = compare_with_store(distance_array)
 
       visited = []
 
@@ -191,7 +196,9 @@ defmodule CLI.ToyRobotB do
           cli_proc_name
         )
 
-      loop_through_goal_locs(distance_array, robot, cli_proc_name)
+        if length(distance_array) > 0 do
+          loop_through_goal_locs(distance_array, robot, cli_proc_name)
+        end
     end
   end
 
