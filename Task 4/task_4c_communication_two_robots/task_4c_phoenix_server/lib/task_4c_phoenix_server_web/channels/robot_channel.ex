@@ -8,6 +8,7 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
   """
   def join("robot:status", _params, socket) do
     Task4CPhoenixServerWeb.Endpoint.subscribe("robot:update")
+    :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
     {:ok, socket}
   end
 
@@ -29,6 +30,8 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
   """
   def handle_in("new_msg", message, socket) do
 
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", %{msg: "value"})
+
     # determine the obstacle's presence in front of the robot and return the boolean value
     is_obs_ahead = Task4CPhoenixServerWeb.FindObstaclePresence.is_obstacle_ahead?(message["x"], message["y"], message["face"])
 
@@ -49,10 +52,26 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
   #########################################
 
   def handle_in("goals_msg", message, socket) do
-    csv = "../../../Plant_Positions.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take(2)
-    IO.inspect(csv)
+    csv = "../../../Plant_Positions.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take_every(1)
+    |> Enum.filter(fn {:ok, [a, b]} -> (a != "Sowing") end)
+    |> Enum.map(fn {:ok, [a, b]} -> [a, b] end)
+    |> Enum.reduce(fn [a, b], acc -> acc ++ [a, b] end )
 
+    IO.inspect(csv, label: "CSV")
+
+    {:reply, {:ok, csv}, socket}
+  end
+
+  def handle_info(data, socket) do
+
+    IO.inspect(data, label: "Data is sent from PubSub")
+    ###########################
+    ## complete this funcion ##
+    ###########################
+
+    {:noreply, socket}
 
   end
+
 
 end

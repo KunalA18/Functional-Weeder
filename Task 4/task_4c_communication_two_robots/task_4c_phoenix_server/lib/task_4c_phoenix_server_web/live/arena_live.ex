@@ -14,6 +14,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
 
     Task4CPhoenixServerWeb.Endpoint.subscribe("robot:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "timer:update")
+    :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
 
     socket = assign(socket, :img_robotA, "robot_facing_north.png")
     socket = assign(socket, :bottom_robotA, 0)
@@ -29,6 +30,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
 
     socket = assign(socket, :obstacle_pos, MapSet.new())
     socket = assign(socket, :timer_tick, 300)
+
 
     {:ok,socket}
 
@@ -179,6 +181,8 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     socket = assign(socket, :robotB_start, data["robotB_start"])
     Task4CPhoenixServerWeb.Endpoint.broadcast("timer:start", "start_timer", %{})
 
+    IO.inspect(socket.assigns.robotA_start)
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", %{msg: "value"})
     #################################
     ## edit the function if needed ##
     #################################
@@ -226,7 +230,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
   These values must be in pixels. You may handle these variables in separate callback functions as well.
   """
   def handle_info(data, socket) do
-
+    IO.inspect(data, label: "Data is sent from PubSub to ArenaLive")
     ###########################
     ## complete this funcion ##
     ###########################

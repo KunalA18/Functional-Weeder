@@ -20,7 +20,7 @@ defmodule Task4cPhoenixServerWeb.UserSocket do
   # for futher details.
 
   channel "robot:*", Task4CPhoenixServerWeb.RobotChannel
-  #channel "timer:*", Task4cPhoenixServerWeb.RoomChannel
+  channel "timer:*", Task4CPhoenixServerWeb.TimerChannel
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After

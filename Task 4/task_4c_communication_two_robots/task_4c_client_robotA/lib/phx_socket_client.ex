@@ -65,6 +65,12 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
 
   end
 
+  def get_goals (channel) do
+    message = %{}
+    {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goals_msg", message)
+    {:ok, goal_list}
+  end
+
   ######################################################
   ## You may create extra helper functions as needed. ##
   ######################################################

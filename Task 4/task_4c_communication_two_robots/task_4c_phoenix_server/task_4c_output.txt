@@ -1,0 +1,15 @@
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
+ => 1, a, north
