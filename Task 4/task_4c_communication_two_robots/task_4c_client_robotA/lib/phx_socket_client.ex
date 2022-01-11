@@ -21,7 +21,23 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
     ###########################
     ## complete this funcion ##
     ###########################
+    socket_opts = [url: Application.get_env(:task_4c_client_robota, :phoenix_server_url )]
 
+    {:ok, socket} = PhoenixClient.Socket.start_link(socket_opts)
+
+    wait_for_socket(socket)
+    IO.inspect(socket, label: "Socket ")
+
+    # joins the robot:status channel
+    {:ok, _response, channel} = PhoenixClient.Channel.join(socket, "robot:status")
+
+    {:ok, _response, channel}
+  end
+
+  def wait_for_socket(socket) do
+    if !Socket.connected?(socket) do
+      wait_for_socket(socket)
+    end
   end
 
   @doc """
@@ -36,6 +52,12 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
   Create a tuple of this format: '{:obstacle_presence, < true or false >}' as a return of this function.
   """
   def send_robot_status(channel, %Task4CClientRobotA.Position{x: x, y: y, facing: facing} = _robot) do
+
+    message = %{x: x, y: y, face: facing} #formats the message
+
+    {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
+
+    {:obstacle_presence, obstaclePresence}
 
     ###########################
     ## complete this funcion ##

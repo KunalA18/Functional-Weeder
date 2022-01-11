@@ -223,7 +223,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
   Assign the values to the variables => "img_robotA", "bottom_robotA", "left_robotA",
   "img_robotB", "bottom_robotB", "left_robotB" and "obstacle_pos" as received.
   Make sure to add a tuple of format: { < obstacle_x >, < obstacle_y > } to the MapSet object "obstacle_pos".
-  These values msut be in pixels. You may handle these variables in separate callback functions as well.
+  These values must be in pixels. You may handle these variables in separate callback functions as well.
   """
   def handle_info(data, socket) do
 

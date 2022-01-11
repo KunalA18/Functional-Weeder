@@ -58,8 +58,16 @@ defmodule Task4CClientRobotA do
   Call the respective functions from this module and others as needed.
   You may create extra helper functions as needed.
   """
-  def main do
+  def main(args) do
+    IO.inspect("Something happens")
+    {:ok, _response, channel} = Task4CClientRobotA.PhoenixSocketClient.connect_server()
+    IO.inspect(channel, "Channel")
 
+    #function to get goal positions
+
+    {:ok, robot} = start(1, "a", :north)
+
+    IO.inspect(Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot))
     ###########################
     ## complete this funcion ##
     ###########################

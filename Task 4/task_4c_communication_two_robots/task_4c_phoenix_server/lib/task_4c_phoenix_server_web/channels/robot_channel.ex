@@ -48,4 +48,11 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
   ## define callback functions as needed ##
   #########################################
 
+  def handle_in("goals_msg", message, socket) do
+    csv = "../../../Plant_Positions.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take(2)
+    IO.inspect(csv)
+
+
+  end
+
 end

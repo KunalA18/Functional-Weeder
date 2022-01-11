@@ -7,7 +7,8 @@ defmodule Task4CClientRobotA.MixProject do
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      escript: [main_module: Task4CClientRobotA]
     ]
   end
 
@@ -28,4 +29,6 @@ defmodule Task4CClientRobotA.MixProject do
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
+
+
 end

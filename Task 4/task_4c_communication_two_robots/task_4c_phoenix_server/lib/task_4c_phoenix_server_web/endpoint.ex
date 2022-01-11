@@ -14,6 +14,9 @@ defmodule Task4CPhoenixServerWeb.Endpoint do
   ## add the configuration of UserSocket module once created ##
   ## make sure the websocket flag is set to true             ##
   #############################################################
+  socket "/socket", Task4cPhoenixServerWeb.UserSocket,
+      websocket: true,
+      longpoll: false
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
