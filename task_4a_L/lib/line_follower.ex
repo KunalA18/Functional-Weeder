@@ -28,9 +28,74 @@ defmodule Line_follower do
   @white_MARGIN 1000
   @weights [0, -3, -1, 0, 1, 3]
 
+  error=0
+  prev_error=0
+
 
   def line_follow do
-    test_wlf_sensors()
+    map_sens_list = test_wlf_sensors()
+    IO.inspect(map_sens_list)
+    error = calculate_error(map_sens_list)
+    calculate_correction(error)
+    line_follow()
+  end
+
+  def calculate_error(map_sens_list) do
+    all_black_flag = 1
+    weighted_sum = 0
+    sum = 0
+    pos = 0
+
+    Enum.map(map_sens_list, fn x -> case x > @black_MARGIN do
+                                        true ->
+                                          all_black_flag = 0
+                                          IO.inspect(all_black_flag)
+                                        false ->
+                                          all_black_flag = all_black_flag
+                                          IO.inspect(all_black_flag)
+                                      end
+                                     end)
+    IO.inspect(all_black_flag)
+    # weighted_sum = Enum.sum(div(@weights,map_sens_list));
+    sum = Enum.sum(map_sens_list);
+    # IO.inspect(weighted_sum)
+    IO.inspect(sum)
+
+    if sum != 0 do
+      pos = weighted_sum / sum;
+    end
+
+    if all_black_flag == 1 do
+      if prev_error > 0 do
+        error = 2.5;
+      else
+        error = -2.5;
+      end
+    else
+      error = pos;
+    end
+
+    error
+
+  end
+
+  def calculate_correction(error) do
+
+    error = error * 10;
+    difference = error - prev_error;
+    cumulative_error += error;
+
+    # cumulative_error = bound(cumulative_error, -30, 30);
+    if cumulative_error < -30 do
+      cumulative_error = -30
+    end
+    if cumulative_error > 30 do
+      cumulative_error = 30
+    end
+
+    correction = read_pid_const().kp * error + read_pid_const().ki * cumulative_error + read_pid_const().kd * difference;
+    prev_error = error;
+
   end
 
   @doc """
@@ -43,11 +108,12 @@ defmodule Line_follower do
       [0, 449, 356, 312, 321, 267]  // on black surface
   """
   def test_wlf_sensors do
-    Logger.debug("Testing white line sensors connected ")
+    # Logger.debug("Testing white line sensors connected ")
     sensor_ref = Enum.map(@sensor_pins, fn {atom, pin_no} -> configure_sensor({atom, pin_no}) end)
     sensor_ref = Enum.map(sensor_ref, fn{_atom, ref_id} -> ref_id end)
     sensor_ref = Enum.zip(@ref_atoms, sensor_ref)
-    get_lfa_readings([1,2,3,4,5], sensor_ref)
+    map_sens_list = get_lfa_readings([1,2,3,4,5], sensor_ref)
+    map_sens_list
   end
 
 
@@ -165,11 +231,12 @@ defmodule Line_follower do
                                                            end)
     map_sens_list = bounded_sens_list |> Enum.map (fn x -> round((x-@black_MARGIN)*(@white_MARGIN/(@white_MARGIN-@black_MARGIN))) end)
 
-    IO.inspect(map_sens_list)
+    # IO.inspect(map_sens_list)
     Enum.each(0..5, fn n -> provide_clock(sensor_ref) end)
     GPIO.write(sensor_ref[:cs], 1)
     Process.sleep(250)
-    get_lfa_readings(sensor_list, sensor_ref)
+    # get_lfa_readings(sensor_list, sensor_ref)
+    map_sens_list
   end
 
   @doc """
