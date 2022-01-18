@@ -21,28 +21,53 @@ defmodule Line_follower do
   @right [1, 0, 0, 1]
   @stop [0, 0, 0, 0]
 
-  @duty_cycles [150, 70, 0]
+  @duty_cycles [100, 70, 0]
   @pwm_frequency 50
 
   @black_MARGIN 600
   @white_MARGIN 1000
   @weights [0, -3, -1, 0, 1, 3]
 
+  @optimum_duty_cycle 120
+  @lower_duty_cycle 100
+  @higher_duty_cycle 140
+  # float left_duty_cycle = 0, right_duty_cycle = 0;
+
 
   def initialize do
     error=0
     prev_error=0
     cumulative_error = 0
-    line_follow(error,prev_error,cumulative_error)
+    left_duty_cycle = 0
+    right_duty_cycle = 0
+    line_follow(error,prev_error,cumulative_error,left_duty_cycle,right_duty_cycle)
   end
 
-  def line_follow(error,prev_error,cumulative_error) do
+  def line_follow(error,prev_error,cumulative_error,left_duty_cycle,right_duty_cycle) do
     map_sens_list = test_wlf_sensors()
     IO.inspect(map_sens_list)
     # error = calculate_error(map_sens_list)
     {error,prev_error} = calculate_error(map_sens_list,error,prev_error)
-    {error,prev_error} = calculate_correction(error,prev_error,cumulative_error)
-    line_follow(error,prev_error,cumulative_error)
+    {error,prev_error,correction} = calculate_correction(error,prev_error,cumulative_error)
+
+    left_duty_cycle = @optimum_duty_cycle - correction
+    right_duty_cycle = @optimum_duty_cycle + correction
+
+    left_duty_cycle = if left_duty_cycle < @lower_duty_cycle do
+                        left_duty_cycle = @lower_duty_cycle
+                      end
+    left_duty_cycle = if left_duty_cycle > @higher_duty_cycle do
+                        left_duty_cycle = @higher_duty_cycle
+                      end
+    right_duty_cycle = if right_duty_cycle < @lower_duty_cycle do
+                        right_duty_cycle = @lower_duty_cycle
+                      end
+    right_duty_cycle = if right_duty_cycle > @higher_duty_cycle do
+                        right_duty_cycle = @higher_duty_cycle
+                      end
+
+
+    line_follow(error,prev_error,cumulative_error,left_duty_cycle,right_duty_cycle)
   end
 
   def calculate_error(map_sens_list,error,prev_error) do
@@ -85,13 +110,13 @@ defmodule Line_follower do
     weighted_sum_list = map_sens_list |> Enum.zip(@weights) |> Enum.map(fn {map,weight} -> map*weight end)
     weighted_sum = Enum.sum(weighted_sum_list)
     sum = Enum.sum(map_sens_list)
-    IO.inspect(weighted_sum)
+    # IO.inspect(weighted_sum)
     # IO.inspect(sum)
 
     pos = if sum != 0 do
             pos = weighted_sum / sum;
           end
-    IO.inspect(pos)
+    # IO.inspect(pos)
 
     error = if all_black_flag == 1 do
               error = if prev_error > 0 do
@@ -103,27 +128,28 @@ defmodule Line_follower do
               error = pos;
             end
 
-    IO.inspect(error)
+    # IO.inspect(error)
     {error,prev_error}
   end
 
   def calculate_correction(error,prev_error,cumulative_error) do
 
-    error = error * 10;
-    difference = error - prev_error;
-    cumulative_error = cumulative_error + error;
+    error = error * 10
+    difference = error - prev_error
+    cumulative_error = cumulative_error + error
 
     # cumulative_error = bound(cumulative_error, -30, 30);
-    if cumulative_error < -30 do
-      cumulative_error = -30
-    end
-    if cumulative_error > 30 do
-      cumulative_error = 30
-    end
+    cumulative_error = if cumulative_error < -30 do
+                         cumulative_error = -30
+                       end
+    cumulative_error = if cumulative_error > 30 do
+                         cumulative_error = 30
+                       end
 
     # correction = read_pid_const().kp * error + read_pid_const().ki * cumulative_error + read_pid_const().kd * difference;
-    prev_error = error;
-    {error,prev_error}
+    correction = (200 * error) + (10 * cumulative_error) + (1 * difference)
+    prev_error = error
+    {error,prev_error,correction}
   end
 
   @doc """
