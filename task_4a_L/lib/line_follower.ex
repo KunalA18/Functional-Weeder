@@ -28,62 +28,90 @@ defmodule Line_follower do
   @white_MARGIN 1000
   @weights [0, -3, -1, 0, 1, 3]
 
-  error=0
-  prev_error=0
 
-
-  def line_follow do
-    map_sens_list = test_wlf_sensors()
-    IO.inspect(map_sens_list)
-    error = calculate_error(map_sens_list)
-    calculate_correction(error)
-    line_follow()
+  def initialize do
+    error=0
+    prev_error=0
+    cumulative_error = 0
+    line_follow(error,prev_error,cumulative_error)
   end
 
-  def calculate_error(map_sens_list) do
+  def line_follow(error,prev_error,cumulative_error) do
+    map_sens_list = test_wlf_sensors()
+    IO.inspect(map_sens_list)
+    # error = calculate_error(map_sens_list)
+    {error,prev_error} = calculate_error(map_sens_list,error,prev_error)
+    {error,prev_error} = calculate_correction(error,prev_error,cumulative_error)
+    line_follow(error,prev_error,cumulative_error)
+  end
+
+  def calculate_error(map_sens_list,error,prev_error) do
     all_black_flag = 1
     weighted_sum = 0
     sum = 0
     pos = 0
 
-    Enum.map(map_sens_list, fn x -> case x > @black_MARGIN do
-                                        true ->
-                                          all_black_flag = 0
-                                          IO.inspect(all_black_flag)
-                                        false ->
-                                          all_black_flag = all_black_flag
-                                          IO.inspect(all_black_flag)
-                                      end
-                                     end)
-    IO.inspect(all_black_flag)
-    # weighted_sum = Enum.sum(div(@weights,map_sens_list));
-    sum = Enum.sum(map_sens_list);
-    # IO.inspect(weighted_sum)
-    IO.inspect(sum)
+    # Enum.map(map_sens_list, fn x -> all_black_flag = case x > @black_MARGIN do
+    #                                                   true ->
+    #                                                     all_black_flag = 0
+    #                                                     # IO.inspect(all_black_flag)
+    #                                                   false ->
+    #                                                     all_black_flag = all_black_flag
+    #                                                     # IO.inspect(all_black_flag)
+    #                                                end
+    #                                                all_black_flag
+    #                                               end)
+    all_black_flag = if Enum.at(map_sens_list,0) > @black_MARGIN do
+                       all_black_flag = 0
+                     end
+    all_black_flag = if Enum.at(map_sens_list,1) > @black_MARGIN do
+                       all_black_flag = 0
+                     end
+    all_black_flag = if Enum.at(map_sens_list,2) > @black_MARGIN do
+                       all_black_flag = 0
+                     end
+    all_black_flag = if Enum.at(map_sens_list,3) > @black_MARGIN do
+                      all_black_flag = 0
+                     end
+    all_black_flag = if Enum.at(map_sens_list,4) > @black_MARGIN do
+                       all_black_flag = 0
+                     end
+    all_black_flag = if Enum.at(map_sens_list,5) > @black_MARGIN do
+                       all_black_flag = 0
+                     end
 
-    if sum != 0 do
-      pos = weighted_sum / sum;
-    end
 
-    if all_black_flag == 1 do
-      if prev_error > 0 do
-        error = 2.5;
-      else
-        error = -2.5;
-      end
-    else
-      error = pos;
-    end
+    # IO.inspect(all_black_flag)
+    weighted_sum_list = map_sens_list |> Enum.zip(@weights) |> Enum.map(fn {map,weight} -> map*weight end)
+    weighted_sum = Enum.sum(weighted_sum_list)
+    sum = Enum.sum(map_sens_list)
+    IO.inspect(weighted_sum)
+    # IO.inspect(sum)
 
-    error
+    pos = if sum != 0 do
+            pos = weighted_sum / sum;
+          end
+    IO.inspect(pos)
 
+    error = if all_black_flag == 1 do
+              error = if prev_error > 0 do
+                        error = 2.5;
+                      else
+                        error = -2.5;
+                      end
+            else
+              error = pos;
+            end
+
+    IO.inspect(error)
+    {error,prev_error}
   end
 
-  def calculate_correction(error) do
+  def calculate_correction(error,prev_error,cumulative_error) do
 
     error = error * 10;
     difference = error - prev_error;
-    cumulative_error += error;
+    cumulative_error = cumulative_error + error;
 
     # cumulative_error = bound(cumulative_error, -30, 30);
     if cumulative_error < -30 do
@@ -93,9 +121,9 @@ defmodule Line_follower do
       cumulative_error = 30
     end
 
-    correction = read_pid_const().kp * error + read_pid_const().ki * cumulative_error + read_pid_const().kd * difference;
+    # correction = read_pid_const().kp * error + read_pid_const().ki * cumulative_error + read_pid_const().kd * difference;
     prev_error = error;
-
+    {error,prev_error}
   end
 
   @doc """
