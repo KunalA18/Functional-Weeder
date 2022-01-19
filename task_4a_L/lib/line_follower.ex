@@ -65,7 +65,9 @@ defmodule Line_follower do
     right_duty_cycle = if right_duty_cycle > @higher_duty_cycle do
                         right_duty_cycle = @higher_duty_cycle
                       end
-
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    motor_action(motor_ref, @forward)
+    my_motion(left_duty_cycle,right_duty_cycle)
 
     line_follow(error,prev_error,cumulative_error,left_duty_cycle,right_duty_cycle)
   end
@@ -152,6 +154,14 @@ defmodule Line_follower do
     {error,prev_error,correction}
   end
 
+  def my_motion(left_duty_cycle,right_duty_cycle) do
+    IO.inspect(left_duty_cycle)
+    IO.inspect(right_duty_cycle)
+    {_,lvalue} = Enum.at(@pwm_pins,0)
+    {_,rvalue} = Enum.at(@pwm_pins,1)
+    Pigpiox.Pwm.gpio_pwm(lvalue, left_duty_cycle)
+    Pigpiox.Pwm.gpio_pwm(rvalue, right_duty_cycle)
+  end
   @doc """
   Tests white line sensor modules reading
 
@@ -348,7 +358,7 @@ defmodule Line_follower do
   """
   defp motor_action(motor_ref,motion) do
     motor_ref |> Enum.zip(motion) |> Enum.each(fn {{_, ref_no}, value} -> GPIO.write(ref_no, value) end)
-    Process.sleep(500)
+    Process.sleep(2000)
   end
 
   @doc """
