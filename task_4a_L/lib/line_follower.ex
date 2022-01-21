@@ -7,8 +7,8 @@ defmodule Line_follower do
   @ir_pins [dr: 16, dl: 19]
   @motor_pins [lf: 12, lb: 13, rf: 20, rb: 21]
   @pwm_pins [enl: 6, enr: 26]
-  @servo_a_pin 27
-  @servo_b_pin 22
+  # @servo_a_pin 27
+  # @servo_b_pin 22
 
   @ref_atoms [:cs, :clock, :address, :dataout]
   @lf_sensor_data %{sensor0: 0, sensor1: 0, sensor2: 0, sensor3: 0, sensor4: 0, sensor5: 0}
@@ -30,13 +30,13 @@ defmodule Line_follower do
   @duty_cycles [100, 70, 0]
   @pwm_frequency 50
 
-  @black_MARGIN 600
+  @black_MARGIN 500
   @white_MARGIN 1000
-  @weights [0, -3, -1, 0, 1, 3]
+  @weights [0, -2, -1, 1, 2, 0]
 
-  @optimum_duty_cycle 120
-  @lower_duty_cycle 100
-  @higher_duty_cycle 140
+  @optimum_duty_cycle 70
+  @lower_duty_cycle 50
+  @higher_duty_cycle 90
   # float left_duty_cycle = 0, right_duty_cycle = 0;
 
   def initialize do
@@ -58,32 +58,41 @@ defmodule Line_follower do
     left_duty_cycle = @optimum_duty_cycle - correction
     right_duty_cycle = @optimum_duty_cycle + correction
 
-    left_duty_cycle =
-      if left_duty_cycle < @lower_duty_cycle do
-        left_duty_cycle = @lower_duty_cycle
-      end
-
-    left_duty_cycle =
-      if left_duty_cycle > @higher_duty_cycle do
-        left_duty_cycle = @higher_duty_cycle
-      end
-
-    right_duty_cycle =
-      if right_duty_cycle < @lower_duty_cycle do
-        right_duty_cycle = @lower_duty_cycle
-      end
-
-    right_duty_cycle =
-      if right_duty_cycle > @higher_duty_cycle do
-        right_duty_cycle = @higher_duty_cycle
-      end
-
-    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
-    motor_action(motor_ref, @forward)
-    my_motion(left_duty_cycle, right_duty_cycle)
     # IO.inspect(correction)
     # IO.inspect(left_duty_cycle)
     # IO.inspect(right_duty_cycle)
+
+    # left_duty_cycle =
+    #   if left_duty_cycle > @higher_duty_cycle do
+    #     left_duty_cycle = @higher_duty_cycle
+    #   end
+
+
+    # left_duty_cycle =
+    #   if left_duty_cycle < @lower_duty_cycle do
+    #     left_duty_cycle = @lower_duty_cycle
+    #   end
+
+
+
+    # right_duty_cycle =
+    #   if right_duty_cycle < @lower_duty_cycle do
+    #     right_duty_cycle = @lower_duty_cycle
+    #   end
+
+    # right_duty_cycle =
+    #   if right_duty_cycle > @higher_duty_cycle do
+    #     right_duty_cycle = @higher_duty_cycle
+    #   end
+
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    motor_action(motor_ref, @forward)
+    my_motion(left_duty_cycle,right_duty_cycle)
+
+    # IO.inspect(correction)
+    # IO.inspect(left_duty_cycle)
+    # IO.inspect(right_duty_cycle)
+
 
     line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle)
   end
@@ -183,7 +192,7 @@ defmodule Line_follower do
       end
 
     # correction = read_pid_const().kp * error + read_pid_const().ki * cumulative_error + read_pid_const().kd * difference;
-    correction = 1.7 * error + 0.0001 * cumulative_error + 0 * difference
+    correction = 0.9 * error + 0.00001 * cumulative_error + 0 * difference
     prev_error = error
     {error, prev_error, correction}
   end
@@ -312,7 +321,7 @@ defmodule Line_follower do
         analog_read(sens_num, sensor_ref, Enum.fetch(temp_sensor_list, sens_idx))
       end)
 
-    # IO.inspect(my_sens_list)
+    IO.inspect(my_sens_list)
 
     bounded_sens_list_L =
       my_sens_list
