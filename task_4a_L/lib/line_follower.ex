@@ -55,8 +55,8 @@ defmodule Line_follower do
     {error, prev_error} = calculate_error(map_sens_list, error, prev_error)
     {error, prev_error, correction} = calculate_correction(error, prev_error, cumulative_error)
 
-    left_duty_cycle = @optimum_duty_cycle - correction
-    right_duty_cycle = @optimum_duty_cycle + correction
+    left_duty_cycle = round(@optimum_duty_cycle - correction)
+    right_duty_cycle = round(@optimum_duty_cycle + correction)
 
     # IO.inspect(correction)
     # IO.inspect(left_duty_cycle)
