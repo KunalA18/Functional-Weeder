@@ -5,6 +5,8 @@ defmodule Task4CClientRobotA do
   @table_top_y :f
   # mapping of y-coordinates
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5, :f => 6}
+  # maps directions to numbers
+  @dir_to_num %{:north => 1, :east => 2, :south => 3, :west => 4}
 
   @doc """
   Places the robot to the default position of (1, A, North)
@@ -52,6 +54,26 @@ defmodule Task4CClientRobotA do
     place(x, y, facing)
   end
 
+  def process_start_message(start_map) do
+    data = start_map["A"]
+    x = Enum.at(data, 0) |> String.to_integer
+    y = Enum.at(data, 1)
+    y = Regex.replace(~r/ /, y, "") |> String.to_atom #Regex to remove all spaces in the string
+    dir = Enum.at(data, 2)
+    dir =  Regex.replace(~r/ /, dir, "") |> String.to_atom #Regex to remove all spaces in the string
+
+    {x,y,dir}
+  end
+
+  def wait_for_start(start_map, channel) do
+    Process.sleep(2000)
+    {:ok, start_map} = Task4CClientRobotA.PhoenixSocketClient.get_start(channel)
+    if Map.get(start_map, "A") == nil do
+      wait_for_start(start_map, channel)
+    else
+      process_start_message(start_map)
+    end
+  end
   @doc """
   Main function to initiate the sequence of tasks to achieve by the Client Robot A,
   such as connect to the Phoenix server, get the robot A's start and goal locations to be traversed.
@@ -59,19 +81,95 @@ defmodule Task4CClientRobotA do
   You may create extra helper functions as needed.
   """
   def main(args) do
+    #Connect to server
     {:ok, _response, channel} = Task4CClientRobotA.PhoenixSocketClient.connect_server()
     # IO.inspect(channel, "Channel")
 
     #function to get goal positions
 
-    {:ok, robot} = start(1, :a, :north)
+    {:ok, goals_string} = Task4CClientRobotA.PhoenixSocketClient.get_goals(channel)
+    goal_locs = calculate_goals(goals_string)
 
-    IO.inspect(Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot))
-    IO.inspect(Task4CClientRobotA.PhoenixSocketClient.get_goals(channel))
+    {start_x, start_y, start_dir} = wait_for_start(%{A: nil, B: nil}, channel) #{1, :a, :north}
+
+    {:ok, robot} = start(start_x, start_y, start_dir)
+
+    Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+
+    robot = move(robot)
+
+    Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+
+
+
     ###########################
     ## complete this funcion ##
     ###########################
 
+  end
+
+  def calculate_goals(goals_string) do
+    #Arena description
+
+    #########################
+    # 31# 32# 33# 34# 35# 36#
+    #########################
+    # 1 # 2 # 3 # 4 # 5 # 6 #
+    #########################
+
+    goal_locs = Enum.reduce(goals_string, [], fn s, acc ->
+      i = String.to_integer(s)
+      last_digit = rem(i, 10)
+      first_digit = Integer.floor_div(i, 10)
+      convert_to_loc(first_digit, last_digit, acc)
+    end)
+  end
+
+  def convert_to_loc(first_digit, last_digit, acc) do
+    acc = if (first_digit == 0) do
+      if last_digit <= 5 do
+        x = Integer.to_string(last_digit)
+        x = if x == "0", do: "5", else: x
+        y = "a"
+        acc ++ [[x,y]]
+      else
+        x = Integer.to_string(last_digit - 5)
+        x = if x == "0", do: "5", else: x
+        y = "b"
+        acc ++ [[x,y]]
+      end
+    else
+      if (first_digit == 1) do
+        if last_digit <= 5 do
+          x = Integer.to_string(last_digit)
+          x = if x == "0", do: "5", else: x
+          y = "c"
+          acc ++ [[x,y]]
+        else
+          x = Integer.to_string(last_digit - 5)
+          x = if x == "0", do: "5", else: x
+          y = "d"
+          acc ++ [[x,y]]
+        end
+      else
+        if (first_digit == 2) do
+          if last_digit <= 5 do
+            x = Integer.to_string(last_digit)
+            x = if x == "0", do: "5", else: x
+            y = "e"
+            acc ++ [[x,y]]
+          else
+            x = Integer.to_string(last_digit - 5)
+            x = if x == "0", do: "5", else: x
+            y = "f"
+            acc ++ [[x,y]]
+          end
+        else
+          acc
+        end
+
+      end
+    end
   end
 
   @doc """

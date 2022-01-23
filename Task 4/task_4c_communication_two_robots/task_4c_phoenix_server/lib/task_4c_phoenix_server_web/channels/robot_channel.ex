@@ -9,6 +9,10 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
   def join("robot:status", _params, socket) do
     Task4CPhoenixServerWeb.Endpoint.subscribe("robot:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
+    {:ok, agent} = Agent.start_link(fn -> %{} end)
+
+    Process.register(agent, :start_store)
+
     {:ok, socket}
   end
 
@@ -28,9 +32,26 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
 
   If an obstacle is present ahead of the robot, then broadcast the pixel location of the obstacle to be displayed on the Dashboard.
   """
+  @robot_map_y_string_to_num %{"a" => 1, "b" => 2, "c" => 3, "d" => 4, "e" => 5, "f" => 6}
+
   def handle_in("new_msg", message, socket) do
 
-    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", %{msg: "value"})
+    # decodes the message
+    x = message["x"]
+    y = message["y"]
+    facing = message["face"]
+    robot = message["robot"] #A or B
+    goals = message["goals"]
+    # pixel values and facing
+    y = @robot_map_y_string_to_num[y] #converts y's string to a number
+    left_value = 150 * (x - 1)
+    bottom_value = 150 * (y - 1)
+    face_value = facing
+
+    # creates a map for the output message
+    msg_map = %{"left" => left_value, "bottom" => bottom_value,"face" => face_value, "robot" => robot, "goals" => goals}
+
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update", msg_map})
 
     # determine the obstacle's presence in front of the robot and return the boolean value
     is_obs_ahead = Task4CPhoenixServerWeb.FindObstaclePresence.is_obstacle_ahead?(message["x"], message["y"], message["face"])
@@ -40,11 +61,44 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     # write the robot actions to a text file
     IO.binwrite(out_file, "#{message["client"]} => #{message["x"]}, #{message["y"]}, #{message["face"]}\n")
 
-    ###########################
-    ## complete this funcion ##
-    ###########################
+    ############################
+    ## complete this function ##
+    ############################
+    if is_obs_ahead do
+      {left, bottom} = get_obs_pixels(left_value, bottom_value, facing)
+      msg_obs = %{"position" => {left, bottom}}
+      Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update_obs", msg_obs})
+    end
 
     {:reply, {:ok, is_obs_ahead}, socket}
+  end
+
+  def get_obs_pixels(left_value, bottom_value, facing) do
+    bottom_value = if facing == "north" do
+      bottom_value = bottom_value + 75
+    else
+      bottom_value
+    end
+
+    bottom_value = if facing == "south" do
+      bottom_value = bottom_value - 75
+    else
+      bottom_value
+    end
+
+    left_value = if facing == "east" do
+      left_value = left_value + 75
+    else
+      left_value
+    end
+
+    left_value = if facing == "west" do
+      left_value = left_value - 75
+    else
+      left_value
+    end
+
+    {left_value, bottom_value}
   end
 
   #########################################
@@ -62,9 +116,22 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     {:reply, {:ok, csv}, socket}
   end
 
-  def handle_info(data, socket) do
+  def handle_in("start_msg", message, socket) do
 
-    IO.inspect(data, label: "Data is sent from PubSub")
+    msg = Agent.get(:start_store, fn map -> map end)
+
+    #Split strings into lists
+    start_A = if Map.get(msg, :A) != nil, do: String.split(Map.get(msg, :A), ","), else: nil
+    start_B = if Map.get(msg, :B) != nil, do: String.split(Map.get(msg, :B), ","), else: nil
+
+    msg = %{A: start_A, B: start_B}
+    {:reply, {:ok, msg}, socket}
+  end
+
+  def handle_info({"start", data}, socket) do
+
+    IO.inspect(data, label: "Data is sent to Channel PubSub")
+    Agent.update(:start_store, fn map -> data end)
     ###########################
     ## complete this funcion ##
     ###########################

@@ -14,18 +14,19 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
 
     Task4CPhoenixServerWeb.Endpoint.subscribe("robot:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "timer:update")
-    :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
+    # :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
+    :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "view:update")
 
     socket = assign(socket, :img_robotA, "robot_facing_north.png")
     socket = assign(socket, :bottom_robotA, 0)
     socket = assign(socket, :left_robotA, 0)
-    socket = assign(socket, :robotA_start, "")
+    socket = assign(socket, :robotA_start, "5, a, north")
     socket = assign(socket, :robotA_goals, [])
 
     socket = assign(socket, :img_robotB, "robot_facing_south.png")
     socket = assign(socket, :bottom_robotB, 750)
     socket = assign(socket, :left_robotB, 750)
-    socket = assign(socket, :robotB_start, "")
+    socket = assign(socket, :robotB_start, "5, e, south")
     socket = assign(socket, :robotB_goals, [])
 
     socket = assign(socket, :obstacle_pos, MapSet.new())
@@ -181,8 +182,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     socket = assign(socket, :robotB_start, data["robotB_start"])
     Task4CPhoenixServerWeb.Endpoint.broadcast("timer:start", "start_timer", %{})
 
-    IO.inspect(socket.assigns.robotA_start)
-    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", %{msg: "value"})
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", {"start", %{A: socket.assigns.robotA_start, B: socket.assigns.robotB_start}})
     #################################
     ## edit the function if needed ##
     #################################
@@ -229,8 +229,8 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
   Make sure to add a tuple of format: { < obstacle_x >, < obstacle_y > } to the MapSet object "obstacle_pos".
   These values must be in pixels. You may handle these variables in separate callback functions as well.
   """
-  def handle_info(data, socket) do
-    IO.inspect(data, label: "Data is sent from PubSub to ArenaLive")
+  def handle_info({"move", data}, socket) do
+    IO.inspect(data, label: "Data is sent to ArenaLive PubSub move")
     ###########################
     ## complete this funcion ##
     ###########################
@@ -239,6 +239,57 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
 
   end
 
+  def handle_info({"update", data}, socket) do
+    IO.inspect(data, label: "Data is sent to ArenaLive PubSub")
+    ###########################
+    ## complete this funcion ##
+    ###########################
+    img_name = get_img(data["face"])
+    # goal_list = data["goals"]
+    # var = Enum.map(goal_list, fn s -> String.to_integer(s) end)
+    # IO.inspect(var, label: "goals in data")
+
+    #Assign values according to the robot it is
+    socket = if data["robot"] == "A" do
+      socket = assign(socket, :img_robotA, img_name)
+      socket = assign(socket, :bottom_robotA, data["bottom"])
+      socket = assign(socket, :left_robotA, data["left"])
+      #Need to add goal updation somehow
+      socket = assign(socket, :robotA_goals, data["goals"])
+
+    else
+      socket = assign(socket, :img_robotB, img_name)
+      socket = assign(socket, :bottom_robotB, data["bottom"])
+      socket = assign(socket, :left_robotB, data["left"])
+      socket = assign(socket, :robotB_goals, data["goals"])
+    end
+    # assigns data to the socket to update the LiveView
+
+    {:noreply, socket}
+
+  end
+
+  def handle_info({"update_obs", data}, socket) do
+    IO.inspect(data, label: "Data send to update_obs")
+    #elem(obs,0)
+    #"bottom: #{elem(obs,1)}px; left: #{elem(obs,0)}px"
+    #{left, bottom} px value
+    #socket.assigns.obstacle_pos Syntax to get the MapSet
+    #Each cell is 150x150 pixels
+    mapset = MapSet.put(socket.assigns.obstacle_pos, data["position"])
+    # IO.inspect(mapset)
+    socket = assign(socket, :obstacle_pos, mapset)
+
+    {:noreply, socket}
+  end
+
+  def get_img(direction) do
+    ans = "robot_facing_north.png"
+    ans = if direction == "south", do: "robot_facing_south.png", else: ans
+    ans = if direction == "east", do: "robot_facing_east.png", else: ans
+    ans = if direction == "west", do: "robot_facing_west.png", else: ans
+    ans
+  end
   ######################################################
   ## You may create extra helper functions as needed  ##
   ## and update remaining assign variables.           ##
