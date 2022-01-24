@@ -97,8 +97,6 @@ defmodule CLI.ToyRobotA do
     ###########################
 
     Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
-    # Agent.update(:goal_store, fn list -> [goal_locs | list] end)
-    # list = Agent.get(:goal_store, fn list -> list end)
 
     # goal_loc format => [["3", "d"], ["2", "c"]]
     {r_x, r_y, _facing} = report(robot)
@@ -133,7 +131,6 @@ defmodule CLI.ToyRobotA do
 
   def compare_with_store(distance_array) do
     key_list = Agent.get(:goal_store, fn list -> list end)
-
     Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
   end
 
