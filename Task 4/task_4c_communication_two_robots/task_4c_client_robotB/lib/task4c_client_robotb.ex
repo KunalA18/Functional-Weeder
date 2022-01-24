@@ -82,7 +82,6 @@ defmodule Task4CClientRobotB do
   You may create extra helper functions as needed.
   """
   def main (args) do
-
     #Connect to server
     {:ok, _response, channel} = Task4CClientRobotB.PhoenixSocketClient.connect_server()
     # IO.inspect(channel, "Channel")
@@ -91,12 +90,13 @@ defmodule Task4CClientRobotB do
 
     {:ok, goals_string} = Task4CClientRobotB.PhoenixSocketClient.get_goals(channel)
     goal_locs = calculate_goals(goals_string)
+    IO.inspect(goal_locs, label: "Goal locations:")
 
     {start_x, start_y, start_dir} = wait_for_start(%{A: nil, B: nil}, channel) #{1, :a, :north}
 
     {:ok, robot} = start(start_x, start_y, start_dir)
 
-    # Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+    Task4CClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
 
     ###########################
     ## complete this funcion ##

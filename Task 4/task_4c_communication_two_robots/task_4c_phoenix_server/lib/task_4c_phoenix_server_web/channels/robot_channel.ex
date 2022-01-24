@@ -9,8 +9,13 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
   def join("robot:status", _params, socket) do
     Task4CPhoenixServerWeb.Endpoint.subscribe("robot:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
-    {:ok, agent} = Agent.start_link(fn -> %{} end)
-    Process.register(agent, :start_store)
+
+    if Process.whereis(:start_store) == nil do
+      {:ok, agent} = Agent.start_link(fn -> %{} end)
+      Process.register(agent, :start_store)
+
+    end
+
 
     # #Agents to store the info supplied by clients which is used for navigation
     # {:ok, pid} = Agent.start_link(fn -> %{} end)
