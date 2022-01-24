@@ -10,8 +10,26 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     Task4CPhoenixServerWeb.Endpoint.subscribe("robot:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
     {:ok, agent} = Agent.start_link(fn -> %{} end)
-
     Process.register(agent, :start_store)
+
+    # #Agents to store the info supplied by clients which is used for navigation
+    # {:ok, pid} = Agent.start_link(fn -> %{} end)
+    # Process.register(pid, :coords_store)
+
+    # {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
+    # Process.register(pid_prev, :previous_store_A)
+
+    # {:ok, pid_prev} = Agent.start(fn -> %{} end)
+    # Process.register(pid_prev, :previous_store_B)
+
+    # {:ok, pid_choice} = Agent.start_link(fn -> %{} end)
+    # Process.register(pid_choice, :goal_choice)
+
+    # {:ok, pid_turns} = Agent.start_link(fn -> %{} end)
+    # Process.register(pid_turns, :turns)
+    # # These inputs signify that it is A's turn
+    # Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+    # Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
 
     {:ok, socket}
   end

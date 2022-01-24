@@ -20,7 +20,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     socket = assign(socket, :img_robotA, "robot_facing_north.png")
     socket = assign(socket, :bottom_robotA, 0)
     socket = assign(socket, :left_robotA, 0)
-    socket = assign(socket, :robotA_start, "5, a, north")
+    socket = assign(socket, :robotA_start, "1, a, north")
     socket = assign(socket, :robotA_goals, [])
 
     socket = assign(socket, :img_robotB, "robot_facing_south.png")
