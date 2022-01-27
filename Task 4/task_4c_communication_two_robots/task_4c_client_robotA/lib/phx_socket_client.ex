@@ -106,6 +106,13 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
     turns_map
   end
 
+  def goal_store_get(channel) do
+    {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goal_store_get", %{})
+    #IO.inspect(goal_map["list"], label: "Goal Store Output")
+    Enum.map(goal_list["list"], fn s -> String.to_atom(s) end)
+
+  end
+
 
   ##############
   ### UPDATE ###
@@ -119,6 +126,14 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
   def previous_store_update(channel, {x, y, facing} = _msg) do
     message = %{x: x, y: y, face: facing, client: "robot_A"}
     {:ok, _} = PhoenixClient.Channel.push(channel, "previous_store_update", message)
+  end
+
+  def goal_store_update(channel, msg) do
+    {:ok, _} = PhoenixClient.Channel.push(channel, "goal_store_update", %{list: msg})
+  end
+
+  def goal_store_delete(channel, key) do
+    {:ok, _} = PhoenixClient.Channel.push(channel, "goal_store_delete", %{key: key})
   end
 
 

@@ -206,16 +206,20 @@ defmodule Task4CClientRobotA do
     # Sort out the goal locs
     distance_array = sort_according_to_distance(r_x, r_y, goal_locs)
 
-    {:ok, pid_goal} = Agent.start_link(fn -> Keyword.keys(distance_array) end)
-    Process.register(pid_goal, :goal_store)
+    # {:ok, pid_goal} = Agent.start_link(fn -> Keyword.keys(distance_array) end)
+    # Process.register(pid_goal, :goal_store)
 
     # ["2d":4]
+    Task4CClientRobotA.PhoenixSocketClient.goal_store_update(channel, Keyword.keys(distance_array))
+    Task4CClientRobotA.PhoenixSocketClient.goal_store_get(channel)
+
     k_a = Integer.to_string(r_x) <> Atom.to_string(r_y)
 
-    Agent.update(:goal_store, &List.delete(&1, String.to_atom(k_a)))
+    Task4CClientRobotA.PhoenixSocketClient.goal_store_delete(channel, k_a)
+    # Agent.update(:goal_store, &List.delete(&1, String.to_atom(k_a)))
 
     #function to compare the agent with the current and return only vals that satisy
-    distance_array = compare_with_store(distance_array)
+    distance_array = compare_with_store(distance_array, channel)
 
     if length(distance_array) == 0 do
       # send status of the start location
@@ -228,9 +232,9 @@ defmodule Task4CClientRobotA do
     end
   end
 
-  def compare_with_store(distance_array) do
-    key_list = Agent.get(:goal_store, fn list -> list end)
-
+  def compare_with_store(distance_array, channel) do
+    # key_list = Agent.get(:goal_store, fn list -> list end)
+    key_list = Task4CClientRobotA.PhoenixSocketClient.goal_store_get(channel)
     Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
   end
 
@@ -279,8 +283,10 @@ defmodule Task4CClientRobotA do
       {x, y, _facing} = report(robot)
       key_current = Integer.to_string(x) <> Atom.to_string(y)
 
-      Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
-      distance_array = compare_with_store(distance_array)
+      # Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
+
+      Task4CClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
+      distance_array = compare_with_store(distance_array, channel)
 
       visited = []
 
@@ -406,10 +412,11 @@ defmodule Task4CClientRobotA do
 
         #Update the goal store to delete the goal entry if A has reached a goal
         key_current = Integer.to_string(x) <> Atom.to_string(y)
-        Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
+        # Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
+        Task4CClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
 
         #get the updated distance array
-        distance_array = compare_with_store(distance_array)
+        distance_array = compare_with_store(distance_array, channel)
         #IO.inspect(distance_array, label: "A's distance array")
 
         #Re-sort the list and change the goals

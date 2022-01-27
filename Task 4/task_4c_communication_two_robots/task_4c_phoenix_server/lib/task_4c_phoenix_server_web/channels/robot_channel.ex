@@ -25,6 +25,8 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     end
 
     if Process.whereis(:goal_choice) == nil do
+      #Only useful for dynamic goal changing
+      #So not really implementing rn
       {:ok, pid_choice} = Agent.start_link(fn -> %{} end)
       Process.register(pid_choice, :goal_choice)
     end
@@ -33,6 +35,11 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
       {:ok, pid_turns} = Agent.start_link(fn -> %{} end)
       Process.register(pid_turns, :turns)
     end
+    if Process.whereis(:goal_store) == nil do
+      {:ok, pid_goal} = Agent.start_link(fn -> %{} end)
+      Process.register(pid_goal, :goal_store)
+    end
+
     # These inputs signify that it is A's turn
     # Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
     # Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
@@ -212,8 +219,6 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     else
       Agent.get(:goal_choice, fn map -> Map.get(map, :B) end)
     end
-
-
     {:reply, {:ok, msg}, socket}
   end
 
@@ -225,6 +230,11 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
       Agent.get(:turns, fn map -> Map.get(map, :B) end)
     end
     {:reply, {:ok, msg}, socket}
+  end
+
+  def handle_in("goal_store_get", message, socket) do
+    list_goal = Agent.get(:goal_store, fn list -> list end)
+    {:reply, {:ok, %{list: list_goal}}, socket}
   end
 
   ############
@@ -254,6 +264,32 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     else
       Agent.update(:previous_store_B, fn map -> Map.put(map, :prev, {x, y, facing}) end)
     end
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("goal_choice_update", message, socket) do
+    x = message["x"]
+    y = message["y"]
+    facing = message["face"]
+    IO.inspect(message, label: "Previous Update Message")
+    if message["client"] == "robot_A" do
+      Agent.update(:goal_choice, fn map -> Map.put(map, :A, {x, y, facing}) end)
+    else
+      Agent.update(:goal_choice, fn map -> Map.put(map, :B, {x, y, facing}) end)
+    end
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("goal_store_update", message, socket) do
+    IO.inspect(message["list"], label: "Received data for goal store")
+    Agent.update(:goal_store, fn map -> message["list"] end)
+    {:reply, :ok, socket}
+  end
+
+
+  def handle_in("goal_store_delete", message, socket) do
+    # IO.inspect(message["list"], label: "Received data for goal store")
+    Agent.update(:goal_store, &List.delete(&1, message["key"]))
     {:reply, :ok, socket}
   end
 
