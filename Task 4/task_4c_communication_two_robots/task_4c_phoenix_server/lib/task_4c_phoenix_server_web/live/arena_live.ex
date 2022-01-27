@@ -230,7 +230,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
   These values must be in pixels. You may handle these variables in separate callback functions as well.
   """
   def handle_info({"move", data}, socket) do
-    IO.inspect(data, label: "Data is sent to ArenaLive PubSub move")
+    #IO.inspect(data, label: "Data is sent to ArenaLive PubSub move")
     ###########################
     ## complete this funcion ##
     ###########################
@@ -240,7 +240,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
   end
 
   def handle_info({"update", data}, socket) do
-    IO.inspect(data, label: "Data is sent to ArenaLive PubSub")
+    #IO.inspect(data, label: "Data is sent to ArenaLive PubSub")
     ###########################
     ## complete this funcion ##
     ###########################

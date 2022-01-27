@@ -75,6 +75,17 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
   def get_start(channel) do
     {:ok, start_map} = PhoenixClient.Channel.push(channel, "start_msg", %{})
   end
+
+  def coords_store_get(channel) do
+    {:ok, coord_map} = PhoenixClient.Channel.push(channel, "coords_store_get", %{A: "A", B: nil})
+  end
+
+  def previous_store_get(channel) do
+    {:ok, prev_map} = PhoenixClient.Channel.push(channel, "previous_store_get", %{A: "A", B: nil})
+  end
+
+
+
   ######################################################
   ## You may create extra helper functions as needed. ##
   ######################################################

@@ -98,6 +98,10 @@ defmodule Task4CClientRobotB do
 
     Task4CClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
 
+    stop(robot, goal_locs, channel)
+
+    #We need to move all agents onto the server
+
     ###########################
     ## complete this funcion ##
     ###########################
@@ -168,11 +172,48 @@ defmodule Task4CClientRobotB do
   end
 
 
+  def wait_for_agent() do
+    if Process.whereis(:coords_store) == nil or Process.whereis(:goal_store) == nil or Process.whereis(:turns) == nil or Process.whereis(:goal_choice) == nil do
+      wait_for_agent()
+    end
+  end
   @doc """
   Provide GOAL positions to the robot as given location of [(x1, y1),(x2, y2),..] and plan the path from START to these locations.
   Make a call to ToyRobot.PhoenixSocketClient.send_robot_status/2 to get the indication of obstacle presence ahead of the robot.
   """
-  def stop(robot, goal_locs) do
+  def stop(robot, goal_locs, channel) do
+    # Wait for the Agent to be created
+    # wait_for_agent()
+
+    {:ok, pid_prev} = Agent.start(fn -> %{} end)
+    Process.register(pid_prev, :previous_store_B)
+
+    ###########################
+    ## complete this funcion ##
+    ###########################
+    Agent.update(:coords_store, fn map -> Map.put(map, :B, report(robot)) end)
+    # goal_loc format => [["3", "d"], ["2", "c"]]
+    {r_x, r_y, _facing} = report(robot)
+
+    # Sort out the goal locs
+    distance_array = sort_according_to_distance(r_x, r_y, goal_locs)
+    # ["2d":4]
+
+    k_b = Integer.to_string(r_x) <> Atom.to_string(r_y)
+
+    Agent.update(:goal_store, &List.delete(&1, String.to_atom(k_b)))
+
+    #function to compare the agent with the current and return only vals that satisy
+    distance_array = compare_with_store(distance_array)
+
+    if length(distance_array) == 0 do
+      # send status of the start location
+      {:obstacle_presence, obs_ahead} = Task4CClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+    else
+      Agent.update(:goal_choice, fn map -> Map.put(map, :B, {Enum.at(distance_array, 0)}) end)
+      # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
+      #loop_through_goal_locs(distance_array, robot, channel)
+    end
 
     ###########################
     ## complete this funcion ##
@@ -180,6 +221,65 @@ defmodule Task4CClientRobotB do
 
   end
 
+  def compare_with_store(distance_array) do
+    key_list = Agent.get(:goal_store, fn list -> list end)
+
+    Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
+  end
+
+  def wait_for_a_choice() do
+    if Agent.get(:goal_choice, fn map -> Map.get(map, :A) end) == nil do
+      wait_for_a_choice()
+    end
+  end
+
+  def sort_according_to_distance(r_x, r_y, goal_locs) do
+    distance_array =
+      Enum.map(goal_locs, fn [x, y] ->
+        {p_x, _} = Integer.parse(x)
+        p_y = @robot_map_y_atom_to_num[String.to_atom(y)]
+
+        d =
+          distance(
+            p_x,
+            p_y,
+            r_x,
+            @robot_map_y_atom_to_num[r_y]
+          )
+
+        s = String.to_atom(x <> y)
+        {s, d}
+      end)
+
+    # Re-arrange goal locs according to distance array
+    distance_array |> List.keysort(1)
+  end
+
+
+
+
+
+  def calculate_next_position(x, y, facing) do
+    y = @robot_map_y_atom_to_num[y]
+    coord = {x, y}
+    coord = if facing == :north, do: {x, y + 1}, else: coord
+    coord = if facing == :south, do: {x, y - 1}, else: coord
+    coord = if facing == :east, do: {x + 1, y}, else: coord
+    coord = if facing == :west, do: {x - 1, y}, else: coord
+    coord
+  end
+
+  def eliminate_out_of_bounds(squares, x, y) do
+    {_, squares} = if x + 1 > 5, do: Keyword.pop(squares, :east), else: {:ok, squares}
+    {_, squares} = if x - 1 < 1, do: Keyword.pop(squares, :west), else: {:ok, squares}
+    {_, squares} = if y + 1 > 5, do: Keyword.pop(squares, :north), else: {:ok, squares}
+    {_, squares} = if y - 1 < 1, do: Keyword.pop(squares, :south), else: {:ok, squares}
+    squares
+  end
+
+  def distance(x1, y1, x2, y2) do
+    abs(x1 - x2) + abs(y1 - y2)
+  end
   @doc """
   Provides the report of the robot's current position
 

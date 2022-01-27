@@ -1,6 +1,43 @@
 defmodule Task4CPhoenixServerWeb.RobotChannel do
   use Phoenix.Channel
 
+  def start_agents() do
+    #Apparently some Agents exist and some don't when B calls this process
+    #So seperate conditions for each seems best
+    if Process.whereis(:start_store) == nil do
+      {:ok, agent} = Agent.start_link(fn -> %{} end)
+      Process.register(agent, :start_store)
+    end
+
+    if Process.whereis(:coords_store) == nil do
+      {:ok, pid} = Agent.start_link(fn -> %{} end)
+      Process.register(pid, :coords_store)
+    end
+
+    if Process.whereis(:previous_store_A) == nil do
+      {:ok, pid_prev_a} = Agent.start_link(fn -> %{} end)
+      Process.register(pid_prev_a, :previous_store_A)
+    end
+
+    if Process.whereis(:previous_store_B) == nil do
+      {:ok, pid_prev_b} = Agent.start(fn -> %{} end)
+      Process.register(pid_prev_b, :previous_store_B)
+    end
+
+    if Process.whereis(:goal_choice) == nil do
+      {:ok, pid_choice} = Agent.start_link(fn -> %{} end)
+      Process.register(pid_choice, :goal_choice)
+    end
+
+    if Process.whereis(:turns) == nil do
+      {:ok, pid_turns} = Agent.start_link(fn -> %{} end)
+      Process.register(pid_turns, :turns)
+    end
+    # These inputs signify that it is A's turn
+    # Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+    # Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+  end
+
   @doc """
   Handler function for any Client joining the channel with topic "robot:status".
   Subscribe to the topic named "robot:update" on the Phoenix Server using Endpoint.
@@ -10,31 +47,11 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     Task4CPhoenixServerWeb.Endpoint.subscribe("robot:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
 
-    if Process.whereis(:start_store) == nil do
-      {:ok, agent} = Agent.start_link(fn -> %{} end)
-      Process.register(agent, :start_store)
-
-    end
+    #IO.inspect(Process.registered, label: "Whereis Result")
 
 
-    # #Agents to store the info supplied by clients which is used for navigation
-    # {:ok, pid} = Agent.start_link(fn -> %{} end)
-    # Process.register(pid, :coords_store)
-
-    # {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
-    # Process.register(pid_prev, :previous_store_A)
-
-    # {:ok, pid_prev} = Agent.start(fn -> %{} end)
-    # Process.register(pid_prev, :previous_store_B)
-
-    # {:ok, pid_choice} = Agent.start_link(fn -> %{} end)
-    # Process.register(pid_choice, :goal_choice)
-
-    # {:ok, pid_turns} = Agent.start_link(fn -> %{} end)
-    # Process.register(pid_turns, :turns)
-    # # These inputs signify that it is A's turn
-    # Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
-    # Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+    #Agents to store the info supplied by clients which is used for robot communication
+    start_agents()
 
     {:ok, socket}
   end
@@ -151,9 +168,29 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     {:reply, {:ok, msg}, socket}
   end
 
+  def handle_in("coords_store_get", message, socket) do
+    IO.inspect(message, label: "Co-ords Store Get message")
+    msg = if message["A"] != nil do
+      Agent.get(:coords_store, fn map -> Map.get(map, :A) end)
+    else
+      Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
+    end
+    {:reply, {:ok, msg}, socket}
+  end
+
+  def handle_in("previous_store_get", message, socket) do
+    IO.inspect(message, label: "Previous Store Get message")
+    msg = if message["A"] != nil do
+      Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end)
+    else
+      Agent.get(:previous_store_B, fn map -> Map.get(map, :prev) end)
+    end
+    {:reply, {:ok, msg}, socket}
+  end
+
   def handle_info({"start", data}, socket) do
 
-    IO.inspect(data, label: "Data is sent to Channel PubSub")
+    #IO.inspect(data, label: "Data is sent to Channel PubSub")
     Agent.update(:start_store, fn map -> data end)
     ###########################
     ## complete this funcion ##

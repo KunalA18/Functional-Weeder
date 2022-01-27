@@ -177,6 +177,8 @@ defmodule Task4CClientRobotA do
     {:ok, pid} = Agent.start_link(fn -> %{} end)
     Process.register(pid, :coords_store)
 
+    Task4CClientRobotA.PhoenixSocketClient.coords_store_get(channel)
+
     {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
     Process.register(pid_prev, :previous_store_A)
 
