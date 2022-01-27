@@ -56,7 +56,7 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
     goals_string = convert_to_numbers(goal_locs)
     # IO.inspect(goals_string, label: "Goal string to be sent")
 
-    message = %{x: x, y: y, face: facing, robot: :A, goals: goals_string} #formats the message
+    message = %{client: "robot_A", x: x, y: y, face: facing, goals: goals_string} #formats the message
 
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
 
@@ -68,6 +68,10 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
 
   end
 
+
+  ###########
+  ### GET ###
+  ###########
   def get_goals (channel) do
     {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goals_msg", %{})
   end
@@ -77,11 +81,44 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
   end
 
   def coords_store_get(channel) do
-    {:ok, coord_map} = PhoenixClient.Channel.push(channel, "coords_store_get", %{A: "A", B: nil})
+    {:ok, coord_map} = PhoenixClient.Channel.push(channel, "coords_store_get", %{A: nil, B: "B"})
+    #Add further processing according to requirements
+    # IO.inspect(coord_map, label: "Co-ord Map recieved from Server")
+    new_coord_map = {coord_map["face"] |> String.to_atom, coord_map["x"], coord_map["y"] |> String.to_atom}
   end
 
   def previous_store_get(channel) do
     {:ok, prev_map} = PhoenixClient.Channel.push(channel, "previous_store_get", %{A: "A", B: nil})
+    new_prev_map = {prev_map["face"] |> String.to_atom, prev_map["x"], prev_map["y"] |> String.to_atom}
+  end
+
+  def goal_choice_get(channel) do
+    {:ok, choice_map} = PhoenixClient.Channel.push(channel, "goal_choice_get", %{A: "A", B: nil})
+    #Add further processing according to requirements
+    IO.inspect(choice_map, label: "Choice Map recieved from Server")
+    choice_map
+  end
+
+  def turns_get(channel) do
+    {:ok, turns_map} = PhoenixClient.Channel.push(channel, "turns_get", %{A: "A", B: nil})
+    #Add further processing according to requirements
+    IO.inspect(turns_map, label: "Turn Map recieved from Server")
+    turns_map
+  end
+
+
+  ##############
+  ### UPDATE ###
+  ##############
+
+  def coords_store_update(channel, {x, y, facing} = _msg) do
+    message = %{x: x, y: y, face: facing, client: "robot_A"}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "coords_store_update", message)
+  end
+
+  def previous_store_update(channel, {x, y, facing} = _msg) do
+    message = %{x: x, y: y, face: facing, client: "robot_A"}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "previous_store_update", message)
   end
 
 

@@ -80,7 +80,7 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     x = message["x"]
     y = message["y"]
     facing = message["face"]
-    robot = message["robot"] #A or B
+    client = message["client"] #robot_A or robot_B
     goals = message["goals"]
     # pixel values and facing
     y = @robot_map_y_string_to_num[y] #converts y's string to a number
@@ -89,7 +89,7 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     face_value = facing
 
     # creates a map for the output message
-    msg_map = %{"left" => left_value, "bottom" => bottom_value,"face" => face_value, "robot" => robot, "goals" => goals}
+    msg_map = %{"client" => client,"left" => left_value, "bottom" => bottom_value,"face" => face_value, "goals" => goals}
 
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update", msg_map})
 
@@ -165,27 +165,96 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     start_B = if Map.get(msg, :B) != nil, do: String.split(Map.get(msg, :B), ","), else: nil
 
     msg = %{A: start_A, B: start_B}
+
     {:reply, {:ok, msg}, socket}
   end
 
+  #########
+  ## GET ##
+  #########
+
   def handle_in("coords_store_get", message, socket) do
     IO.inspect(message, label: "Co-ords Store Get message")
-    msg = if message["A"] != nil do
-      Agent.get(:coords_store, fn map -> Map.get(map, :A) end)
+
+    if message["A"] == "A" do
+      res = Agent.get(:coords_store, fn map -> Map.get(map, :A) end)
+      {x, y, facing} = if res != nil, do: res, else: {1, "a", "north"}
+      message = %{x: x, y: y, face: facing}
+      {:reply, {:ok, message}, socket}
     else
-      Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
+      res = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
+      {x, y, facing} = if res != nil, do: res, else: {6, "e", "south"}
+      message = %{x: x, y: y, face: facing}
+      {:reply, {:ok, message}, socket}
     end
-    {:reply, {:ok, msg}, socket}
+
   end
 
   def handle_in("previous_store_get", message, socket) do
     IO.inspect(message, label: "Previous Store Get message")
-    msg = if message["A"] != nil do
-      Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end)
+    if message["A"] == "A" do
+      res = Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end)
+      {x, y, facing} = if res != nil, do: res, else: {1, "a", "north"}
+      message = %{x: x, y: y, face: facing}
+      {:reply, {:ok, message}, socket}
     else
-      Agent.get(:previous_store_B, fn map -> Map.get(map, :prev) end)
+      res = Agent.get(:previous_store_B, fn map -> Map.get(map, :prev) end)
+      {x, y, facing} = if res != nil, do: res, else: {6, "f", "south"}
+      message = %{x: x, y: y, face: facing}
+      {:reply, {:ok, message}, socket}
+    end
+  end
+
+  def handle_in("goal_choice_get", message, socket) do
+    IO.inspect(message, label: "Goal Choice Get message")
+    msg = if message["A"] != nil do
+      Agent.get(:goal_choice, fn map -> Map.get(map, :A) end)
+    else
+      Agent.get(:goal_choice, fn map -> Map.get(map, :B) end)
+    end
+
+
+    {:reply, {:ok, msg}, socket}
+  end
+
+  def handle_in("turns_get", message, socket) do
+    IO.inspect(message, label: "Turn Get message")
+    msg = if message["A"] != nil do
+      Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    else
+      Agent.get(:turns, fn map -> Map.get(map, :B) end)
     end
     {:reply, {:ok, msg}, socket}
+  end
+
+  ############
+  ## UPDATE ##
+  ############
+
+  def handle_in("coords_store_update", message, socket) do
+    x = message["x"]
+    y = message["y"]
+    facing = message["face"]
+    IO.inspect(message, label: "Co-ords Update Message")
+    if message["client"] == "robot_A" do
+      Agent.update(:coords_store, fn map -> Map.put(map, :A, {x, y, facing}) end)
+    else
+      Agent.update(:coords_store, fn map -> Map.put(map, :B, {x, y, facing}) end)
+    end
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("previous_store_update", message, socket) do
+    x = message["x"]
+    y = message["y"]
+    facing = message["face"]
+    IO.inspect(message, label: "Previous Update Message")
+    if message["client"] == "robot_A" do
+      Agent.update(:previous_store_A, fn map -> Map.put(map, :prev, {x, y, facing}) end)
+    else
+      Agent.update(:previous_store_B, fn map -> Map.put(map, :prev, {x, y, facing}) end)
+    end
+    {:reply, :ok, socket}
   end
 
   def handle_info({"start", data}, socket) do

@@ -26,7 +26,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     socket = assign(socket, :img_robotB, "robot_facing_south.png")
     socket = assign(socket, :bottom_robotB, 750)
     socket = assign(socket, :left_robotB, 750)
-    socket = assign(socket, :robotB_start, "5, e, south")
+    socket = assign(socket, :robotB_start, "6, f, south")
     socket = assign(socket, :robotB_goals, [])
 
     socket = assign(socket, :obstacle_pos, MapSet.new())
@@ -250,7 +250,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     # IO.inspect(var, label: "goals in data")
 
     #Assign values according to the robot it is
-    socket = if data["robot"] == "A" do
+    socket = if data["client"] == "robot_A" do
       socket = assign(socket, :img_robotA, img_name)
       socket = assign(socket, :bottom_robotA, data["bottom"])
       socket = assign(socket, :left_robotA, data["left"])

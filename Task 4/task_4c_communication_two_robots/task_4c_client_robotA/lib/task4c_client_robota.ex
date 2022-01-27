@@ -174,10 +174,10 @@ defmodule Task4CClientRobotA do
   """
   def stop(robot, goal_locs, channel) do
 
-    {:ok, pid} = Agent.start_link(fn -> %{} end)
-    Process.register(pid, :coords_store)
+    # {:ok, pid} = Agent.start_link(fn -> %{} end)
+    # Process.register(pid, :coords_store)
 
-    Task4CClientRobotA.PhoenixSocketClient.coords_store_get(channel)
+
 
     {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
     Process.register(pid_prev, :previous_store_A)
@@ -195,7 +195,10 @@ defmodule Task4CClientRobotA do
     ## complete this funcion ##
     ###########################
 
-    Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+    #Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+    Task4CClientRobotA.PhoenixSocketClient.coords_store_update(channel, report(robot))
+    # new_map = Task4CClientRobotA.PhoenixSocketClient.coords_store_get(channel)
+    # IO.inspect(new_map, label: "Recieved from co-ords store")
 
     # goal_loc format => [["3", "d"], ["2", "c"]]
     {r_x, r_y, _facing} = report(robot)
@@ -354,7 +357,9 @@ defmodule Task4CClientRobotA do
         {x, y, _facing} = report(robot)
 
         # Update position in :coords_store
-        Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+        #Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+        Task4CClientRobotA.PhoenixSocketClient.coords_store_update(channel, report(robot))
+
 
         # NOTE: y and goal_y are NUMBERS HEREAFTER
         y = @robot_map_y_atom_to_num[y]
@@ -393,6 +398,7 @@ defmodule Task4CClientRobotA do
         {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, false, goal_locs, channel)
 
         # {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
+        {x_b, y_b, _} = Task4CClientRobotA.PhoenixSocketClient.coords_store_get(channel)
 
         {x, y, _facing} = report(robot)
 
@@ -553,6 +559,7 @@ defmodule Task4CClientRobotA do
         else: {robot, obs_ahead}
 
     # {x_b, y_b, facing_b} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
+    {x_b, y_b, facing_b} = Task4CClientRobotA.PhoenixSocketClient.coords_store_get(channel)
     {x, y, facing} = report(robot)
     {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
     #{nxt_x_b, nxt_y_b} = calculate_next_position(x_b, y_b, facing_b)
@@ -573,7 +580,8 @@ defmodule Task4CClientRobotA do
     # if not, continue
 
     # Get previous location of this robot
-    prev = Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end, 1)
+    # prev = Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end, 1)
+    prev = Task4CClientRobotA.PhoenixSocketClient.previous_store_get(channel)
     # If the robot is at the same place for two moves in a row
     # i.e. wait_for_movement() makes no difference
     # basically, the other robot has stopped in front of this one
@@ -597,6 +605,7 @@ defmodule Task4CClientRobotA do
     else
       # wait_for_b()
       # {x_b, y_b, facing_b} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
+      {x_b, y_b, facing_b} = Task4CClientRobotA.PhoenixSocketClient.coords_store_get(channel)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
 
       # y_b = @robot_map_y_atom_to_num[y_b]
@@ -609,7 +618,8 @@ defmodule Task4CClientRobotA do
       #   end
       robot_ahead = false #Line to compensate for commenting previous ones
 
-      Agent.update(:previous_store_A, fn map -> Map.put(map, :prev, report(robot)) end)
+      #Agent.update(:previous_store_A, fn map -> Map.put(map, :prev, report(robot)) end)
+      Task4CClientRobotA.PhoenixSocketClient.previous_store_update(channel, report(robot))
 
       robot =
         if !robot_ahead do
@@ -618,7 +628,8 @@ defmodule Task4CClientRobotA do
           robot
         end
 
-      Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+      #Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
+      Task4CClientRobotA.PhoenixSocketClient.coords_store_update(channel, report(robot))
 
 
       # parent = self()
@@ -661,6 +672,7 @@ defmodule Task4CClientRobotA do
 
   def wait_for_movement(nxt_x, nxt_y) do
     {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
+    #{x_b, y_b, _} = Task4CClientRobotA.PhoenixSocketClient.coords_store_get(channel)
     #IO.puts("Waiting for movement")
 
     if x_b == nxt_x and y_b == nxt_y do
@@ -679,9 +691,9 @@ defmodule Task4CClientRobotA do
   end
 
   def eliminate_out_of_bounds(squares, x, y) do
-    {_, squares} = if x + 1 > 5, do: Keyword.pop(squares, :east), else: {:ok, squares}
+    {_, squares} = if x + 1 > 6, do: Keyword.pop(squares, :east), else: {:ok, squares}
     {_, squares} = if x - 1 < 1, do: Keyword.pop(squares, :west), else: {:ok, squares}
-    {_, squares} = if y + 1 > 5, do: Keyword.pop(squares, :north), else: {:ok, squares}
+    {_, squares} = if y + 1 > 6, do: Keyword.pop(squares, :north), else: {:ok, squares}
     {_, squares} = if y - 1 < 1, do: Keyword.pop(squares, :south), else: {:ok, squares}
     squares
   end
