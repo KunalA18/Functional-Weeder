@@ -55,7 +55,7 @@ defmodule Task4CClientRobotB do
   end
 
   def process_start_message(start_map) do
-    data = start_map["A"]
+    data = start_map["B"]
     x = Enum.at(data, 0) |> String.to_integer
     y = Enum.at(data, 1)
     y = Regex.replace(~r/ /, y, "") |> String.to_atom #Regex to remove all spaces in the string
@@ -96,11 +96,9 @@ defmodule Task4CClientRobotB do
 
     {:ok, robot} = start(start_x, start_y, start_dir)
 
-    Task4CClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+    # Task4CClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
 
     stop(robot, goal_locs, channel)
-
-    #We need to move all agents onto the server
 
     ###########################
     ## complete this funcion ##
@@ -185,13 +183,14 @@ defmodule Task4CClientRobotB do
     # Wait for the Agent to be created
     # wait_for_agent()
 
-    {:ok, pid_prev} = Agent.start(fn -> %{} end)
-    Process.register(pid_prev, :previous_store_B)
+    # {:ok, pid_prev} = Agent.start(fn -> %{} end)
+    # Process.register(pid_prev, :previous_store_B)
 
     ###########################
     ## complete this funcion ##
     ###########################
-    Agent.update(:coords_store, fn map -> Map.put(map, :B, report(robot)) end)
+    # Agent.update(:coords_store, fn map -> Map.put(map, :B, report(robot)) end)
+    Task4CClientRobotB.PhoenixSocketClient.coords_store_update(channel, report(robot))
     # goal_loc format => [["3", "d"], ["2", "c"]]
     {r_x, r_y, _facing} = report(robot)
 
@@ -199,20 +198,24 @@ defmodule Task4CClientRobotB do
     distance_array = sort_according_to_distance(r_x, r_y, goal_locs)
     # ["2d":4]
 
+    Task4CClientRobotB.PhoenixSocketClient.goal_store_update(channel, Keyword.keys(distance_array))
+
+
     k_b = Integer.to_string(r_x) <> Atom.to_string(r_y)
 
-    Agent.update(:goal_store, &List.delete(&1, String.to_atom(k_b)))
+    # Agent.update(:goal_store, &List.delete(&1, String.to_atom(k_b)))
+    Task4CClientRobotB.PhoenixSocketClient.goal_store_delete(channel, k_b)
 
     #function to compare the agent with the current and return only vals that satisy
-    distance_array = compare_with_store(distance_array)
+    distance_array = compare_with_store(distance_array, channel)
 
     if length(distance_array) == 0 do
       # send status of the start location
       {:obstacle_presence, obs_ahead} = Task4CClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
     else
-      Agent.update(:goal_choice, fn map -> Map.put(map, :B, {Enum.at(distance_array, 0)}) end)
+      # Agent.update(:goal_choice, fn map -> Map.put(map, :B, {Enum.at(distance_array, 0)}) end)
       # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
-      #loop_through_goal_locs(distance_array, robot, channel)
+      loop_through_goal_locs(distance_array, robot, goal_locs, channel)
     end
 
     ###########################
@@ -221,9 +224,9 @@ defmodule Task4CClientRobotB do
 
   end
 
-  def compare_with_store(distance_array) do
-    key_list = Agent.get(:goal_store, fn list -> list end)
-
+  def compare_with_store(distance_array, channel) do
+    # key_list = Agent.get(:goal_store, fn list -> list end)
+    key_list = Task4CClientRobotB.PhoenixSocketClient.goal_store_get(channel)
     Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
   end
 
@@ -233,20 +236,22 @@ defmodule Task4CClientRobotB do
     end
   end
 
-  def loop_through_goal_locs(distance_array, robot, channel) do
+  def loop_through_goal_locs(distance_array, robot, goal_locs, channel) do
     if length(distance_array) > 0 do
       #IO.inspect(distance_array)
       # Extract the current position from the KeyWord List
       {pos, dis_b} = Enum.at(distance_array, 0)
-      wait_for_a_choice()
-      {{a_choice, dis_a}} = Agent.get(:goal_choice, fn map -> Map.get(map, :A) end)
 
-      {pos, _} =
-        if a_choice == pos and length(distance_array) > 1 and dis_a > dis_b do
-          Enum.at(distance_array, 1)
-        else
-          {pos, nil}
-        end
+      #################################
+      # wait_for_a_choice()
+      # {{a_choice, dis_a}} = Agent.get(:goal_choice, fn map -> Map.get(map, :A) end)
+
+      # {pos, _} =
+      #   if a_choice == pos and length(distance_array) > 1 and dis_a > dis_b do
+      #     Enum.at(distance_array, 1)
+      #   else
+      #     {pos, nil}
+      #   end
         #IO.inspect(pos, label: "B's chosen goal")
       # tup = {:"2a", 1}
       pos = Atom.to_string(pos)
@@ -268,18 +273,21 @@ defmodule Task4CClientRobotB do
 
       # spawn a process that recieves from server
       # recieve a message then send the message to self()
-      parent = self()
-      pid = spawn_link(fn -> roundabout(parent) end)
-      Process.register(pid, :client_toyrobotB)
+      # parent = self()
+      # pid = spawn_link(fn -> roundabout(parent) end)
+      # Process.register(pid, :client_toyrobotB)
 
       # send status of the start location
-      obs_ahead = wait_and_send(robot, channel, 0)
+      # obs_ahead = wait_and_send(robot, channel, 0)
 
+      {:obstacle_presence, obs_ahead} = Task4CClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
       {x, y, _facing} = report(robot)
       key_current = Integer.to_string(x) <> Atom.to_string(y)
 
-      Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
-      distance_array = compare_with_store(distance_array)
+      # Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
+
+      Task4CClientRobotB.PhoenixSocketClient.goal_store_delete(channel, key_current)
+      distance_array = compare_with_store(distance_array, channel)
 
       visited = []
 
@@ -296,11 +304,12 @@ defmodule Task4CClientRobotB do
           goal_y,
           obs_ahead,
           distance_array,
+          goal_locs,
           channel
         )
 
         if length(distance_array) > 0 do
-          loop_through_goal_locs(distance_array, robot, channel)
+          loop_through_goal_locs(distance_array, robot, goal_locs, channel)
         end
     end
   end
@@ -319,13 +328,6 @@ defmodule Task4CClientRobotB do
   #     wait_and_send(robot, channel, i+1)
   #   end
   # end
-
-  def roundabout(parent) do
-    receive do
-      {:obstacle_presence, is_obs_ahead} ->
-        send(parent, {:obstacle_presence, is_obs_ahead})
-    end
-  end
 
   def sort_according_to_distance(r_x, r_y, goal_locs) do
     distance_array =
@@ -350,7 +352,7 @@ defmodule Task4CClientRobotB do
   end
 
 
-  def loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, channel) do
+  def loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, goal_locs, channel) do
     case diff_y == 0 and diff_x == 0 do
       false ->
         # say you visit an old square or you're at the old square
@@ -359,7 +361,8 @@ defmodule Task4CClientRobotB do
         # add the square it is at to the list
         {x, y, _facing} = report(robot)
 
-        Agent.update(:coords_store, fn map -> Map.put(map, :B, report(robot)) end)
+        # Agent.update(:coords_store, fn map -> Map.put(map, :B, report(robot)) end)
+        Task4CClientRobotB.PhoenixSocketClient.coords_store_update(channel, report(robot))
 
         # NOTE: y and goal_y are NUMBERS HEREAFTER
         y = @robot_map_y_atom_to_num[y]
@@ -393,19 +396,22 @@ defmodule Task4CClientRobotB do
         sq_keys = arrange_by_visited(x, y, sq_keys, visited)
 
         # navigate according to the list
-        {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, false, channel)
+        {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, false, goal_locs, channel)
 
         # get co-ordinates of A
-        {x_a, y_a, _} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end)
+        #{x_a, y_a, _} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end)
+        {x_a, y_a, _} = Task4CClientRobotB.PhoenixSocketClient.coords_store_get(channel)
 
         {x, y, _facing} = report(robot)
 
         #Update the goal store to delete the goal entry if A has reached a goal
         key_current = Integer.to_string(x) <> Atom.to_string(y)
-        Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
+        # Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
+        Task4CClientRobotB.PhoenixSocketClient.goal_store_delete(channel, key_current)
+
 
         #get the updated distance array
-        distance_array = compare_with_store(distance_array)
+        distance_array = compare_with_store(distance_array, channel)
         #IO.inspect(distance_array, label: "B's distance array")
 
         #Re-sort the list and change the goals
@@ -424,7 +430,7 @@ defmodule Task4CClientRobotB do
         {diff_x, diff_y} = if length(distance_array) == 0, do: {0,0}, else: {diff_x, diff_y}
 
 
-        loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, channel)
+        loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, goal_locs, channel)
 
       true ->
         {robot, distance_array}
@@ -489,28 +495,33 @@ defmodule Task4CClientRobotB do
   end
 
   def rotate(
-        %Task4CClientRobotA.Position{facing: facing} = robot,
+        %Task4CClientRobotB.Position{facing: facing} = robot,
         should_face,
         face_diff,
         obs_ahead,
+        goal_locs,
         channel
       ) do
     case should_face == facing do
       false ->
-        parent = self()
-        pid = spawn_link(fn -> roundabout(parent) end)
-        Process.register(pid, :client_toyrobotB)
+        # parent = self()
+        # pid = spawn_link(fn -> roundabout(parent) end)
+        # Process.register(pid, :client_toyrobotB)
 
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
-          obs_ahead = wait_and_send(robot, channel, 0)
-          rotate(robot, should_face, face_diff, obs_ahead, channel)
+          # obs_ahead = wait_and_send(robot, channel, 0)
+          {:obstacle_presence, obs_ahead} = Task4CClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+
+          rotate(robot, should_face, face_diff, obs_ahead, goal_locs, channel)
         else
           # rotate right
           robot = right(robot)
-          obs_ahead = wait_and_send(robot, channel, 0)
-          rotate(robot, should_face, face_diff, obs_ahead, channel)
+          # obs_ahead = wait_and_send(robot, channel, 0)
+          {:obstacle_presence, obs_ahead} = Task4CClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+
+          rotate(robot, should_face, face_diff, obs_ahead, goal_locs, channel)
         end
 
       true ->
@@ -520,11 +531,12 @@ defmodule Task4CClientRobotB do
   end
 
   def move_with_priority(
-        %Task4CClientRobotA.Position{facing: facing} = robot,
+        %Task4CClientRobotB.Position{facing: facing} = robot,
         sq_keys,
         obs_ahead,
         i,
         prev_loop,
+        goal_locs,
         channel
       ) do
     # rotate to the defined direction
@@ -534,10 +546,12 @@ defmodule Task4CClientRobotB do
 
     {robot, obs_ahead} =
       if face_diff != 0,
-        do: rotate(robot, should_face, face_diff, false, channel),
+        do: rotate(robot, should_face, face_diff, false, goal_locs, channel),
         else: {robot, obs_ahead}
 
-    {x_a, y_a, facing_a} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end)
+    # {x_a, y_a, facing_a} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end)
+    {x_a, y_a, facing_a} = Task4CClientRobotB.PhoenixSocketClient.coords_store_get(channel)
+
     {x, y, facing} = report(robot)
     {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
     # IO.puts("Next X B: #{nxt_x} Next Y B: #{nxt_y}")
@@ -545,14 +559,16 @@ defmodule Task4CClientRobotB do
     y_a = @robot_map_y_atom_to_num[y_a]
     # check if the robot is in the way
     # if it is, wait for 1 iteration
-    if x_a == nxt_x and y_a == nxt_y and !obs_ahead do
-      # wait_for_movement(nxt_x, nxt_y)
-      #wait_for_movement(robot, channel, 0)
-      obs_ahead = true
-    end
+    # if x_a == nxt_x and y_a == nxt_y and !obs_ahead do
+    #   # wait_for_movement(nxt_x, nxt_y)
+    #   #wait_for_movement(robot, channel, 0)
+    #   obs_ahead = true
+    # end
 
     # Get previous location of this robot
-    prev = Agent.get(:previous_store_B, fn map -> Map.get(map, :prev) end, 1)
+    # prev = Agent.get(:previous_store_B, fn map -> Map.get(map, :prev) end, 1)
+    prev = Task4CClientRobotB.PhoenixSocketClient.previous_store_get(channel)
+
 
 
     #IO.inspect(prev)
@@ -578,10 +594,11 @@ defmodule Task4CClientRobotB do
     if obs_ahead do
       i = i + 1
       #IO.puts("Entered the retry loop")
-      move_with_priority(robot, sq_keys, obs_ahead, i, true, channel)
+      move_with_priority(robot, sq_keys, obs_ahead, i, true, goal_locs, channel)
     else
-      wait_for_a()
-      {x_a, y_a, facing_a} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end, 10)
+      # wait_for_a()
+      # {x_a, y_a, facing_a} = Agent.get(:coords_store, fn map -> Map.get(map, :A) end, 10)
+      {x_a, y_a, facing_a} = Task4CClientRobotB.PhoenixSocketClient.coords_store_get(channel)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
 
       y_a = @robot_map_y_atom_to_num[y_a]
@@ -589,13 +606,14 @@ defmodule Task4CClientRobotB do
       robot_ahead =
         if x_a == nxt_x and y_a == nxt_y do
           true
-
         else
           false
         end
 
       # IO.inspect(robot_ahead, label: "Is the robot ahead of B")
-      Agent.update(:previous_store_B, fn map -> Map.put(map, :prev, report(robot)) end)
+      # Agent.update(:previous_store_B, fn map -> Map.put(map, :prev, report(robot)) end)
+      Task4CClientRobotB.PhoenixSocketClient.previous_store_update(channel, report(robot))
+
       robot =
         if !robot_ahead do
           move(robot)
@@ -603,13 +621,16 @@ defmodule Task4CClientRobotB do
           robot
         end
 
-      Agent.update(:coords_store, fn map -> Map.put(map, :B, report(robot)) end)
+      # Agent.update(:coords_store, fn map -> Map.put(map, :B, report(robot)) end)
+      Task4CClientRobotB.PhoenixSocketClient.coords_store_update(channel, report(robot))
 
 
-      parent = self()
-      pid = spawn_link(fn -> roundabout(parent) end)
-      Process.register(pid, :client_toyrobotB)
-      obs_ahead = wait_and_send(robot, channel, 0)
+      # parent = self()
+      # pid = spawn_link(fn -> roundabout(parent) end)
+      # Process.register(pid, :client_toyrobotB)
+      # obs_ahead = wait_and_send(robot, channel, 0)
+
+      {:obstacle_presence, obs_ahead} = Task4CClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
 
       {robot, obs_ahead}
     end
@@ -632,20 +653,20 @@ defmodule Task4CClientRobotB do
     end
   end
 
-  def wait_for_movement(robot, channel, _) do
-    # get the status of the turns
-    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
-    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+  # def wait_for_movement(robot, channel, _) do
+  #   # get the status of the turns
+  #   a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+  #   b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
 
-    if b_turn do
-      obs_ahead = send_robot_status(robot, channel)
-      #Now update it to show that it is A's turn
-      Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
-      Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
-    else
-      wait_for_a()
-    end
-  end
+  #   if b_turn do
+  #     obs_ahead = send_robot_status(robot, channel)
+  #     #Now update it to show that it is A's turn
+  #     Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+  #     Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+  #   else
+  #     wait_for_a()
+  #   end
+  # end
 
   def wait_for_movement(nxt_x, nxt_y) do
     {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
@@ -666,9 +687,9 @@ defmodule Task4CClientRobotB do
   end
 
   def eliminate_out_of_bounds(squares, x, y) do
-    {_, squares} = if x + 1 > 5, do: Keyword.pop(squares, :east), else: {:ok, squares}
+    {_, squares} = if x + 1 > @table_top_x, do: Keyword.pop(squares, :east), else: {:ok, squares}
     {_, squares} = if x - 1 < 1, do: Keyword.pop(squares, :west), else: {:ok, squares}
-    {_, squares} = if y + 1 > 5, do: Keyword.pop(squares, :north), else: {:ok, squares}
+    {_, squares} = if y + 1 > @table_top_x, do: Keyword.pop(squares, :north), else: {:ok, squares}
     {_, squares} = if y - 1 < 1, do: Keyword.pop(squares, :south), else: {:ok, squares}
     squares
   end

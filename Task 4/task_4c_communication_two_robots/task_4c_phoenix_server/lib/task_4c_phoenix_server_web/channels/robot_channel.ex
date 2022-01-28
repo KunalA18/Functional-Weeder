@@ -36,7 +36,7 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
       Process.register(pid_turns, :turns)
     end
     if Process.whereis(:goal_store) == nil do
-      {:ok, pid_goal} = Agent.start_link(fn -> %{} end)
+      {:ok, pid_goal} = Agent.start_link(fn -> [] end)
       Process.register(pid_goal, :goal_store)
     end
 
@@ -286,7 +286,9 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     {:reply, :ok, socket}
   end
 
-
+  ############
+  ## DELETE ##
+  ############
   def handle_in("goal_store_delete", message, socket) do
     # IO.inspect(message["list"], label: "Received data for goal store")
     Agent.update(:goal_store, &List.delete(&1, message["key"]))

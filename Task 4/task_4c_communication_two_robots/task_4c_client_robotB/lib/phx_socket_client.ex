@@ -57,7 +57,7 @@ defmodule Task4CClientRobotB.PhoenixSocketClient do
     goals_string = convert_to_numbers(goal_locs)
     # IO.inspect(goals_string, label: "Goal string to be sent")
 
-    message = %{x: x, y: y, face: facing, robot: :A, goals: goals_string} #formats the message
+    message = %{client: "robot_B", x: x, y: y, face: facing, goals: goals_string} #formats the message
 
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
 

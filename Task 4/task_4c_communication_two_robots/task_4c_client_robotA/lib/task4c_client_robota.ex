@@ -211,7 +211,7 @@ defmodule Task4CClientRobotA do
 
     # ["2d":4]
     Task4CClientRobotA.PhoenixSocketClient.goal_store_update(channel, Keyword.keys(distance_array))
-    Task4CClientRobotA.PhoenixSocketClient.goal_store_get(channel)
+    # Task4CClientRobotA.PhoenixSocketClient.goal_store_get(channel)
 
     k_a = Integer.to_string(r_x) <> Atom.to_string(r_y)
 
@@ -615,15 +615,14 @@ defmodule Task4CClientRobotA do
       {x_b, y_b, facing_b} = Task4CClientRobotA.PhoenixSocketClient.coords_store_get(channel)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
 
-      # y_b = @robot_map_y_atom_to_num[y_b]
+      y_b = @robot_map_y_atom_to_num[y_b]
 
-      # robot_ahead =
-      #   if x_b == nxt_x and y_b == nxt_y do
-      #     true
-      #   else
-      #     false
-      #   end
-      robot_ahead = false #Line to compensate for commenting previous ones
+      robot_ahead =
+        if x_b == nxt_x and y_b == nxt_y do
+          true
+        else
+          false
+        end
 
       #Agent.update(:previous_store_A, fn map -> Map.put(map, :prev, report(robot)) end)
       Task4CClientRobotA.PhoenixSocketClient.previous_store_update(channel, report(robot))
@@ -698,9 +697,9 @@ defmodule Task4CClientRobotA do
   end
 
   def eliminate_out_of_bounds(squares, x, y) do
-    {_, squares} = if x + 1 > 6, do: Keyword.pop(squares, :east), else: {:ok, squares}
+    {_, squares} = if x + 1 > @table_top_x, do: Keyword.pop(squares, :east), else: {:ok, squares}
     {_, squares} = if x - 1 < 1, do: Keyword.pop(squares, :west), else: {:ok, squares}
-    {_, squares} = if y + 1 > 6, do: Keyword.pop(squares, :north), else: {:ok, squares}
+    {_, squares} = if y + 1 > @table_top_x, do: Keyword.pop(squares, :north), else: {:ok, squares}
     {_, squares} = if y - 1 < 1, do: Keyword.pop(squares, :south), else: {:ok, squares}
     squares
   end

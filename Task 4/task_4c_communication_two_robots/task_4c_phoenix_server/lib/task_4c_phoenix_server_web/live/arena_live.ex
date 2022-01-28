@@ -256,7 +256,6 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
       socket = assign(socket, :left_robotA, data["left"])
       #Need to add goal updation somehow
       socket = assign(socket, :robotA_goals, data["goals"])
-
     else
       socket = assign(socket, :img_robotB, img_name)
       socket = assign(socket, :bottom_robotB, data["bottom"])
