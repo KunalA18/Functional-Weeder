@@ -90,7 +90,7 @@ defmodule Task4CClientRobotB do
 
     {:ok, goals_string} = Task4CClientRobotB.PhoenixSocketClient.get_goals(channel)
     goal_locs = calculate_goals(goals_string)
-    IO.inspect(goal_locs, label: "Goal locations:")
+    # IO.inspect(goal_locs, label: "Goal locations:")
 
     {start_x, start_y, start_dir} = wait_for_start(%{A: nil, B: nil}, channel) #{1, :a, :north}
 
