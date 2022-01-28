@@ -68,6 +68,10 @@ defmodule Task4CClientRobotB.PhoenixSocketClient do
     ###########################
   end
 
+
+  ###########
+  ### GET ###
+  ###########
   def get_goals (channel) do
     {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goals_msg", %{})
   end
@@ -75,6 +79,63 @@ defmodule Task4CClientRobotB.PhoenixSocketClient do
   def get_start(channel) do
     {:ok, start_map} = PhoenixClient.Channel.push(channel, "start_msg", %{})
   end
+
+  def coords_store_get(channel) do
+    {:ok, coord_map} = PhoenixClient.Channel.push(channel, "coords_store_get", %{A: "A", B: nil})
+    #Add further processing according to requirements
+    # IO.inspect(coord_map, label: "Co-ord Map recieved from Server")
+    new_coord_map = {coord_map["face"] |> String.to_atom, coord_map["x"], coord_map["y"] |> String.to_atom}
+  end
+
+  def previous_store_get(channel) do
+    {:ok, prev_map} = PhoenixClient.Channel.push(channel, "previous_store_get", %{A: nil, B: "B"})
+    new_prev_map = {prev_map["face"] |> String.to_atom, prev_map["x"], prev_map["y"] |> String.to_atom}
+  end
+
+  def goal_choice_get(channel) do
+    {:ok, choice_map} = PhoenixClient.Channel.push(channel, "goal_choice_get", %{A: nil, B: "B"})
+    #Add further processing according to requirements
+    IO.inspect(choice_map, label: "Choice Map recieved from Server for B")
+    choice_map
+  end
+
+  def turns_get(channel) do
+    {:ok, turns_map} = PhoenixClient.Channel.push(channel, "turns_get", %{A: nil, B: "B"})
+    #Add further processing according to requirements
+    IO.inspect(turns_map, label: "Turn Map recieved from Server for B")
+    turns_map
+  end
+
+  def goal_store_get(channel) do
+    {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goal_store_get", %{})
+    #IO.inspect(goal_map["list"], label: "Goal Store Output")
+    Enum.map(goal_list["list"], fn s -> String.to_atom(s) end)
+
+  end
+
+
+  ##############
+  ### UPDATE ###
+  ##############
+
+  def coords_store_update(channel, {x, y, facing} = _msg) do
+    message = %{x: x, y: y, face: facing, client: "robot_B"}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "coords_store_update", message)
+  end
+
+  def previous_store_update(channel, {x, y, facing} = _msg) do
+    message = %{x: x, y: y, face: facing, client: "robot_B"}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "previous_store_update", message)
+  end
+
+  def goal_store_update(channel, msg) do
+    {:ok, _} = PhoenixClient.Channel.push(channel, "goal_store_update", %{list: msg})
+  end
+
+  def goal_store_delete(channel, key) do
+    {:ok, _} = PhoenixClient.Channel.push(channel, "goal_store_delete", %{key: key})
+  end
+
 
   ######################################################
   ## You may create extra helper functions as needed. ##

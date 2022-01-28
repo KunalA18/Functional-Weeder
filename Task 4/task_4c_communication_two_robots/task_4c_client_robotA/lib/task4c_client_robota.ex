@@ -179,8 +179,8 @@ defmodule Task4CClientRobotA do
 
 
 
-    {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
-    Process.register(pid_prev, :previous_store_A)
+    # {:ok, pid_prev} = Agent.start_link(fn -> %{} end)
+    # Process.register(pid_prev, :previous_store_A)
 
     {:ok, pid_choice} = Agent.start_link(fn -> %{} end)
     Process.register(pid_choice, :goal_choice)
