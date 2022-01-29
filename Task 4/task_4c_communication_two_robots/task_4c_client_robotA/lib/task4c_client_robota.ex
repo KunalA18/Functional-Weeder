@@ -188,8 +188,9 @@ defmodule Task4CClientRobotA do
     {:ok, pid_turns} = Agent.start_link(fn -> %{} end)
     Process.register(pid_turns, :turns)
     # These inputs signify that it is A's turn
-    Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
-    Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+    Task4CClientRobotA.PhoenixSocketClient.turns_get(channel)
+    # Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+    # Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
 
     ###########################
     ## complete this funcion ##
@@ -314,21 +315,25 @@ defmodule Task4CClientRobotA do
   end
 
 
-  # def wait_and_send(robot, channel, i) do
-  #   a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
-  #   b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
-
-  #   if (a_turn == true and b_turn == false) or (i > 10000000) do
-  #     #IO.inspect("Wait and send func")
-  #     #obs_ahead = send_robot_status(robot, channel)
-  #     #Now update it to show that it is B's turn
-  #     Agent.update(:turns, fn map -> Map.put(map, :A, false) end)
-  #     Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
-  #     obs_ahead
-  #   else
-  #     wait_and_send(robot, channel, i+1)
-  #   end
-  # end
+  def wait_and_send(robot, channel, i) do
+    # a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    # b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+    turn = Task4CClientRobotA.PhoenixSocketClient.turns_get(channel)
+    a_turn = turn["A"]
+    b_turn = turn["B"]
+    if (a_turn == "true" and b_turn == "false") or (i > 10000) do
+      #IO.inspect("Wait and send func")
+      #obs_ahead = send_robot_status(robot, channel)
+      #Now update it to show that it is B's turn
+      # Agent.update(:turns, fn map -> Map.put(map, :A, false) end)
+      # Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
+      msg = %{"A" => "false", "B" => "true"}
+      Task4CClientRobotA.PhoenixSocketClient.turns_update(channel, msg)
+      obs_ahead
+    else
+      wait_and_send(robot, channel, i+1)
+    end
+  end
 
   def sort_according_to_distance(r_x, r_y, goal_locs) do
     distance_array =
@@ -571,18 +576,18 @@ defmodule Task4CClientRobotA do
     {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
     #{nxt_x_b, nxt_y_b} = calculate_next_position(x_b, y_b, facing_b)
     # IO.puts("Next X A: #{nxt_x} Next Y A: #{nxt_y}")
-    # y_b = @robot_map_y_atom_to_num[y_b]
+    y_b = @robot_map_y_atom_to_num[y_b]
 
     # check if the robot is in the way
     # if it is, wait for 1 iteration
-    # if (x_b == nxt_x and y_b == nxt_y and !obs_ahead) do #or (nxt_x == nxt_x_b and nxt_y == nxt_y_b) do
-    #   # wait_for_movement(nxt_x, nxt_y)
-    #   #wait_for_movement(robot, channel, 0)
-    #   #No problems here
-    #   # If B is ahead, wait a turn
-    #   #If B is ahead and facing us, then treat it as an obstacle
-    #   obs_ahead = true
-    # end
+    if (x_b == nxt_x and y_b == nxt_y and !obs_ahead) do #or (nxt_x == nxt_x_b and nxt_y == nxt_y_b) do
+      # wait_for_movement(nxt_x, nxt_y)
+      #wait_for_movement(robot, channel, 0)
+      #No problems here
+      # If B is ahead, wait a turn
+      #If B is ahead and facing us, then treat it as an obstacle
+      obs_ahead = true
+    end
 
     # if not, continue
 

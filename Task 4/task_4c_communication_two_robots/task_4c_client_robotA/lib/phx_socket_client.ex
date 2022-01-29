@@ -100,7 +100,7 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
   end
 
   def turns_get(channel) do
-    {:ok, turns_map} = PhoenixClient.Channel.push(channel, "turns_get", %{A: "A", B: nil})
+    {:ok, turns_map} = PhoenixClient.Channel.push(channel, "turns_get", %{})
     #Add further processing according to requirements
     IO.inspect(turns_map, label: "Turn Map recieved from Server")
     turns_map
@@ -132,9 +132,19 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
     {:ok, _} = PhoenixClient.Channel.push(channel, "goal_store_update", %{list: msg})
   end
 
+  def turns_update(channel, msg) do
+    # %{"A" => "true", "B" => "false"}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "turns_update", msg)
+  end
+
+  ############
+  ## DELETE ##
+  ############
   def goal_store_delete(channel, key) do
     {:ok, _} = PhoenixClient.Channel.push(channel, "goal_store_delete", %{key: key})
   end
+
+
 
 
 

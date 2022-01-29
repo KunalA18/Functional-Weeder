@@ -34,6 +34,8 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     if Process.whereis(:turns) == nil do
       {:ok, pid_turns} = Agent.start_link(fn -> %{} end)
       Process.register(pid_turns, :turns)
+      Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+      Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
     end
     if Process.whereis(:goal_store) == nil do
       {:ok, pid_goal} = Agent.start_link(fn -> [] end)
@@ -88,7 +90,7 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     y = message["y"]
     facing = message["face"]
     client = message["client"] #robot_A or robot_B
-    goals = message["goals"]
+    goals = Agent.get(:goal_store, fn list -> list end)
     # pixel values and facing
     y = @robot_map_y_string_to_num[y] #converts y's string to a number
     left_value = 150 * (x - 1)
@@ -223,12 +225,9 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
   end
 
   def handle_in("turns_get", message, socket) do
-    IO.inspect(message, label: "Turn Get message")
-    msg = if message["A"] != nil do
-      Agent.get(:turns, fn map -> Map.get(map, :A) end)
-    else
-      Agent.get(:turns, fn map -> Map.get(map, :B) end)
-    end
+    t_a = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    t_b = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+    msg = %{"A" => t_a, "B" => t_b}
     {:reply, {:ok, msg}, socket}
   end
 
@@ -277,6 +276,26 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     else
       Agent.update(:goal_choice, fn map -> Map.put(map, :B, {x, y, facing}) end)
     end
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("turns_update", message, socket) do
+    IO.inspect(message, label: "Received data for turns update")
+
+    if message["A"] == "true" do
+      Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+    end
+    if message["A"] == "false" do
+      Agent.update(:turns, fn map -> Map.put(map, :A, false) end)
+    end
+
+    if message["B"] == "true" do
+      Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
+    end
+    if message["B"] == "false" do
+      Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+    end
+
     {:reply, :ok, socket}
   end
 

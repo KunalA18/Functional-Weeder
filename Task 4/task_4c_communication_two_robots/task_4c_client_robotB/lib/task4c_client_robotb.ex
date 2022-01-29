@@ -200,7 +200,6 @@ defmodule Task4CClientRobotB do
 
     Task4CClientRobotB.PhoenixSocketClient.goal_store_update(channel, Keyword.keys(distance_array))
 
-
     k_b = Integer.to_string(r_x) <> Atom.to_string(r_y)
 
     # Agent.update(:goal_store, &List.delete(&1, String.to_atom(k_b)))
@@ -559,11 +558,11 @@ defmodule Task4CClientRobotB do
     y_a = @robot_map_y_atom_to_num[y_a]
     # check if the robot is in the way
     # if it is, wait for 1 iteration
-    # if x_a == nxt_x and y_a == nxt_y and !obs_ahead do
-    #   # wait_for_movement(nxt_x, nxt_y)
-    #   #wait_for_movement(robot, channel, 0)
-    #   obs_ahead = true
-    # end
+    if x_a == nxt_x and y_a == nxt_y and !obs_ahead do
+      # wait_for_movement(nxt_x, nxt_y)
+      # wait_for_movement(robot, channel, 0)
+      obs_ahead = true
+    end
 
     # Get previous location of this robot
     # prev = Agent.get(:previous_store_B, fn map -> Map.get(map, :prev) end, 1)
