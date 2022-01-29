@@ -38,7 +38,7 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
       Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
     end
     if Process.whereis(:goal_store) == nil do
-      {:ok, pid_goal} = Agent.start_link(fn -> [] end)
+      {:ok, pid_goal} = Agent.start_link(fn -> nil end)
       Process.register(pid_goal, :goal_store)
     end
 
@@ -282,17 +282,17 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
   def handle_in("turns_update", message, socket) do
     IO.inspect(message, label: "Received data for turns update")
 
-    if message["A"] == "true" do
+    if message["A"] == true do
       Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
     end
-    if message["A"] == "false" do
+    if message["A"] == false do
       Agent.update(:turns, fn map -> Map.put(map, :A, false) end)
     end
 
-    if message["B"] == "true" do
+    if message["B"] == true do
       Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
     end
-    if message["B"] == "false" do
+    if message["B"] == false do
       Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
     end
 

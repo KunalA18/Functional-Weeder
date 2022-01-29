@@ -100,16 +100,20 @@ defmodule Task4CClientRobotB.PhoenixSocketClient do
   end
 
   def turns_get(channel) do
-    {:ok, turns_map} = PhoenixClient.Channel.push(channel, "turns_get", %{A: nil, B: "B"})
+    {:ok, turns_map} = PhoenixClient.Channel.push(channel, "turns_get", %{})
     #Add further processing according to requirements
-    IO.inspect(turns_map, label: "Turn Map recieved from Server for B")
+    IO.inspect(turns_map, label: "Turn Map recieved from Server")
     turns_map
   end
 
   def goal_store_get(channel) do
     {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goal_store_get", %{})
     #IO.inspect(goal_map["list"], label: "Goal Store Output")
-    Enum.map(goal_list["list"], fn s -> String.to_atom(s) end)
+    if(goal_list["list"] != nil) do
+      Enum.map(goal_list["list"], fn s -> String.to_atom(s) end)
+    else
+      nil
+    end
 
   end
 
@@ -132,6 +136,14 @@ defmodule Task4CClientRobotB.PhoenixSocketClient do
     {:ok, _} = PhoenixClient.Channel.push(channel, "goal_store_update", %{list: msg})
   end
 
+  def turns_update(channel, msg) do
+    # %{"A" => "true", "B" => "false"}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "turns_update", msg)
+  end
+
+  ############
+  ## DELETE ##
+  ############
   def goal_store_delete(channel, key) do
     {:ok, _} = PhoenixClient.Channel.push(channel, "goal_store_delete", %{key: key})
   end

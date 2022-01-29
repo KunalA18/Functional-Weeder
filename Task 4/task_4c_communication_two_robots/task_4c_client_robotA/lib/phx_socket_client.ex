@@ -109,8 +109,11 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
   def goal_store_get(channel) do
     {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goal_store_get", %{})
     #IO.inspect(goal_map["list"], label: "Goal Store Output")
-    Enum.map(goal_list["list"], fn s -> String.to_atom(s) end)
-
+    if(goal_list["list"] != nil) do
+      Enum.map(goal_list["list"], fn s -> String.to_atom(s) end)
+    else
+      nil
+    end
   end
 
 

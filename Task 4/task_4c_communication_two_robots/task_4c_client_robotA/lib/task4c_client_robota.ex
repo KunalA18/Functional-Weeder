@@ -279,8 +279,8 @@ defmodule Task4CClientRobotA do
       # -ve implies that it needs to go down
 
       # send status of the start location
-      # obs_ahead = wait_and_send(robot, channel, 0)
-      {:obstacle_presence, obs_ahead} = Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+      obs_ahead = wait_and_send(robot, channel, goal_locs, 0)
+      # {:obstacle_presence, obs_ahead} = Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
       {x, y, _facing} = report(robot)
       key_current = Integer.to_string(x) <> Atom.to_string(y)
 
@@ -315,23 +315,25 @@ defmodule Task4CClientRobotA do
   end
 
 
-  def wait_and_send(robot, channel, i) do
+  def wait_and_send(robot, channel, goal_locs, i) do
     # a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
     # b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
     turn = Task4CClientRobotA.PhoenixSocketClient.turns_get(channel)
     a_turn = turn["A"]
     b_turn = turn["B"]
-    if (a_turn == "true" and b_turn == "false") or (i > 10000) do
+    if (a_turn == true and b_turn == false) or (i > 10000) do
       #IO.inspect("Wait and send func")
       #obs_ahead = send_robot_status(robot, channel)
+      {:obstacle_presence, obs_ahead} = Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
       #Now update it to show that it is B's turn
       # Agent.update(:turns, fn map -> Map.put(map, :A, false) end)
       # Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
-      msg = %{"A" => "false", "B" => "true"}
+      msg = %{"A" => false, "B" => true}
       Task4CClientRobotA.PhoenixSocketClient.turns_update(channel, msg)
       obs_ahead
     else
-      wait_and_send(robot, channel, i+1)
+      Process.sleep(500)
+      wait_and_send(robot, channel, goal_locs, i+1)
     end
   end
 
@@ -530,15 +532,15 @@ defmodule Task4CClientRobotA do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
-          #obs_ahead = wait_and_send(robot, channel, 0)
-          {:obstacle_presence, obs_ahead} = Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+          obs_ahead = wait_and_send(robot, channel, goal_locs, 0)
+          # {:obstacle_presence, obs_ahead} = Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
           # IO.inspect("In rotate")
           rotate(robot, should_face, face_diff, obs_ahead, goal_locs, channel)
         else
           # rotate right
           robot = right(robot)
-          #obs_ahead = wait_and_send(robot, channel, 0)
-          {:obstacle_presence, obs_ahead} = Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+          obs_ahead = wait_and_send(robot, channel, goal_locs, 0)
+          # {:obstacle_presence, obs_ahead} = Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
           # IO.inspect("In rotate")
           rotate(robot, should_face, face_diff, obs_ahead, goal_locs, channel)
         end
@@ -615,7 +617,7 @@ defmodule Task4CClientRobotA do
       i = i + 1
       move_with_priority(robot, sq_keys, obs_ahead, i, true, goal_locs, channel)
     else
-      # wait_for_b()
+      wait_for_b(channel)
       # {x_b, y_b, facing_b} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end, 10)
       {x_b, y_b, facing_b} = Task4CClientRobotA.PhoenixSocketClient.coords_store_get(channel)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
@@ -647,20 +649,23 @@ defmodule Task4CClientRobotA do
       # pid = spawn_link(fn -> roundabout(parent) end)
       # Process.register(pid, :client_toyrobotA)
       # IO.inspect("At the end of move with priority")
-      #obs_ahead = wait_and_send(robot, channel, 0)
-      {:obstacle_presence, obs_ahead} = Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+      obs_ahead = wait_and_send(robot, channel, goal_locs, 0)
+      # {:obstacle_presence, obs_ahead} = Task4CClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
 
 
       {robot, obs_ahead}
     end
   end
 
-  def wait_for_b() do
-    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
-    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+  def wait_for_b(channel) do
+    # a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    # b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+    turn = Task4CClientRobotA.PhoenixSocketClient.turns_get(channel)
+    a_turn = turn["A"]
+    b_turn = turn["B"]
 
-    if a_turn == false and b_turn == true do
-      wait_for_b()
+    if a_turn == "false" and b_turn == "true" do
+      wait_for_b(channel)
     end
   end
 
