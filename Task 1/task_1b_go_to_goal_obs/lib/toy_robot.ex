@@ -214,11 +214,9 @@ defmodule ToyRobot do
 
   def move_with_priority(%ToyRobot.Position{facing: facing} = robot, sq_keys, obs_ahead, i, cli_proc_name) do
     #rotate to the defined direction
-
     should_face = Enum.at(sq_keys, i)
     face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
     {robot, obs_ahead} = if face_diff != 0, do: rotate(robot, should_face, face_diff, false, cli_proc_name), else: {robot, obs_ahead}
-
     if obs_ahead do
       i = i+1
       move_with_priority(robot, sq_keys, obs_ahead, i, cli_proc_name)
