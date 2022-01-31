@@ -58,4 +58,4 @@ The algorithm followed by each of the client robots can be briefly summarised as
 
 ### Pictorial Representation: -
 
-<img src="diagrams/algorithm.png" height="600" width="400">
+<img src="diagrams/algorithm.png" >
