@@ -30,14 +30,18 @@ defmodule Line_follower do
   @duty_cycles [100, 70, 0]
   @pwm_frequency 50
 
-  @black_MARGIN 500
+  @black_MARGIN 400
   @white_MARGIN 1000
-  @weights [0, -2, -1, 1, 2, 0]
+  # @weights [0, -2, -1, 1, 2, 0]
+  @weights [0, -3, -1, 0, 1, 3]
 
   @optimum_duty_cycle 110
-  @lower_duty_cycle 90
-  @higher_duty_cycle 130
+  @lower_duty_cycle 85
+  @higher_duty_cycle 135
   # float left_duty_cycle = 0, right_duty_cycle = 0;
+  @kp 6
+  @ki 0
+  @kd 0
 
   def initialize do
     error = 0
@@ -45,22 +49,48 @@ defmodule Line_follower do
     cumulative_error = 0
     left_duty_cycle = 0
     right_duty_cycle = 0
-    line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle)
+    main_node = 0
+    same_node = false
+    line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle,main_node,same_node)
   end
 
-  def line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle) do
+  def line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle,main_node,same_node) do
     map_sens_list = test_wlf_sensors()
     IO.inspect(map_sens_list)
     # error = calculate_error(map_sens_list)
     {error, prev_error} = calculate_error(map_sens_list, error, prev_error)
-    {error, prev_error,cumulative_error, correction} = calculate_correction(error, prev_error, cumulative_error)
+
+    {error, prev_error, cumulative_error, correction} =
+      calculate_correction(error, prev_error, cumulative_error)
+
+    main_node =
+      if (same_node == false && Enum.at(map_sens_list,2) > 800 && Enum.at(map_sens_list,3) > 800 && Enum.at(map_sens_list,4) > 800) do
+        # same_node = true
+        main_node = main_node + 1
+      else
+        main_node
+      end
+
+    same_node =
+      if (same_node == false && Enum.at(map_sens_list,1) > 800 && Enum.at(map_sens_list,2) > 800 && Enum.at(map_sens_list,3) > 800 && Enum.at(map_sens_list,4) > 800) do
+        same_node = true
+        # main_node = main_node + 1
+      else
+        same_node
+      end
+
+    same_node =
+      if (same_node == true && Enum.at(map_sens_list,4) < 800) do
+        same_node = false
+      else
+        same_node
+      end
+
+    IO.inspect(main_node)
+
 
     left_duty_cycle = round(@optimum_duty_cycle - correction)
     right_duty_cycle = round(@optimum_duty_cycle + correction)
-
-    # IO.inspect(correction)
-    # IO.inspect(left_duty_cycle)
-    # IO.inspect(right_duty_cycle)
 
     left_duty_cycle =
       if left_duty_cycle > @higher_duty_cycle do
@@ -90,16 +120,15 @@ defmodule Line_follower do
         right_duty_cycle
       end
 
-    # motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
-    # motor_action(motor_ref, @forward)
-    # my_motion(left_duty_cycle,right_duty_cycle)
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    motor_action(motor_ref, @forward)
+    my_motion(left_duty_cycle, right_duty_cycle)
 
-    IO.inspect(correction)
-    IO.inspect(left_duty_cycle)
-    IO.inspect(right_duty_cycle)
+    # IO.inspect(correction)
+    # IO.inspect(left_duty_cycle)
+    # IO.inspect(right_duty_cycle)
 
-
-    line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle)
+    line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle,main_node,same_node)
   end
 
   def calculate_error(map_sens_list, error, prev_error) do
@@ -108,15 +137,14 @@ defmodule Line_follower do
     sum = 0
     pos = 0
 
-    all_black_flag = Enum.reduce(map_sens_list, 1, fn val, acc ->
-      if val > @black_MARGIN do
+    all_black_flag =
+      Enum.reduce(map_sens_list, 1, fn val, acc ->
+        if val > @black_MARGIN do
           acc = 0
-      else
+        else
           acc
-      end
-    end)
-
-
+        end
+      end)
 
     weighted_sum_list =
       map_sens_list |> Enum.zip(@weights) |> Enum.map(fn {map, weight} -> map * weight end)
@@ -178,14 +206,15 @@ defmodule Line_follower do
     # IO.inspect(cumulative_error)
     # IO.inspect(difference)
     # correction = read_pid_const().kp * error + read_pid_const().ki * cumulative_error + read_pid_const().kd * difference;
-    correction = 0.1 * error + 1 * cumulative_error + 5 * difference
+    correction = @kp * error + @ki * cumulative_error + @kd * difference
 
     # IO.inspect(0.1*error)
     # IO.inspect(cumulative_error)
     # IO.inspect(difference)
     # IO.inspect(correction)
     prev_error = error
-    {error, prev_error,cumulative_error ,correction}
+    # IO.inspect(prev_error)
+    {error, prev_error, cumulative_error, correction}
   end
 
   def my_motion(left_duty_cycle, right_duty_cycle) do
@@ -212,7 +241,8 @@ defmodule Line_follower do
     sensor_ref = Enum.map(@sensor_pins, fn {atom, pin_no} -> configure_sensor({atom, pin_no}) end)
     sensor_ref = Enum.map(sensor_ref, fn {_atom, ref_id} -> ref_id end)
     sensor_ref = Enum.zip(@ref_atoms, sensor_ref)
-    map_sens_list = get_lfa_readings([1, 2, 3, 4, 5], sensor_ref)
+    # map_sens_list = get_lfa_readings([1, 2, 3, 4, 5], sensor_ref)
+    map_sens_list = get_lfa_readings([0, 1, 2, 3, 4], sensor_ref)
     map_sens_list
   end
 
@@ -346,7 +376,7 @@ defmodule Line_follower do
     # IO.inspect(map_sens_list)
     Enum.each(0..5, fn n -> provide_clock(sensor_ref) end)
     GPIO.write(sensor_ref[:cs], 1)
-    Process.sleep(250)
+    # Process.sleep(50)
     # get_lfa_readings(sensor_list, sensor_ref)
     map_sens_list
   end
@@ -412,7 +442,7 @@ defmodule Line_follower do
     |> Enum.zip(motion)
     |> Enum.each(fn {{_, ref_no}, value} -> GPIO.write(ref_no, value) end)
 
-    Process.sleep(2000)
+    # Process.sleep(2000)
   end
 
   @doc """
