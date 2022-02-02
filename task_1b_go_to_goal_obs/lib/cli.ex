@@ -135,20 +135,20 @@ defmodule FW_DEMO do
     Pigpiox.Pwm.gpio_pwm(@servo_a_pin, val)
         
   end
-
-  def arm_code do
+  
+  def weeder do
     
-    test_servo_b(120)
+    test_servo_b(90)
     Process.sleep(1000)
-    test_servo_a(60)
+    test_servo_c(60)
     Process.sleep(1000)
-    test_servo_b(60)
+    test_servo_b(30)
     Process.sleep(1000)
-    test_servo_a(0)
+    test_servo_c(0)
     Process.sleep(1250)
-    test_servo_b(120)
+    test_servo_b(90)
     Process.sleep(1500)
-    test_servo_a(60)
+    test_servo_c(60)
     Process.sleep(1000)
     
 
