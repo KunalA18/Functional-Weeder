@@ -26,6 +26,7 @@ defmodule Line_follower do
   @left [0, 1, 1, 0]
   @right [1, 0, 0, 1]
   @stop [0, 0, 0, 0]
+  @onlyright [0, 0, 1 ,0]
 
   @duty_cycles [100, 70, 0]
   @pwm_frequency 50
@@ -39,9 +40,9 @@ defmodule Line_follower do
   @lower_duty_cycle 85
   @higher_duty_cycle 135
   # float left_duty_cycle = 0, right_duty_cycle = 0;
-  @kp 6
+  @kp 5
   @ki 0
-  @kd 0
+  @kd 6
 
   def initialize do
     error = 0
@@ -63,21 +64,15 @@ defmodule Line_follower do
     {error, prev_error, cumulative_error, correction} =
       calculate_correction(error, prev_error, cumulative_error)
 
-    main_node =
-      if (same_node == false && Enum.at(map_sens_list,2) > 800 && Enum.at(map_sens_list,3) > 800 && Enum.at(map_sens_list,4) > 800) do
-        # same_node = true
+    {main_node, same_node} =
+      if (same_node == false && Enum.at(map_sens_list,3) > 800 && Enum.at(map_sens_list,4) > 800 && Enum.at(map_sens_list,5) > 800) do
+        same_node = true
         main_node = main_node + 1
+        {main_node, same_node}
       else
-        main_node
+        {main_node, same_node}
       end
 
-    same_node =
-      if (same_node == false && Enum.at(map_sens_list,1) > 800 && Enum.at(map_sens_list,2) > 800 && Enum.at(map_sens_list,3) > 800 && Enum.at(map_sens_list,4) > 800) do
-        same_node = true
-        # main_node = main_node + 1
-      else
-        same_node
-      end
 
     same_node =
       if (same_node == true && Enum.at(map_sens_list,4) < 800) do
@@ -121,12 +116,22 @@ defmodule Line_follower do
       end
 
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
-    motor_action(motor_ref, @forward)
-    my_motion(left_duty_cycle, right_duty_cycle)
+    main_node =
+      if main_node == 2 do
+        motor_action(motor_ref, @stop)
+        my_motion(0, 0)
+        Process.sleep(300)
+        motor_action(motor_ref, @onlyright)
+        my_motion(left_duty_cycle, right_duty_cycle)
+        Process.sleep(450)
+        main_node = 0
+        main_node
+      else
+        motor_action(motor_ref, @forward)
+        my_motion(left_duty_cycle, right_duty_cycle)
+        main_node
+      end
 
-    # IO.inspect(correction)
-    # IO.inspect(left_duty_cycle)
-    # IO.inspect(right_duty_cycle)
 
     line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle,main_node,same_node)
   end
