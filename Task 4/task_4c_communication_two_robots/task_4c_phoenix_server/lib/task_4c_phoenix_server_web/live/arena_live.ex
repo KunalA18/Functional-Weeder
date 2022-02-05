@@ -31,9 +31,11 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     socket = assign(socket, :robotB_goals, [])
     socket = assign(socket, :robotB_status, "Inactive")
 
-
+    plantset = get_plants(socket)
     socket = assign(socket, :obstacle_pos, MapSet.new())
+    socket = assign(socket, :plant_pos, plantset)
     socket = assign(socket, :timer_tick, 300)
+
 
 
     {:ok,socket}
@@ -95,6 +97,10 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
 
           <%= for obs <- @obstacle_pos do %>
             <img  class="obstacles"  src="/images/stone.png" width="50px" style={"bottom: #{elem(obs,1)}px; left: #{elem(obs,0)}px"}>
+          <% end %>
+
+          <%= for plant <- @plant_pos do %>
+            <img  class="plants"  src={"/images/#{elem(plant, 2)}"} width="50px" style={"bottom: #{elem(plant,1)}px; left: #{elem(plant,0)}px"}>
           <% end %>
 
           <div class="robot-container" style={"bottom: #{@bottom_robotA}px; left: #{@left_robotA}px"}>
@@ -293,6 +299,10 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
 
     {:noreply, socket}
   end
+  ######################################################
+  ## You may create extra helper functions as needed  ##
+  ## and update remaining assign variables.           ##
+  ######################################################
 
   def get_img(direction) do
     ans = "robot_facing_north.png"
@@ -301,9 +311,52 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     ans = if direction == "west", do: "robot_facing_west.png", else: ans
     ans
   end
-  ######################################################
-  ## You may create extra helper functions as needed  ##
-  ## and update remaining assign variables.           ##
-  ######################################################
 
+  def get_plants(socket) do
+
+    csv = "../../../Plant_Positions.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take_every(1)
+    |> Enum.filter(fn {:ok, [a, b]} -> (a != "Sowing") end)
+    |> Enum.map(fn {:ok, [a, b]} -> [a, b] end)
+    |> Enum.reduce(fn [a, b], acc -> acc ++ [a, b] end )
+
+    # IO.inspect(csv)
+    seeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 0 do x end end) |> Enum.reject(fn x -> x == nil end)# 0, 2, 4
+    weeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 1 do x end end) |> Enum.reject(fn x -> x == nil end)# 1, 3, 5
+
+    IO.inspect(seeding, label: "Seeding")
+    IO.inspect(weeding, label: "Weeding")
+    mapset = MapSet.new()
+
+    # mapset = for loc <- seeding do
+    #   {x, y} = convert_to_coord(loc)
+    #   left = 75 * x
+    #   bottom = 75 * y
+    #   IO.inspect(mapset)
+    #   MapSet.put(mapset, {left, bottom})
+    # end
+
+    map = Enum.reduce(seeding, MapSet.new(), fn loc, acc ->
+      {x, y} = convert_to_coord(loc)
+      IO.puts("Loc: #{loc}")
+      left = 150 * (x-1) + 75
+      bottom = 150 * (y-1) + 75
+      MapSet.put(acc, {left, bottom, "green_plant.png"})
+    end)
+
+    map = Enum.reduce(weeding, map, fn loc, acc ->
+      {x, y} = convert_to_coord(loc)
+      IO.puts("Loc: #{loc}")
+      left = 150 * (x-1) + 75
+      bottom = 150 * (y-1) + 75
+      MapSet.put(acc, {left, bottom, "red_plant.png"})
+    end)
+    map
+  end
+
+  def convert_to_coord(loc) do
+    loc = if !is_integer(loc), do: String.to_integer(loc), else: loc
+    x = if rem(loc, 5) == 0, do: 5, else: rem(loc, 5)
+    y = if floor((loc+5) / 5) == 0, do: 5, else: floor((loc+5) / 5)
+    {x, y}
+  end
 end

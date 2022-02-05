@@ -87,7 +87,12 @@
     bottom:0;
     transform:translate(-40%,47%)
 }
-
+.plants{
+    position: absolute;
+    left:0;
+    bottom:0;
+    transform:translate(-40%,47%)
+}
 #timer{
     font-family: 'Share Tech Mono', monospace;
     color: #ffffff;
