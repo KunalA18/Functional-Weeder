@@ -97,8 +97,28 @@
     padding: 5px 0;
 }
 
+#status{
+    font-family: 'Share Tech Mono', monospace;
+    text-align: center;
+    font-size: 80px;
+    padding: 5px 0;
+}
+
 .timer-card{
     background:linear-gradient(135deg, #CE9FFC 0%,#7367F0 100%);
+    box-shadow: 5px 6px 16px 4px rgba(0,0,0,0.18);
+    -webkit-box-shadow: 5px 6px 16px 4px rgba(0,0,0,0.18);
+    -moz-box-shadow: 5px 6px 16px 4px rgba(0,0,0,0.18);
+    width:30%;
+    flex-grow:1;
+    min-width:190px;
+    padding:10px;
+    border-radius:5px;
+    margin: 10px;
+}
+
+.status-card{
+    background:linear-gradient(135deg, #E3E3E3 0%,#5D6874 100%);
     box-shadow: 5px 6px 16px 4px rgba(0,0,0,0.18);
     -webkit-box-shadow: 5px 6px 16px 4px rgba(0,0,0,0.18);
     -moz-box-shadow: 5px 6px 16px 4px rgba(0,0,0,0.18);

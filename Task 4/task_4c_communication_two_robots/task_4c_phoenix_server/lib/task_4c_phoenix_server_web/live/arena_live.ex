@@ -22,12 +22,15 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     socket = assign(socket, :left_robotA, 0)
     socket = assign(socket, :robotA_start, "1, a, north")
     socket = assign(socket, :robotA_goals, [])
+    socket = assign(socket, :robotA_status, "Active")
 
     socket = assign(socket, :img_robotB, "robot_facing_south.png")
     socket = assign(socket, :bottom_robotB, 750)
     socket = assign(socket, :left_robotB, 750)
     socket = assign(socket, :robotB_start, "6, f, south")
     socket = assign(socket, :robotB_goals, [])
+    socket = assign(socket, :robotB_status, "Inactive")
+
 
     socket = assign(socket, :obstacle_pos, MapSet.new())
     socket = assign(socket, :timer_tick, 300)
@@ -163,6 +166,15 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
               </svg>
             </button>
           </form>
+        </div>
+
+        <div class="status-card">
+          <label style="text-transform:uppercase;width:100%;font-weight:bold;text-align:center" >Robot A</label>
+            <p id="status" style={"color:#{if @robotA_status == "Inactive", do: "red", else: "green"}"}><%= @robotA_status %></p>
+        </div>
+        <div class="status-card">
+          <label style="text-transform:uppercase;width:100%;font-weight:bold;text-align:center" >Robot B</label>
+            <p id="status" style={"color:#{if @robotB_status == "Inactive", do: "red", else: "green"}"}><%= @robotB_status %></p>
         </div>
 
       </div>
