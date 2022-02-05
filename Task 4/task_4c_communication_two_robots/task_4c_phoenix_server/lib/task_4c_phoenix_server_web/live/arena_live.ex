@@ -335,20 +335,22 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     #   MapSet.put(mapset, {left, bottom})
     # end
 
+    # Red for Seeding
     map = Enum.reduce(seeding, MapSet.new(), fn loc, acc ->
       {x, y} = convert_to_coord(loc)
       IO.puts("Loc: #{loc}")
       left = 150 * (x-1) + 75
       bottom = 150 * (y-1) + 75
-      MapSet.put(acc, {left, bottom, "green_plant.png"})
+      MapSet.put(acc, {left, bottom, "red_plant.png"})
     end)
 
+    # Green for Weeding
     map = Enum.reduce(weeding, map, fn loc, acc ->
       {x, y} = convert_to_coord(loc)
       IO.puts("Loc: #{loc}")
       left = 150 * (x-1) + 75
       bottom = 150 * (y-1) + 75
-      MapSet.put(acc, {left, bottom, "red_plant.png"})
+      MapSet.put(acc, {left, bottom, "green_plant.png"})
     end)
     map
   end
