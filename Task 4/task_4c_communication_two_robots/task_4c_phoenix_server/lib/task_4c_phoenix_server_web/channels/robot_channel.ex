@@ -160,10 +160,6 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     |> Enum.map(fn {:ok, [a, b]} -> [a, b] end)
     |> Enum.reduce(fn [a, b], acc -> acc ++ [a, b] end )
 
-    IO.inspect(csv, label: "CSV")
-    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update_plants", csv})
-
-
     {:reply, {:ok, csv}, socket}
   end
 

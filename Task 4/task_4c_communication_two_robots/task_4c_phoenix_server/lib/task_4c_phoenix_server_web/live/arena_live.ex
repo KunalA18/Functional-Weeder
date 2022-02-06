@@ -14,7 +14,6 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
 
     Task4CPhoenixServerWeb.Endpoint.subscribe("robot:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "timer:update")
-    # :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "view:update")
 
     socket = assign(socket, :img_robotA, "robot_facing_north.png")
@@ -31,15 +30,12 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     socket = assign(socket, :robotB_goals, [])
     socket = assign(socket, :robotB_status, "Inactive")
 
-    plantset = get_plants(socket)
+    plants_list = get_plants()
     socket = assign(socket, :obstacle_pos, MapSet.new())
-    socket = assign(socket, :plant_pos, plantset)
+    socket = assign(socket, :plant_pos, plants_list)
     socket = assign(socket, :timer_tick, 300)
 
-
-
     {:ok,socket}
-
   end
 
   @doc """
@@ -258,14 +254,10 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
   end
 
   def handle_info({"update", data}, socket) do
-    #IO.inspect(data, label: "Data is sent to ArenaLive PubSub")
     ###########################
     ## complete this funcion ##
     ###########################
     img_name = get_img(data["face"])
-    # goal_list = data["goals"]
-    # var = Enum.map(goal_list, fn s -> String.to_integer(s) end)
-    # IO.inspect(var, label: "goals in data")
 
     #Assign values according to the robot it is
     socket = if data["client"] == "robot_A" do
@@ -282,8 +274,31 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     end
     # assigns data to the socket to update the LiveView
 
+    # Gray Out
+    # Search the plant pos mapset the location sent by the robot
+    # If location exists, gray it out
+    socket = gray_out(socket, data)
+
     {:noreply, socket}
 
+  end
+
+  def gray_out(socket, data) do
+    x = floor(data["left"] / 150) + 1
+    y = floor(data["bottom"] / 150) + 1
+    left_pos = 150 * (x-1) + 75
+    bottom_pos = 150 * (y-1) + 75
+    IO.puts("Left: #{left_pos}, Bottom: #{bottom_pos}")
+    plants_list = Enum.map(socket.assigns.plant_pos, fn {left, bottom, img} ->
+      if ((left >= left_pos - 10 and left <= left_pos + 10)
+      and (bottom >= bottom_pos - 10 and bottom <= bottom_pos + 10 ))
+      and (img == "red_plant.png" or img == "green_plant.png") do
+       {left, bottom, "gray_plant.png"}
+     else
+       {left, bottom, img}
+      end
+   end)
+   socket = assign(socket, :plant_pos, plants_list)
   end
 
   def handle_info({"update_obs", data}, socket) do
@@ -294,9 +309,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     #socket.assigns.obstacle_pos Syntax to get the MapSet
     #Each cell is 150x150 pixels
     mapset = MapSet.put(socket.assigns.obstacle_pos, data["position"])
-    # IO.inspect(mapset)
     socket = assign(socket, :obstacle_pos, mapset)
-
     {:noreply, socket}
   end
   ######################################################
@@ -312,7 +325,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     ans
   end
 
-  def get_plants(socket) do
+  def get_plants() do
 
     csv = "../../../Plant_Positions.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take_every(1)
     |> Enum.filter(fn {:ok, [a, b]} -> (a != "Sowing") end)
@@ -323,34 +336,22 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
     seeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 0 do x end end) |> Enum.reject(fn x -> x == nil end)# 0, 2, 4
     weeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 1 do x end end) |> Enum.reject(fn x -> x == nil end)# 1, 3, 5
 
-    IO.inspect(seeding, label: "Seeding")
-    IO.inspect(weeding, label: "Weeding")
-    mapset = MapSet.new()
-
-    # mapset = for loc <- seeding do
-    #   {x, y} = convert_to_coord(loc)
-    #   left = 75 * x
-    #   bottom = 75 * y
-    #   IO.inspect(mapset)
-    #   MapSet.put(mapset, {left, bottom})
-    # end
-
     # Red for Seeding
-    map = Enum.reduce(seeding, MapSet.new(), fn loc, acc ->
+    map = Enum.reduce(seeding, [], fn loc, acc ->
       {x, y} = convert_to_coord(loc)
-      IO.puts("Loc: #{loc}")
+      # IO.puts("Loc: #{loc}")
       left = 150 * (x-1) + 75
       bottom = 150 * (y-1) + 75
-      MapSet.put(acc, {left, bottom, "red_plant.png"})
+      acc ++ [{left, bottom, "red_plant.png"}]
     end)
 
     # Green for Weeding
     map = Enum.reduce(weeding, map, fn loc, acc ->
       {x, y} = convert_to_coord(loc)
-      IO.puts("Loc: #{loc}")
+      # IO.puts("Loc: #{loc}")
       left = 150 * (x-1) + 75
       bottom = 150 * (y-1) + 75
-      MapSet.put(acc, {left, bottom, "green_plant.png"})
+      acc ++ [{left, bottom, "green_plant.png"}]
     end)
     map
   end
