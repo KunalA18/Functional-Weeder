@@ -1,8 +1,0 @@
-A => 1, a, north
-B => 5, e, south
-A => 1, a, east
-B => 5, e, west
-A => 2, a, east
-B => 4, e, west
-A => 3, a, east
-B => 3, e, west
