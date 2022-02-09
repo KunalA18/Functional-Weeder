@@ -142,8 +142,18 @@ defmodule CLI.ToyRobotB do
       end
 
       # send status of the start location
+<<<<<<< HEAD
       obs_ahead = send_robot_status(robot, cli_proc_name)
       # send_robot_position(robot, :position)
+=======
+      obs_ahead = wait_and_send(robot, cli_proc_name, 0)
+
+      {x, y, _facing} = report(robot)
+      key_current = Integer.to_string(x) <> Atom.to_string(y)
+
+      Agent.update(:goal_store, &List.delete(&1, String.to_atom(key_current)))
+      distance_array = compare_with_store(distance_array)
+>>>>>>> 9fa27c7a7510583088673550a0f91ae27c3b373e
 
       visited = []
 
@@ -163,10 +173,30 @@ defmodule CLI.ToyRobotB do
           cli_proc_name
         )
 
-      loop_through_goal_locs(distance_array, robot, cli_proc_name)
+        if length(distance_array) > 0 do
+          loop_through_goal_locs(distance_array, robot, cli_proc_name)
+        end
     end
   end
 
+<<<<<<< HEAD
+=======
+  def wait_and_send(robot, cli_proc_name, i) do
+    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+
+    if (b_turn == true and a_turn == false) or (i > 10000000) do
+      obs_ahead = send_robot_status(robot, cli_proc_name)
+      #Now update it to show that it is B's turn
+      Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+      Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+      obs_ahead
+    else
+      wait_and_send(robot, cli_proc_name, i+1)
+    end
+  end
+
+>>>>>>> 9fa27c7a7510583088673550a0f91ae27c3b373e
   def roundabout(parent) do
     receive do
       {:obstacle_presence, is_obs_ahead} ->
@@ -370,12 +400,20 @@ defmodule CLI.ToyRobotB do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
+<<<<<<< HEAD
           obs_ahead = send_robot_status(robot, cli_proc_name)
+=======
+          obs_ahead = wait_and_send(robot, cli_proc_name, 0)
+>>>>>>> 9fa27c7a7510583088673550a0f91ae27c3b373e
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         else
           # rotate right
           robot = right(robot)
+<<<<<<< HEAD
           obs_ahead = send_robot_status(robot, cli_proc_name)
+=======
+          obs_ahead = wait_and_send(robot, cli_proc_name, 0)
+>>>>>>> 9fa27c7a7510583088673550a0f91ae27c3b373e
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         end
 
@@ -413,6 +451,11 @@ defmodule CLI.ToyRobotB do
     if x_a == nxt_x and y_a == nxt_y and !obs_ahead do
       wait_for_movement(nxt_x, nxt_y)
       # wait_for_movement(nxt_x, nxt_y)
+<<<<<<< HEAD
+=======
+      #wait_for_movement(robot, cli_proc_name, 0)
+      obs_ahead = true
+>>>>>>> 9fa27c7a7510583088673550a0f91ae27c3b373e
     end
 
     # Get previous location of this robot
@@ -432,7 +475,6 @@ defmodule CLI.ToyRobotB do
       else
         obs_ahead
       end
-
     if obs_ahead do
       i = i + 1
       move_with_priority(robot, sq_keys, obs_ahead, i, cli_proc_name)
@@ -463,15 +505,47 @@ defmodule CLI.ToyRobotB do
 
       parent = self()
       pid = spawn_link(fn -> roundabout(parent) end)
+<<<<<<< HEAD
       if (Process.whereis(:client_toyrobotB) == nil ) do
         Process.register(pid, :client_toyrobotB)
       end
       obs_ahead = send_robot_status(robot, cli_proc_name)
+=======
+      Process.register(pid, :client_toyrobotB)
+      obs_ahead = wait_and_send(robot, cli_proc_name, 0)
+>>>>>>> 9fa27c7a7510583088673550a0f91ae27c3b373e
 
       {robot, obs_ahead}
     end
   end
 
+<<<<<<< HEAD
+=======
+  def wait_for_a() do
+    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+
+    if a_turn == true and b_turn == false do
+      wait_for_a()
+    end
+  end
+
+  def wait_for_movement(robot, cli_proc_name, _) do
+    # get the status of the turns
+    a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+
+    if b_turn do
+      obs_ahead = send_robot_status(robot, cli_proc_name)
+      #Now update it to show that it is A's turn
+      Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+      Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+    else
+      wait_for_a()
+    end
+  end
+
+>>>>>>> 9fa27c7a7510583088673550a0f91ae27c3b373e
   def wait_for_movement(nxt_x, nxt_y) do
     {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
 
