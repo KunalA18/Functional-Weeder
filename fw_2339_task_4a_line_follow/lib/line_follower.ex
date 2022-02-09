@@ -260,27 +260,55 @@ defmodule Line_follower do
     Pigpiox.Pwm.gpio_pwm(rvalue, right_duty_cycle)
   end
 
-  def turn_right() do
-    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
-    motor_action(motor_ref, @onlyright)
-    my_motion(110,110)
-    Process.sleep(400)
-    motor_action(motor_ref, @stop)
-    my_motion(0, 0)
+  def turn_right do
+    right_detect = false
+    move_right(right_detect)
   end
 
-  def turn_left(a,b,c) do
+  def move_right(right_detect) do
+    map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
-    # motor_action(motor_ref, @forward)
-    # my_motion(110,110)
-    # Process.sleep(100)
-    # motor_action(motor_ref, @stop)
-    # my_motion(0, 0)
-    motor_action(motor_ref, @forward)
-    my_motion(a,b)
-    Process.sleep(c)
-    motor_action(motor_ref, @stop)
-    my_motion(0, 0)
+    motor_action(motor_ref, @onlyright)
+    my_motion(120,120)
+    right_detect =
+      if Enum.at(map_sens_list, 3) < 600 do
+        right_detect = true
+      else
+        right_detect
+      end
+
+    if Enum.at(map_sens_list, 3) > 600 && right_detect == true do
+      motor_action(motor_ref, @stop)
+      my_motion(0, 0)
+    else
+      move_right(right_detect)
+    end
+  end
+
+  def turn_left do
+    left_detect = false
+    move_left(left_detect)
+  end
+
+  def move_left(left_detect) do
+    map_sens_list = test_wlf_sensors()
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    motor_action(motor_ref, @onlyleft)
+    my_motion(120,120)
+    left_detect =
+      if Enum.at(map_sens_list, 3) < 600 do
+        left_detect = true
+      else
+        left_detect
+      end
+
+    if Enum.at(map_sens_list, 3) > 600 && left_detect == true do
+      motor_action(motor_ref, @stop)
+      my_motion(0, 0)
+    else
+      move_left(left_detect)
+    end
+
   end
 
   def u_turn() do
