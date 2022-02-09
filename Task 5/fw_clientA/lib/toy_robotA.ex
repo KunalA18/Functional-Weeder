@@ -7,7 +7,8 @@ defmodule CLI.ToyRobotA do
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5}
   # maps directions to numbers
   @dir_to_num %{:north => 1, :east => 2, :south => 3, :west => 4}
-
+  # Changing this to false will disable separate turns
+  @turns_enabled false
   @doc """
   Places the robot to the default position of (1, A, North)
 
@@ -92,6 +93,7 @@ defmodule CLI.ToyRobotA do
     Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
     Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
 
+    IO.inspect(@turns_enabled)
     ###########################
     ## complete this funcion ##
     ###########################
@@ -181,7 +183,7 @@ defmodule CLI.ToyRobotA do
 
       # send status of the start location
       # IO.inspect("186")
-      obs_ahead = wait_and_send(robot, cli_proc_name, 0)
+      obs_ahead = wait_and_send(robot, cli_proc_name)
       {x, y, _facing} = report(robot)
       key_current = Integer.to_string(x) <> Atom.to_string(y)
       # IO.inspect(key_current, label: "Current key")
@@ -221,11 +223,11 @@ defmodule CLI.ToyRobotA do
     end
   end
 
-  def wait_and_send(robot, cli_proc_name, i) do
+  def wait_and_send(robot, cli_proc_name) do
     a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
     b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
 
-    if (a_turn == true and b_turn == false) or (i > 10000000) do
+    if (a_turn == true and b_turn == false) do
       #IO.inspect("Wait and send func")
       obs_ahead = send_robot_status(robot, cli_proc_name)
       #Now update it to show that it is B's turn
@@ -233,7 +235,7 @@ defmodule CLI.ToyRobotA do
       Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
       obs_ahead
     else
-      wait_and_send(robot, cli_proc_name, i+1)
+      wait_and_send(robot, cli_proc_name)
     end
   end
 
@@ -426,13 +428,13 @@ defmodule CLI.ToyRobotA do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
-          obs_ahead = wait_and_send(robot, cli_proc_name, 0)
+          obs_ahead = wait_and_send(robot, cli_proc_name)
           # IO.inspect("In rotate")
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         else
           # rotate right
           robot = right(robot)
-          obs_ahead = wait_and_send(robot, cli_proc_name, 0)
+          obs_ahead = wait_and_send(robot, cli_proc_name)
           # IO.inspect("In rotate")
           rotate(robot, should_face, face_diff, obs_ahead, cli_proc_name)
         end
@@ -533,7 +535,7 @@ defmodule CLI.ToyRobotA do
       pid = spawn_link(fn -> roundabout(parent) end)
       Process.register(pid, :client_toyrobotA)
       # IO.inspect("At the end of move with priority")
-      obs_ahead = wait_and_send(robot, cli_proc_name, 0)
+      obs_ahead = wait_and_send(robot, cli_proc_name)
 
       {robot, obs_ahead}
     end
@@ -646,6 +648,8 @@ defmodule CLI.ToyRobotA do
   """
   def left(%CLI.Position{facing: facing} = robot) do
     %CLI.Position{robot | facing: @directions_to_the_left[facing]}
+
+    #Code for left turn Line Following here
   end
 
   @doc """
@@ -660,6 +664,9 @@ defmodule CLI.ToyRobotA do
           end)
           |> elem(0)
     }
+
+    # Code for line following here
+    Line_follower.print(0)
   end
 
   @doc """

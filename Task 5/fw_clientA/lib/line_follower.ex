@@ -55,6 +55,10 @@ defmodule Line_follower do
     line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle,main_node,same_node)
   end
 
+  def print(x) do
+    IO.inspect(x, label: "Printed in Line follow")
+  end
+
   def line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle,main_node,same_node) do
     map_sens_list = test_wlf_sensors()
     IO.inspect(map_sens_list)
