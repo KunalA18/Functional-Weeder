@@ -639,6 +639,7 @@ defmodule CLI.ToyRobotA do
   Rotates the robot to the right
   """
   def right(%CLI.Position{facing: facing} = robot) do
+    CLI.Test.print(0)
     %CLI.Position{robot | facing: @directions_to_the_right[facing]}
   end
 
@@ -647,6 +648,7 @@ defmodule CLI.ToyRobotA do
   Rotates the robot to the left
   """
   def left(%CLI.Position{facing: facing} = robot) do
+    CLI.Test.print(0)
     %CLI.Position{robot | facing: @directions_to_the_left[facing]}
 
     #Code for left turn Line Following here
@@ -656,6 +658,7 @@ defmodule CLI.ToyRobotA do
   Moves the robot to the north, but prevents it to fall
   """
   def move(%CLI.Position{x: _, y: y, facing: :north} = robot) when y < @table_top_y do
+    # Code for line following here
     %CLI.Position{
       robot
       | y:
@@ -665,8 +668,7 @@ defmodule CLI.ToyRobotA do
           |> elem(0)
     }
 
-    # Code for line following here
-    Line_follower.print(0)
+
   end
 
   @doc """
