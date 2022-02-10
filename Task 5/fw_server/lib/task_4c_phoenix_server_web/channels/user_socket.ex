@@ -19,8 +19,8 @@ defmodule Task4cPhoenixServerWeb.UserSocket do
   # See the [`Channels guide`](https://hexdocs.pm/phoenix/channels.html)
   # for futher details.
 
-  channel "robot:*", Task4CPhoenixServerWeb.RobotChannel
-  channel "timer:*", Task4CPhoenixServerWeb.TimerChannel
+  channel "robot:*", FWServerWeb.RobotChannel
+  channel "timer:*", FWServerWeb.TimerChannel
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After

@@ -1,11 +1,11 @@
-defmodule Task4CPhoenixServerWeb.Router do
-  use Task4CPhoenixServerWeb, :router
+defmodule FWServerWeb.Router do
+  use FWServerWeb, :router
 
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
-    plug :put_root_layout, {Task4CPhoenixServerWeb.LayoutView, :root}
+    plug :put_root_layout, {FWServerWeb.LayoutView, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
   end
@@ -14,7 +14,7 @@ defmodule Task4CPhoenixServerWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", Task4CPhoenixServerWeb do
+  scope "/", FWServerWeb do
     pipe_through :browser
 
     get "/", PageController, :index
@@ -22,7 +22,7 @@ defmodule Task4CPhoenixServerWeb.Router do
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", Task4CPhoenixServerWeb do
+  # scope "/api", FWServerWeb do
   #   pipe_through :api
   # end
 
@@ -38,7 +38,7 @@ defmodule Task4CPhoenixServerWeb.Router do
 
     scope "/" do
       pipe_through :browser
-      live_dashboard "/dashboard", metrics: Task4CPhoenixServerWeb.Telemetry
+      live_dashboard "/dashboard", metrics: FWServerWeb.Telemetry
     end
   end
 

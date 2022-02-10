@@ -1,3 +1,3 @@
-defmodule Task4CPhoenixServerWeb.PageViewTest do
-  use Task4CPhoenixServerWeb.ConnCase, async: true
+defmodule FWServerWeb.PageViewTest do
+  use FWServerWeb.ConnCase, async: true
 end

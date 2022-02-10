@@ -1,5 +1,5 @@
-defmodule Task4CPhoenixServerWeb.ArenaLive do
-  use Task4CPhoenixServerWeb,:live_view
+defmodule FWServerWeb.ArenaLive do
+  use FWServerWeb,:live_view
   require Logger
 
   @doc """
@@ -12,7 +12,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
   """
   def mount(_params, _session, socket) do
 
-    Task4CPhoenixServerWeb.Endpoint.subscribe("robot:update")
+    FWServerWeb.Endpoint.subscribe("robot:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "timer:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "view:update")
 
@@ -194,7 +194,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
 
     socket = assign(socket, :robotA_start, data["robotA_start"])
     socket = assign(socket, :robotB_start, data["robotB_start"])
-    Task4CPhoenixServerWeb.Endpoint.broadcast("timer:start", "start_timer", %{})
+    FWServerWeb.Endpoint.broadcast("timer:start", "start_timer", %{})
 
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", {"start", %{A: socket.assigns.robotA_start, B: socket.assigns.robotB_start}})
     #################################
@@ -211,7 +211,7 @@ defmodule Task4CPhoenixServerWeb.ArenaLive do
   """
   def handle_event("stop_clock", _data, socket) do
 
-    Task4CPhoenixServerWeb.Endpoint.broadcast("timer:stop", "stop_timer", %{})
+    FWServerWeb.Endpoint.broadcast("timer:stop", "stop_timer", %{})
 
     #################################
     ## edit the function if needed ##

@@ -1,5 +1,5 @@
-defmodule Task4CPhoenixServerWeb.LayoutView do
-  use Task4CPhoenixServerWeb, :view
+defmodule FWServerWeb.LayoutView do
+  use FWServerWeb, :view
 
   # Phoenix LiveDashboard is available only in development by default,
   # so we instruct Elixir to not warn if the dashboard route is missing.

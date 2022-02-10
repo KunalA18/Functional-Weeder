@@ -1,5 +1,5 @@
-defmodule Task4CPhoenixServerWeb.PageControllerTest do
-  use Task4CPhoenixServerWeb.ConnCase
+defmodule FWServerWeb.PageControllerTest do
+  use FWServerWeb.ConnCase
 
   test "GET /", %{conn: conn} do
     conn = get(conn, "/")

@@ -1,4 +1,4 @@
-defmodule Task4CPhoenixServerWeb.RobotChannel do
+defmodule FWServerWeb.RobotChannel do
   use Phoenix.Channel
 
   def start_agents() do
@@ -53,7 +53,7 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
   Reply or Acknowledge with socket PID received from the Client.
   """
   def join("robot:status", _params, socket) do
-    Task4CPhoenixServerWeb.Endpoint.subscribe("robot:update")
+    FWServerWeb.Endpoint.subscribe("robot:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
 
     #IO.inspect(Process.registered, label: "Whereis Result")
@@ -61,6 +61,9 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
 
     #Agents to store the info supplied by clients which is used for robot communication
     start_agents()
+
+    FWServerWeb.Endpoint.subscribe("timer:update")
+    socket = assign(socket, :timer_tick, 180)
 
     {:ok, socket}
   end
@@ -82,7 +85,8 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
   If an obstacle is present ahead of the robot, then broadcast the pixel location of the obstacle to be displayed on the Dashboard.
   """
   @robot_map_y_string_to_num %{"a" => 1, "b" => 2, "c" => 3, "d" => 4, "e" => 5, "f" => 6}
-
+  #Map format from now on
+  # %{"event_id" => <integer>, "sender" => <"A" OR "B" OR "Server">, "value" => <data_required_by_server>, ...}
   def handle_in("new_msg", message, socket) do
 
     # decodes the message
@@ -103,7 +107,7 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update", msg_map})
 
     # determine the obstacle's presence in front of the robot and return the boolean value
-    is_obs_ahead = Task4CPhoenixServerWeb.FindObstaclePresence.is_obstacle_ahead?(message["x"], message["y"], message["face"])
+    is_obs_ahead = FWServerWeb.FindObstaclePresence.is_obstacle_ahead?(message["x"], message["y"], message["face"])
 
     # file object to write each action taken by each Robot (A as well as B)
     {:ok, out_file} = File.open("task_4c_output.txt", [:append])
@@ -120,6 +124,17 @@ defmodule Task4CPhoenixServerWeb.RobotChannel do
     end
 
     {:reply, {:ok, is_obs_ahead}, socket}
+  end
+
+  def handle_info(%{event: "update_timer_tick", payload: timer_data, topic: "timer:update"}, socket) do
+    socket = assign(socket, :timer_tick, timer_data.time)
+    {:noreply, socket}
+  end
+
+  def handle_in("event_msg", message, socket) do
+    message = Map.put(message, "timer", socket.assigns[:timer_tick])
+    FWServerWeb.Endpoint.broadcast_from(self(), "robot:status", "event_msg", message)
+    {:reply, {:ok, true}, socket}
   end
 
   def get_obs_pixels(left_value, bottom_value, facing) do

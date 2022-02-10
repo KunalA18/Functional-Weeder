@@ -1,4 +1,4 @@
-defmodule Task4CPhoenixServerWeb.Telemetry do
+defmodule FWServerWeb.Telemetry do
   use Supervisor
   import Telemetry.Metrics
 
@@ -42,7 +42,7 @@ defmodule Task4CPhoenixServerWeb.Telemetry do
     [
       # A module, function and arguments to be invoked periodically.
       # This function must call :telemetry.execute/3 and a metric must be added above.
-      # {Task4CPhoenixServerWeb, :count_users, []}
+      # {FWServerWeb, :count_users, []}
     ]
   end
 end

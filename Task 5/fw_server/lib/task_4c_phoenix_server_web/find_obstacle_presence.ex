@@ -1,4 +1,4 @@
-defmodule Task4CPhoenixServerWeb.FindObstaclePresence do
+defmodule FWServerWeb.FindObstaclePresence do
   def is_obstacle_ahead?(x, y, face) do
 
     # file object to read obstacle locations from given .txt file

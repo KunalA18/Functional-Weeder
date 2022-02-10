@@ -1,4 +1,4 @@
-defmodule Task4CPhoenixServerWeb.ConnCase do
+defmodule FWServerWeb.ConnCase do
   @moduledoc """
   This module defines the test case to be used by
   tests that require setting up a connection.
@@ -11,7 +11,7 @@ defmodule Task4CPhoenixServerWeb.ConnCase do
   we enable the SQL sandbox, so changes done to the database
   are reverted at the end of every test. If you are using
   PostgreSQL, you can even run database tests asynchronously
-  by setting `use Task4CPhoenixServerWeb.ConnCase, async: true`, although
+  by setting `use FWServerWeb.ConnCase, async: true`, although
   this option is not recommended for other databases.
   """
 
@@ -22,12 +22,12 @@ defmodule Task4CPhoenixServerWeb.ConnCase do
       # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
-      import Task4CPhoenixServerWeb.ConnCase
+      import FWServerWeb.ConnCase
 
-      alias Task4CPhoenixServerWeb.Router.Helpers, as: Routes
+      alias FWServerWeb.Router.Helpers, as: Routes
 
       # The default endpoint for testing
-      @endpoint Task4CPhoenixServerWeb.Endpoint
+      @endpoint FWServerWeb.Endpoint
     end
   end
 

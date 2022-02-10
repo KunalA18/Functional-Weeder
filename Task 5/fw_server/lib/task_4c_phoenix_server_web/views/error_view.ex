@@ -1,5 +1,5 @@
-defmodule Task4CPhoenixServerWeb.ErrorView do
-  use Task4CPhoenixServerWeb, :view
+defmodule FWServerWeb.ErrorView do
+  use FWServerWeb, :view
 
   # If you want to customize a particular status code
   # for a certain format, you may uncomment below.

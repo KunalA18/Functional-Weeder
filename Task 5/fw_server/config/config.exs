@@ -8,9 +8,9 @@
 import Config
 
 # Configures the endpoint
-config :task_4c_phoenix_server, Task4CPhoenixServerWeb.Endpoint,
+config :task_4c_phoenix_server, FWServerWeb.Endpoint,
   url: [host: "localhost"],
-  render_errors: [view: Task4CPhoenixServerWeb.ErrorView, accepts: ~w(html json), layout: false],
+  render_errors: [view: FWServerWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Task4CPhoenixServer.PubSub,
   live_view: [signing_salt: "8WLDIktq"]
 

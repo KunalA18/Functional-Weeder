@@ -1,4 +1,4 @@
-defmodule Task4CPhoenixServerWeb.ErrorHelpers do
+defmodule FWServerWeb.ErrorHelpers do
   @moduledoc """
   Conveniences for translating and building error messages.
   """
@@ -39,9 +39,9 @@ defmodule Task4CPhoenixServerWeb.ErrorHelpers do
     # should be written to the errors.po file. The :count option is
     # set by Ecto and indicates we should also apply plural rules.
     if count = opts[:count] do
-      Gettext.dngettext(Task4CPhoenixServerWeb.Gettext, "errors", msg, msg, count, opts)
+      Gettext.dngettext(FWServerWeb.Gettext, "errors", msg, msg, count, opts)
     else
-      Gettext.dgettext(Task4CPhoenixServerWeb.Gettext, "errors", msg, opts)
+      Gettext.dgettext(FWServerWeb.Gettext, "errors", msg, opts)
     end
   end
 end

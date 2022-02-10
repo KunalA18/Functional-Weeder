@@ -1,4 +1,4 @@
-defmodule Task4CPhoenixServerWeb.Endpoint do
+defmodule FWServerWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :task_4c_phoenix_server
 
   # The session will be stored in the cookie and signed,
@@ -53,5 +53,5 @@ defmodule Task4CPhoenixServerWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug Task4CPhoenixServerWeb.Router
+  plug FWServerWeb.Router
 end

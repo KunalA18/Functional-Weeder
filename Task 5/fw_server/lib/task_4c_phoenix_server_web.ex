@@ -1,12 +1,12 @@
-defmodule Task4CPhoenixServerWeb do
+defmodule FWServerWeb do
   @moduledoc """
   The entrypoint for defining your web interface, such
   as controllers, views, channels and so on.
 
   This can be used in your application as:
 
-      use Task4CPhoenixServerWeb, :controller
-      use Task4CPhoenixServerWeb, :view
+      use FWServerWeb, :controller
+      use FWServerWeb, :view
 
   The definitions below will be executed for every view,
   controller, etc, so keep them short and clean, focused
@@ -19,11 +19,11 @@ defmodule Task4CPhoenixServerWeb do
 
   def controller do
     quote do
-      use Phoenix.Controller, namespace: Task4CPhoenixServerWeb
+      use Phoenix.Controller, namespace: FWServerWeb
 
       import Plug.Conn
-      import Task4CPhoenixServerWeb.Gettext
-      alias Task4CPhoenixServerWeb.Router.Helpers, as: Routes
+      import FWServerWeb.Gettext
+      alias FWServerWeb.Router.Helpers, as: Routes
     end
   end
 
@@ -31,7 +31,7 @@ defmodule Task4CPhoenixServerWeb do
     quote do
       use Phoenix.View,
         root: "lib/task_4c_phoenix_server_web/templates",
-        namespace: Task4CPhoenixServerWeb
+        namespace: FWServerWeb
 
       # Import convenience functions from controllers
       import Phoenix.Controller,
@@ -45,7 +45,7 @@ defmodule Task4CPhoenixServerWeb do
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {Task4CPhoenixServerWeb.LayoutView, "live.html"}
+        layout: {FWServerWeb.LayoutView, "live.html"}
 
       unquote(view_helpers())
     end
@@ -72,7 +72,7 @@ defmodule Task4CPhoenixServerWeb do
   def channel do
     quote do
       use Phoenix.Channel
-      import Task4CPhoenixServerWeb.Gettext
+      import FWServerWeb.Gettext
     end
   end
 
@@ -87,9 +87,9 @@ defmodule Task4CPhoenixServerWeb do
       # Import basic rendering functionality (render, render_layout, etc)
       import Phoenix.View
 
-      import Task4CPhoenixServerWeb.ErrorHelpers
-      import Task4CPhoenixServerWeb.Gettext
-      alias Task4CPhoenixServerWeb.Router.Helpers, as: Routes
+      import FWServerWeb.ErrorHelpers
+      import FWServerWeb.Gettext
+      alias FWServerWeb.Router.Helpers, as: Routes
     end
   end
 

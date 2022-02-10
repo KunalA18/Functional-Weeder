@@ -7,8 +7,8 @@ defmodule Task4CPhoenixServer.Timer do
   end
 
   def init(_state) do
-    Task4CPhoenixServerWeb.Endpoint.subscribe "timer:start", []
-    Task4CPhoenixServerWeb.Endpoint.subscribe "timer:stop", []
+    FWServerWeb.Endpoint.subscribe "timer:start", []
+    FWServerWeb.Endpoint.subscribe "timer:stop", []
     state = %{timer_ref: nil, timer: nil}
     {:ok, state}
   end
@@ -47,7 +47,7 @@ defmodule Task4CPhoenixServer.Timer do
   end
 
   defp broadcast(tick, response) do
-    Task4CPhoenixServerWeb.Endpoint.broadcast! "timer:update", "update_timer_tick", %{
+    FWServerWeb.Endpoint.broadcast! "timer:update", "update_timer_tick", %{
       response: response,
       time: tick,
     }

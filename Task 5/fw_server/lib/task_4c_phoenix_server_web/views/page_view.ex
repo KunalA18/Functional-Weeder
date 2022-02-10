@@ -1,3 +1,3 @@
-defmodule Task4CPhoenixServerWeb.PageView do
-  use Task4CPhoenixServerWeb, :view
+defmodule FWServerWeb.PageView do
+  use FWServerWeb, :view
 end

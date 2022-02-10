@@ -2,7 +2,7 @@ import Config
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
-config :task_4c_phoenix_server, Task4CPhoenixServerWeb.Endpoint,
+config :task_4c_phoenix_server, FWServerWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "qF6ZU6m6jxh9TQDm0KZGoLrlsklk9flcTTkaKhD7SN8FkPvzOg6erpWjg4tMfEsu",
   server: false

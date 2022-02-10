@@ -9,11 +9,11 @@ defmodule Task4CPhoenixServer.Application do
   def start(_type, _args) do
     children = [
       # Start the Telemetry supervisor
-      Task4CPhoenixServerWeb.Telemetry,
+      FWServerWeb.Telemetry,
       # Start the PubSub system
       {Phoenix.PubSub, name: Task4CPhoenixServer.PubSub, adapter: Phoenix.PubSub.PG2},
       # Start the Endpoint (http/https)
-      Task4CPhoenixServerWeb.Endpoint,
+      FWServerWeb.Endpoint,
       # Start a worker by calling: Task4CPhoenixServer.Worker.start_link(arg)
       # {Task4CPhoenixServer.Worker, arg}
       {Task4CPhoenixServer.Timer, []}
@@ -29,7 +29,7 @@ defmodule Task4CPhoenixServer.Application do
   # whenever the application is updated.
   @impl true
   def config_change(changed, _new, removed) do
-    Task4CPhoenixServerWeb.Endpoint.config_change(changed, removed)
+    FWServerWeb.Endpoint.config_change(changed, removed)
     :ok
   end
 end

@@ -1,4 +1,4 @@
-defmodule Task4CPhoenixServerWeb.TimerChannel do
+defmodule FWServerWeb.TimerChannel do
   use Phoenix.Channel
   def join("timer:update", _msg, socket) do
     {:ok, socket}
