@@ -1,4 +1,4 @@
-defmodule Task4CClientRobotA.MixProject do
+defmodule FWClientRobotA.MixProject do
   use Mix.Project
 
   def project do
@@ -8,7 +8,7 @@ defmodule Task4CClientRobotA.MixProject do
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      escript: [main_module: Task4CClientRobotA]
+      escript: [main_module: FWClientRobotA]
     ]
   end
 

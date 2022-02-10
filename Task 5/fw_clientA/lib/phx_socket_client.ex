@@ -1,4 +1,4 @@
-defmodule Task4CClientRobotA.PhoenixSocketClient do
+defmodule FWClientRobotA.PhoenixSocketClient do
 
   alias PhoenixClient.{Socket, Channel, Message}
 
@@ -51,14 +51,25 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
   in this format: {:ok, < true OR false >}.
   Create a tuple of this format: '{:obstacle_presence, < true or false >}' as a return of this function.
   """
-  def send_robot_status(channel, %Task4CClientRobotA.Position{x: x, y: y, facing: facing} = _robot, goal_locs) do
+  def send_robot_status(channel, %FWClientRobotA.Position{x: x, y: y, facing: facing} = _robot, goal_locs) do
 
     goals_string = convert_to_numbers(goal_locs)
     # IO.inspect(goals_string, label: "Goal string to be sent")
 
     message = %{client: "robot_A", x: x, y: y, face: facing, goals: goals_string} #formats the message
 
+    #New format for task 5
+    # %{"event_id" => <integer>, "sender" => <"A" OR "B" OR "Server">, "value" => <data_required_by_server>, ...}
+    event_message = %{"event_id" => 1, "sender" => <"A", "value" => %{"x" => x, "y" => y, "face" => facing}} #formats the message
+
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
+
+    if obstaclePresence do
+      event_message = %{"event_id" => 2, "sender" => <"A", "value" => %{"x" => x, "y" => y, "face" => facing}}
+      {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+    end
 
     {:obstacle_presence, obstaclePresence}
 
@@ -73,7 +84,7 @@ defmodule Task4CClientRobotA.PhoenixSocketClient do
   ### GET ###
   ###########
   def get_goals (channel) do
-    {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goals_msg", %{})
+    {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goals_msg", %{"sender" => "A"})
   end
 
   def get_start(channel) do

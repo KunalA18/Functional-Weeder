@@ -175,7 +175,16 @@ defmodule FWServerWeb.RobotChannel do
     |> Enum.map(fn {:ok, [a, b]} -> [a, b] end)
     |> Enum.reduce(fn [a, b], acc -> acc ++ [a, b] end )
 
-    {:reply, {:ok, csv}, socket}
+    seeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 0 do x end end)
+      |> Enum.reject(fn x -> x == nil end)# 0, 2, 4
+    weeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 1 do x end end)
+      |> Enum.reject(fn x -> x == nil end)# 1, 3, 5
+
+    if message["sender"] == "A" do
+      {:reply, {:ok, weeding}, socket}
+    else
+      {:reply, {:ok, seeding}, socket}
+    end
   end
 
   def handle_in("start_msg", message, socket) do
