@@ -36,15 +36,19 @@ defmodule FWServerWeb.RobotChannel do
       Process.register(pid_turns, :turns)
       Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
       Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+
     end
+
     if Process.whereis(:goal_store) == nil do
       {:ok, pid_goal} = Agent.start_link(fn -> nil end)
       Process.register(pid_goal, :goal_store)
     end
 
-    # These inputs signify that it is A's turn
-    # Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
-    # Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+    if Process.whereis(:stopped) == nil do
+      {:ok, pid_stopped} = Agent.start_link(fn -> %{"A" => false, "B" => false} end)
+      Process.register(pid_stopped, :stopped)
+    end
+
   end
 
   @doc """
@@ -55,9 +59,6 @@ defmodule FWServerWeb.RobotChannel do
   def join("robot:status", _params, socket) do
     FWServerWeb.Endpoint.subscribe("robot:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "start")
-
-    #IO.inspect(Process.registered, label: "Whereis Result")
-
 
     #Agents to store the info supplied by clients which is used for robot communication
     start_agents()
@@ -348,5 +349,16 @@ defmodule FWServerWeb.RobotChannel do
 
   end
 
+  def handle_info({"stop_robot", data}, socket) do
+    IO.inspect(data["robot"], label: "Stopped")
+    Agent.update(:stopped, fn map -> Map.put(map, data["robot"], true) end)
+    {:noreply, socket}
+  end
+
+  def handle_info({"start_robot", data}, socket) do
+    IO.inspect(data["robot"], label: "Start")
+    Agent.update(:stopped, fn map -> Map.put(map, data["robot"], false) end)
+    {:noreply, socket}
+  end
 
 end

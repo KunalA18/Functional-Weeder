@@ -2,6 +2,8 @@ defmodule FWClientRobotA.PhoenixSocketClient do
 
   alias PhoenixClient.{Socket, Channel, Message}
 
+  @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5, :f => 6}
+
   @doc """
   Connect to the Phoenix Server URL (defined in config.exs) via socket.
   Once ensured that socket is connected, join the channel on the server with topic "robot:status".
@@ -60,14 +62,14 @@ defmodule FWClientRobotA.PhoenixSocketClient do
 
     #New format for task 5
     # %{"event_id" => <integer>, "sender" => <"A" OR "B" OR "Server">, "value" => <data_required_by_server>, ...}
-    event_message = %{"event_id" => 1, "sender" => <"A", "value" => %{"x" => x, "y" => y, "face" => facing}} #formats the message
+    event_message = %{"event_id" => 1, "sender" => "A", "value" => %{"x" => x, "y" => y, "face" => facing}} #formats the message
 
     {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
 
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
 
     if obstaclePresence do
-      event_message = %{"event_id" => 2, "sender" => <"A", "value" => %{"x" => x, "y" => y, "face" => facing}}
+      event_message = %{"event_id" => 2, "sender" => "A", "value" => %{"x" => x, "y" => y, "face" => facing}}
       {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
     end
 
@@ -76,9 +78,27 @@ defmodule FWClientRobotA.PhoenixSocketClient do
     ###########################
     ## complete this funcion ##
     ###########################
-
   end
 
+  def send_weeding_msg(channel, x, y) do
+    {location} = convert_to_location(x, y)
+    event_message = %{"event_id" => 4, "sender" => "A", "value" => location}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
+  def send_seeding_msg(channel, x, y) do
+    {location} = convert_to_location(x, y)
+    event_message = %{"event_id" => 3, "sender" => "A", "value" => location}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
+  @doc """
+  Takes in x (integer) and y(atom) to convert them into the corresponding square location
+  """
+  def convert_to_location(x, y) do
+    y = @robot_map_y_atom_to_num[y]
+    location = x + ((y-1) * 5)
+  end
 
   ###########
   ### GET ###

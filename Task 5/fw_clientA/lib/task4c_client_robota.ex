@@ -84,6 +84,8 @@ defmodule FWClientRobotA do
   """
   def main(args) do
     #Connect to server
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+    Process.register(agent, :weeded_store)
     {:ok, _response, channel} = FWClientRobotA.PhoenixSocketClient.connect_server()
     # IO.inspect(channel, "Channel")
 
@@ -396,6 +398,7 @@ defmodule FWClientRobotA do
         key_current = Integer.to_string(x) <> Atom.to_string(y)
 
         FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
+        weeding(robot, distance_array, key_current, channel)
 
         #get the updated distance array
         distance_array = compare_with_store(distance_array, channel)
@@ -417,6 +420,37 @@ defmodule FWClientRobotA do
 
       true ->
         {robot, distance_array}
+    end
+  end
+
+  def weeding(robot, distance_array, key_current, channel) do
+    #If the position the robot is at is a goal, then weed the plant
+    if Enum.member?(distance_array, key_current) do
+      # 4 ways to weed a robot depending on which direction the robot is facing
+      IO.puts("Weeding Started")
+      {x, y, facing} = report(robot)
+      if facing == :north do
+        # FWClientRobotA.LineFollower.weed_north
+      end
+      if facing == :east do
+        # FWClientRobotA.LineFollower.weed_east
+      end
+      if facing == :west do
+        # FWClientRobotA.LineFollower.weed_west
+      end
+      if facing == :south do
+        # FWClientRobotA.LineFollower.weed_south
+      end
+      IO.puts("Weeding Done")
+      FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, x, y)
+
+      #Two options now
+      # 1. Go to deposition zone
+      # Kaafi code likhna padega
+
+      # 2. Put it in box at the back (best imo)
+      # Zyada kuch nahi karna padega
+
     end
   end
 

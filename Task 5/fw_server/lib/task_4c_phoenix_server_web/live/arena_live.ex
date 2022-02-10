@@ -2,6 +2,7 @@ defmodule FWServerWeb.ArenaLive do
   use FWServerWeb,:live_view
   require Logger
 
+  @duration 180
   @doc """
   Mount the Dashboard when this module is called with request
   for the Arena view from the client like browser.
@@ -16,12 +17,18 @@ defmodule FWServerWeb.ArenaLive do
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "timer:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "view:update")
 
+    if Process.whereis(:stop_times) == nil do
+      {:ok, pid_stop} = Agent.start_link(fn -> [] end)
+      Process.register(pid_stop, :stop_times)
+      read_stop_times()
+    end
+
     socket = assign(socket, :img_robotA, "robot_facing_north.png")
     socket = assign(socket, :bottom_robotA, 0)
     socket = assign(socket, :left_robotA, 0)
     socket = assign(socket, :robotA_start, "1, a, north")
     socket = assign(socket, :robotA_goals, [])
-    socket = assign(socket, :robotA_status, "Active")
+    socket = assign(socket, :robotA_status, "Inactive")
 
     socket = assign(socket, :img_robotB, "robot_facing_south.png")
     socket = assign(socket, :bottom_robotB, 750)
@@ -194,6 +201,8 @@ defmodule FWServerWeb.ArenaLive do
 
     socket = assign(socket, :robotA_start, data["robotA_start"])
     socket = assign(socket, :robotB_start, data["robotB_start"])
+    socket = assign(socket, :robotA_status, "Active")
+    socket = assign(socket, :robotB_status, "Active")
     FWServerWeb.Endpoint.broadcast("timer:start", "start_timer", %{})
 
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", {"start", %{A: socket.assigns.robotA_start, B: socket.assigns.robotB_start}})
@@ -230,6 +239,38 @@ defmodule FWServerWeb.ArenaLive do
 
     Logger.info("Timer tick: #{timer_data.time}")
     socket = assign(socket, :timer_tick, timer_data.time)
+
+    stop_list = Agent.get(:stop_times, fn list -> list end)
+    kill_list = Enum.find(stop_list, fn [sr, robot, kill_time, restart_time] -> kill_time == timer_data.time end)
+
+    socket = if kill_list != nil do
+      robot = Enum.at(kill_list, 1)
+      msg = %{"robot" => robot}
+      Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", {"stop_robot", msg})
+      if robot == "A" do
+        assign(socket, :robotA_status, "Inactive")
+      else
+        assign(socket, :robotB_status, "Inactive")
+      end
+    else
+      socket
+    end
+
+    start_list = Enum.find(stop_list, fn [sr, robot, kill_time, restart_time] -> restart_time == timer_data.time end)
+
+    socket = if start_list != nil do
+      robot = Enum.at(start_list, 1)
+      msg = %{"robot" => robot}
+      Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", {"start_robot", msg})
+      if robot == "A" do
+        assign(socket, :robotA_status, "Active")
+      else
+        assign(socket, :robotB_status, "Active")
+      end
+    else
+      socket
+    end
+
 
     {:noreply, socket}
 
@@ -354,6 +395,16 @@ defmodule FWServerWeb.ArenaLive do
       acc ++ [{left, bottom, "green_plant.png"}]
     end)
     map
+  end
+
+  # Note change to 300 in final run
+  def read_stop_times() do
+    csv = "../../../Robots_handle.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take_every(1)
+    |> Enum.filter(fn {:ok, [a, b, c, d]} -> (b != "Robot") end)
+    |> Enum.map(fn {:ok, [a, b, c, d]} -> [a, b, @duration - String.to_integer(c), @duration - String.to_integer(c) - String.to_integer(d)] end)
+
+    IO.inspect(csv, label: "Robot stop times")
+    Agent.update(:stop_times, fn list -> csv end)
   end
 
   def convert_to_coord(loc) do
