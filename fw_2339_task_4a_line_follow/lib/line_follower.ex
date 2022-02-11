@@ -269,7 +269,8 @@ defmodule Line_follower do
     map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
-    my_motion(120,120)
+    my_motion(120, 120)
+
     right_detect =
       if Enum.at(map_sens_list, 3) < 600 do
         right_detect = true
@@ -294,7 +295,8 @@ defmodule Line_follower do
     map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyleft)
-    my_motion(120,120)
+    my_motion(120, 120)
+
     left_detect =
       if Enum.at(map_sens_list, 3) < 600 do
         left_detect = true
@@ -308,13 +310,12 @@ defmodule Line_follower do
     else
       move_left(left_detect)
     end
-
   end
 
   def u_turn() do
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
-    my_motion(110,110)
+    my_motion(110, 110)
     Process.sleep(700)
     motor_action(motor_ref, @stop)
     my_motion(0, 0)
@@ -357,6 +358,36 @@ defmodule Line_follower do
       Enum.map(@ir_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :input, pull_mode: :pullup) end)
 
     ir_values = Enum.map(ir_ref, fn {_, ref_no} -> GPIO.read(ref_no) end)
+  end
+
+  def front_ir do
+    sense = false
+    {_, rvalue} = Enum.at(@ir_pins, 0)
+    ir_ref = GPIO.open(rvalue, :input, pull_mode: :pullup)
+    {_, rv} = ir_ref
+    ir_value = GPIO.read(rv)
+
+    sense =
+      if ir_value == 0 do
+        sense = true
+      else
+        sense
+      end
+  end
+
+  def side_ir do
+    sense = false
+    {_, lvalue} = Enum.at(@ir_pins, 1)
+    ir_ref = GPIO.open(lvalue, :input, pull_mode: :pullup)
+    {_, lv} = ir_ref
+    ir_value = GPIO.read(lv)
+
+    sense =
+      if ir_value == 0 do
+        sense = true
+      else
+        sense
+      end
   end
 
   @doc """
