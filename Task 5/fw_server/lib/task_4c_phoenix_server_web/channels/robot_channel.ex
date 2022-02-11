@@ -40,7 +40,7 @@ defmodule FWServerWeb.RobotChannel do
     end
 
     if Process.whereis(:goal_store) == nil do
-      {:ok, pid_goal} = Agent.start_link(fn -> nil end)
+      {:ok, pid_goal} = Agent.start_link(fn -> [] end)
       Process.register(pid_goal, :goal_store)
     end
 
@@ -324,7 +324,7 @@ defmodule FWServerWeb.RobotChannel do
 
   def handle_in("goal_store_update", message, socket) do
     IO.inspect(message["list"], label: "Received data for goal store")
-    Agent.update(:goal_store, fn map -> message["list"] end)
+    Agent.update(:goal_store, fn list -> list ++ message["list"] end)
     {:reply, :ok, socket}
   end
 

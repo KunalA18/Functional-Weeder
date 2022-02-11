@@ -86,8 +86,10 @@ defmodule FWClientRobotA do
     #Connect to server
     {:ok, agent} = Agent.start_link(fn -> [] end)
     Process.register(agent, :weeded_store)
+    {:ok, pid_goal} = Agent.start_link(fn -> [] end)
+    Process.register(pid_goal, :goal_storeA)
+
     {:ok, _response, channel} = FWClientRobotA.PhoenixSocketClient.connect_server()
-    # IO.inspect(channel, "Channel")
 
     #function to get goal positions
 
@@ -195,12 +197,13 @@ defmodule FWClientRobotA do
     distance_array = sort_according_to_distance(r_x, r_y, goal_locs)
 
     # ["2d":4]
-    FWClientRobotA.PhoenixSocketClient.goal_store_update(channel, Keyword.keys(distance_array))
-    # FWClientRobotA.PhoenixSocketClient.goal_store_get(channel)
+    # FWClientRobotA.PhoenixSocketClient.goal_store_update(channel, Keyword.keys(distance_array))
+    Agent.update(:goal_storeA, fn list -> list ++ Keyword.keys(distance_array) end)
 
     k_a = Integer.to_string(r_x) <> Atom.to_string(r_y)
 
-    FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, k_a)
+    # FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, k_a)
+    Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(k_a)))
 
     #function to compare the agent with the current and return only vals that satisy
     distance_array = compare_with_store(distance_array, channel)
@@ -218,12 +221,16 @@ defmodule FWClientRobotA do
     FWClientRobotA.PhoenixSocketClient.turns_update(channel, msg)
     {x, y, _facing} = report(robot)
     key_current = Integer.to_string(x) <> Atom.to_string(y)
-    FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
+    # FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
+    Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(k_a)))
+
     IO.inspect(distance_array, label: "Distance_array")
   end
 
   def compare_with_store(distance_array, channel) do
-    key_list = FWClientRobotA.PhoenixSocketClient.goal_store_get(channel)
+    # key_list = FWClientRobotA.PhoenixSocketClient.goal_store_get(channel)
+    key_list = Agent.get(:goal_storeA, fn list -> list end)
+    IO.inspect(key_list, label: "Key List")
     Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
   end
 
@@ -238,6 +245,7 @@ defmodule FWClientRobotA do
 
       # Extract the current position from the KeyWord List
       {pos, dis_a} = Enum.at(distance_array, 0)
+      IO.inspect(distance_array, label: "Distance Array")
       ################################
       # wait_for_b_choice()
       #{{b_choice, dis_b}} = Agent.get(:goal_choice, fn map -> Map.get(map, :B) end)
@@ -272,7 +280,9 @@ defmodule FWClientRobotA do
       {x, y, _facing} = report(robot)
       key_current = Integer.to_string(x) <> Atom.to_string(y)
 
-      FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
+      # FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
+      Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(key_current)))
+
       distance_array = compare_with_store(distance_array, channel)
 
       visited = []
@@ -351,6 +361,7 @@ defmodule FWClientRobotA do
 
         # add the square it is at to the list
         {x, y, _facing} = report(robot)
+        IO.puts("In loop")
 
         # Update position in :coords_store
         #Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
@@ -397,7 +408,9 @@ defmodule FWClientRobotA do
         #Update the goal store to delete the goal entry if A has reached a goal
         key_current = Integer.to_string(x) <> Atom.to_string(y)
 
-        FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
+        # FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
+        Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(key_current)))
+
         weeding(robot, distance_array, key_current, channel)
 
         #get the updated distance array
@@ -429,18 +442,7 @@ defmodule FWClientRobotA do
       # 4 ways to weed a robot depending on which direction the robot is facing
       IO.puts("Weeding Started")
       {x, y, facing} = report(robot)
-      if facing == :north do
-        # FWClientRobotA.LineFollower.weed_north
-      end
-      if facing == :east do
-        # FWClientRobotA.LineFollower.weed_east
-      end
-      if facing == :west do
-        # FWClientRobotA.LineFollower.weed_west
-      end
-      if facing == :south do
-        # FWClientRobotA.LineFollower.weed_south
-      end
+
       IO.puts("Weeding Done")
       FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, x, y)
 
@@ -718,7 +720,7 @@ defmodule FWClientRobotA do
   Rotates the robot to the right
   """
   def right(%FWClientRobotA.Position{facing: facing} = robot) do
-    # FWClientRobotA.LineFollower.turn_right
+    FWClientRobotA.LineFollower.turn_right
     %FWClientRobotA.Position{robot | facing: @directions_to_the_right[facing]}
   end
 
@@ -727,7 +729,7 @@ defmodule FWClientRobotA do
   Rotates the robot to the left
   """
   def left(%FWClientRobotA.Position{facing: facing} = robot) do
-    # FWClientRobotA.LineFollower.turn_left
+    FWClientRobotA.LineFollower.turn_left
     %FWClientRobotA.Position{robot | facing: @directions_to_the_left[facing]}
   end
 
@@ -735,7 +737,7 @@ defmodule FWClientRobotA do
   Moves the robot to the north, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: _, y: y, facing: :north} = robot) when y < @table_top_y do
-    # FWClientRobotA.LineFollower.start
+    FWClientRobotA.LineFollower.start
     %FWClientRobotA.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) + 1 end) |> elem(0)
     }
   end
@@ -744,7 +746,7 @@ defmodule FWClientRobotA do
   Moves the robot to the east, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: x, y: _, facing: :east} = robot) when x < @table_top_x do
-    # FWClientRobotA.LineFollower.start
+    FWClientRobotA.LineFollower.start
     %FWClientRobotA.Position{robot | x: x + 1}
   end
 
@@ -752,7 +754,7 @@ defmodule FWClientRobotA do
   Moves the robot to the south, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: _, y: y, facing: :south} = robot) when y > :a do
-    # FWClientRobotA.LineFollower.start
+    FWClientRobotA.LineFollower.start
     %FWClientRobotA.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) - 1 end) |> elem(0)}
   end
 
@@ -760,7 +762,7 @@ defmodule FWClientRobotA do
   Moves the robot to the west, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: x, y: _, facing: :west} = robot) when x > 1 do
-    # FWClientRobotA.LineFollower.start
+    FWClientRobotA.LineFollower.start
     %FWClientRobotA.Position{robot | x: x - 1}
   end
 

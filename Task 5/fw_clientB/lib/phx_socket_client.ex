@@ -2,6 +2,8 @@ defmodule FWClientRobotB.PhoenixSocketClient do
 
   alias PhoenixClient.{Socket, Channel, Message}
 
+  @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5, :f => 6}
+
   @doc """
   Connect to the Phoenix Server URL (defined in config.exs) via socket.
   Once ensured that socket is connected, join the channel on the server with topic "robot:status".
@@ -59,7 +61,14 @@ defmodule FWClientRobotB.PhoenixSocketClient do
 
     message = %{client: "robot_B", x: x, y: y, face: facing, goals: goals_string} #formats the message
 
+    event_message = %{"event_id" => 1, "sender" => "B", "value" => %{"x" => x, "y" => y, "face" => facing}} #formats the message
+
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
+
+    if obstaclePresence do
+      event_message = %{"event_id" => 2, "sender" => "B", "value" => %{"x" => x, "y" => y, "face" => facing}}
+      {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+    end
 
     {:obstacle_presence, obstaclePresence}
 
@@ -68,12 +77,31 @@ defmodule FWClientRobotB.PhoenixSocketClient do
     ###########################
   end
 
+  def send_weeding_msg(channel, x, y) do
+    {location} = convert_to_location(x, y)
+    event_message = %{"event_id" => 4, "sender" => "B", "value" => location}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
+  def send_seeding_msg(channel, x, y) do
+    {location} = convert_to_location(x, y)
+    event_message = %{"event_id" => 3, "sender" => "B", "value" => location}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
+  @doc """
+  Takes in x (integer) and y(atom) to convert them into the corresponding square location
+  """
+  def convert_to_location(x, y) do
+    y = @robot_map_y_atom_to_num[y]
+    location = x + ((y-1) * 5)
+  end
 
   ###########
   ### GET ###
   ###########
   def get_goals (channel) do
-    {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goals_msg", %{})
+    {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goals_msg", %{"sender" => "B"})
   end
 
   def get_start(channel) do
@@ -102,7 +130,7 @@ defmodule FWClientRobotB.PhoenixSocketClient do
   def turns_get(channel) do
     {:ok, turns_map} = PhoenixClient.Channel.push(channel, "turns_get", %{})
     #Add further processing according to requirements
-    IO.inspect(turns_map, label: "Turn Map recieved from Server")
+    # IO.inspect(turns_map, label: "Turn Map recieved from Server")
     turns_map
   end
 
@@ -147,7 +175,6 @@ defmodule FWClientRobotB.PhoenixSocketClient do
   def goal_store_delete(channel, key) do
     {:ok, _} = PhoenixClient.Channel.push(channel, "goal_store_delete", %{key: key})
   end
-
 
   ######################################################
   ## You may create extra helper functions as needed. ##

@@ -20,9 +20,6 @@ defmodule FWClientRobotA.PhoenixSocketClient do
   """
   def connect_server do
 
-    ###########################
-    ## complete this funcion ##
-    ###########################
     socket_opts = [url: Application.get_env(:task_4c_client_robota, :phoenix_server_url )]
 
     {:ok, socket} = PhoenixClient.Socket.start_link(socket_opts)
@@ -133,7 +130,7 @@ defmodule FWClientRobotA.PhoenixSocketClient do
   def turns_get(channel) do
     {:ok, turns_map} = PhoenixClient.Channel.push(channel, "turns_get", %{})
     #Add further processing according to requirements
-    IO.inspect(turns_map, label: "Turn Map recieved from Server")
+    # IO.inspect(turns_map, label: "Turn Map recieved from Server")
     turns_map
   end
 
@@ -177,10 +174,6 @@ defmodule FWClientRobotA.PhoenixSocketClient do
   def goal_store_delete(channel, key) do
     {:ok, _} = PhoenixClient.Channel.push(channel, "goal_store_delete", %{key: key})
   end
-
-
-
-
 
   ######################################################
   ## You may create extra helper functions as needed. ##
