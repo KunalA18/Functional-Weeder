@@ -1606,3 +1606,4 @@ robot_A => 4, c, east
 robot_B => 5, b, south
 robot_A => 5, c, east
 robot_A => 1, a, north
+robot_A => 1, a, north
