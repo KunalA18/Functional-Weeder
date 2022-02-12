@@ -95,6 +95,8 @@ defmodule FWClientRobotA do
 
     {:ok, goals_string} = FWClientRobotA.PhoenixSocketClient.get_goals(channel)
 
+    IO.inspect(goals_string)
+
     goal_locs = calculate_goals(goals_string)
 
     {start_x, start_y, start_dir} = wait_for_start(%{A: nil, B: nil}, channel) #{1, :a, :north}
@@ -173,6 +175,13 @@ defmodule FWClientRobotA do
     end
   end
 
+  def convert_goal_to_locations(loc) do
+    no = String.to_integer(loc) - 1
+    x = rem(no, 5) + 1
+    y = Integer.floor_div(no, 5) + 1
+    {x, y}
+  end
+
   @doc """
   Provide GOAL positions to the robot as given location of [(x1, y1),(x2, y2),..] and plan the path from START to these locations.
   Make a call to ToyRobot.PhoenixSocketClient.send_robot_status/2 to get the indication of obstacle presence ahead of the robot.
@@ -180,7 +189,7 @@ defmodule FWClientRobotA do
   def stop(robot, goal_locs, channel) do
 
     # These inputs signify that it is A's turn
-    FWClientRobotA.PhoenixSocketClient.turns_get(channel)
+    # FWClientRobotA.PhoenixSocketClient.turns_get(channel)
 
     ###########################
     ## complete this funcion ##
