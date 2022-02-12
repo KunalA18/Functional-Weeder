@@ -259,6 +259,11 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, {:ok, %{list: list_goal}}, socket}
   end
 
+  def handle_in("stopped_get", message, socket) do
+    status  = Agent.get(:stopped, fn map -> map end)
+    {:reply, {:ok, status}, socket}
+  end
+
   ############
   ## UPDATE ##
   ############

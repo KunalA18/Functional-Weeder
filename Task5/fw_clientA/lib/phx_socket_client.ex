@@ -65,16 +65,16 @@ defmodule FWClientRobotA.PhoenixSocketClient do
 
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
 
-    if obstaclePresence do
-      event_message = %{"event_id" => 2, "sender" => "A", "value" => %{"x" => x, "y" => y, "face" => facing}}
-      {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
-    end
-
     {:obstacle_presence, obstaclePresence}
 
     ###########################
     ## complete this funcion ##
     ###########################
+  end
+
+  def send_obstacle_presence(channel, %FWClientRobotA.Position{x: x, y: y, facing: facing} = _robot) do
+    event_message = %{"event_id" => 2, "sender" => "A", "value" => %{"x" => x, "y" => y, "face" => facing}}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
   end
 
   def send_weeding_msg(channel, x, y) do
@@ -144,6 +144,13 @@ defmodule FWClientRobotA.PhoenixSocketClient do
     end
   end
 
+  def stopped_get(channel) do
+    {:ok, status} = PhoenixClient.Channel.push(channel, "stopped_get", %{})
+    if status["A"] == true do
+      # Acknowledge stop
+      event_msg = %{"event_id" => 7, "sender" => "A", "value" => nil}
+    end
+  end
 
   ##############
   ### UPDATE ###

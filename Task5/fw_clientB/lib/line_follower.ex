@@ -1,4 +1,4 @@
-defmodule FWClientRobotA.LineFollower do
+defmodule FWClientRobotB.LineFollower do
   require Logger
   use Bitwise
   alias Circuits.GPIO

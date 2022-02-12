@@ -22,8 +22,8 @@ use Mix.Config
 #
 
 # config :task_4c_client_robotb, :phoenix_server, url: "ws://<ngrok-url>:80/socket/websocket"
-config :task_4c_client_robota, :phoenix_server, url: "ws://7c25-1-38-159-85.ngrok.io/socket/websocket"
-# config :task_4c_client_robotb, phoenix_server_url: "ws://localhost:4000/socket/websocket"
+# config :task_4c_client_robotb, :phoenix_server_url: "ws://7c25-1-38-159-85.ngrok.io/socket/websocket"
+config :task_4c_client_robotb, phoenix_server_url: "ws://localhost:4000/socket/websocket"
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

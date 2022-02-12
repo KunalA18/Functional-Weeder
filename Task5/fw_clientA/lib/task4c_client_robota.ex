@@ -101,8 +101,6 @@ defmodule FWClientRobotA do
 
     {:ok, robot} = start(start_x, start_y, start_dir)
 
-    # FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
-
     stop(robot, goal_locs, channel)
 
     ###########################
@@ -275,8 +273,8 @@ defmodule FWClientRobotA do
       # -ve implies that it needs to go down
 
       # send status of the start location
-      obs_ahead = wait_and_send(robot, channel, goal_locs)
-      # {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+      # obs_ahead = wait_and_send(robot, channel, goal_locs)
+      {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
       {x, y, _facing} = report(robot)
       key_current = Integer.to_string(x) <> Atom.to_string(y)
 
@@ -411,7 +409,7 @@ defmodule FWClientRobotA do
         # FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
         Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(key_current)))
 
-        weeding(robot, distance_array, key_current, channel)
+        weeding(robot, distance_array, String.to_atom(key_current), channel)
 
         #get the updated distance array
         distance_array = compare_with_store(distance_array, channel)
@@ -534,14 +532,14 @@ defmodule FWClientRobotA do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
-          obs_ahead = wait_and_send(robot, channel, goal_locs)
-          # {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+          # obs_ahead = wait_and_send(robot, channel, goal_locs)
+          {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
           rotate(robot, should_face, face_diff, obs_ahead, goal_locs, channel)
         else
           # rotate right
           robot = right(robot)
-          obs_ahead = wait_and_send(robot, channel, goal_locs)
-          # {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+          # obs_ahead = wait_and_send(robot, channel, goal_locs)
+          {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
           rotate(robot, should_face, face_diff, obs_ahead, goal_locs, channel)
         end
 
@@ -610,7 +608,7 @@ defmodule FWClientRobotA do
       i = i + 1
       move_with_priority(robot, sq_keys, obs_ahead, i, true, goal_locs, channel)
     else
-      wait_for_b(channel)
+      # wait_for_b(channel)
 
       {x_b, y_b, facing_b} = FWClientRobotA.PhoenixSocketClient.coords_store_get(channel)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
@@ -635,11 +633,28 @@ defmodule FWClientRobotA do
 
       FWClientRobotA.PhoenixSocketClient.coords_store_update(channel, report(robot))
 
-      obs_ahead = wait_and_send(robot, channel, goal_locs)
-      # {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+      # obs_ahead = wait_and_send(robot, channel, goal_locs)
+      {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
 
       {robot, obs_ahead}
     end
+  end
+
+  def send_robot_status(channel, robot, goal_locs) do
+    # Here send the status of the robot
+    # Check server to see if robot has stopped
+    # If obstacle detected, send message to the server
+    {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+    # obs_ahead = FWClientRobotA.LineFollower.detect_obstacle()
+
+    if obs_ahead do
+      FWClientRobotA.PhoenixSocketClient.send_obstacle_presence(channel, robot)
+    end
+
+    # Code for stopping robot here
+    # ....
+
+    {:obstacle_presence, obs_ahead}
   end
 
   def wait_for_b(channel) do
@@ -720,7 +735,7 @@ defmodule FWClientRobotA do
   Rotates the robot to the right
   """
   def right(%FWClientRobotA.Position{facing: facing} = robot) do
-    FWClientRobotA.LineFollower.turn_right
+    # FWClientRobotA.LineFollower.turn_right
     %FWClientRobotA.Position{robot | facing: @directions_to_the_right[facing]}
   end
 
@@ -729,7 +744,7 @@ defmodule FWClientRobotA do
   Rotates the robot to the left
   """
   def left(%FWClientRobotA.Position{facing: facing} = robot) do
-    FWClientRobotA.LineFollower.turn_left
+    # FWClientRobotA.LineFollower.turn_left
     %FWClientRobotA.Position{robot | facing: @directions_to_the_left[facing]}
   end
 
@@ -737,7 +752,7 @@ defmodule FWClientRobotA do
   Moves the robot to the north, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: _, y: y, facing: :north} = robot) when y < @table_top_y do
-    FWClientRobotA.LineFollower.start
+    # FWClientRobotA.LineFollower.start
     %FWClientRobotA.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) + 1 end) |> elem(0)
     }
   end
@@ -746,7 +761,7 @@ defmodule FWClientRobotA do
   Moves the robot to the east, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: x, y: _, facing: :east} = robot) when x < @table_top_x do
-    FWClientRobotA.LineFollower.start
+    # FWClientRobotA.LineFollower.start
     %FWClientRobotA.Position{robot | x: x + 1}
   end
 
@@ -754,7 +769,7 @@ defmodule FWClientRobotA do
   Moves the robot to the south, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: _, y: y, facing: :south} = robot) when y > :a do
-    FWClientRobotA.LineFollower.start
+    # FWClientRobotA.LineFollower.start
     %FWClientRobotA.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) - 1 end) |> elem(0)}
   end
 
@@ -762,7 +777,7 @@ defmodule FWClientRobotA do
   Moves the robot to the west, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: x, y: _, facing: :west} = robot) when x > 1 do
-    FWClientRobotA.LineFollower.start
+    # FWClientRobotA.LineFollower.start
     %FWClientRobotA.Position{robot | x: x - 1}
   end
 
