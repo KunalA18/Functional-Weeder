@@ -9,6 +9,8 @@ defmodule FWClientRobotA do
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5, :f => 6}
   # maps directions to numbers
   @dir_to_num %{:north => 1, :east => 2, :south => 3, :west => 4}
+  # maps y numbers to atoms
+  @robot_map_y_num_to_atom %{1 => :a, 2 => :b, 3 => :c, 4 => :d, 5 => :e, 6 => :f}
 
   @doc """
   Places the robot to the default position of (1, A, North)
@@ -89,6 +91,9 @@ defmodule FWClientRobotA do
     {:ok, pid_goal} = Agent.start_link(fn -> [] end)
     Process.register(pid_goal, :goal_storeA)
 
+    {:ok, pid_goals} = Agent.start_link(fn -> [] end)
+    Process.register(pid_goals, :main_goal_storeA)
+
     {:ok, _response, channel} = FWClientRobotA.PhoenixSocketClient.connect_server()
 
     #function to get goal positions
@@ -97,23 +102,20 @@ defmodule FWClientRobotA do
 
     IO.inspect(goals_string)
 
-    goal_locs = calculate_goals(goals_string)
+    Agent.update(:main_goal_storeA, fn list -> list ++ goals_string end)
 
     {start_x, start_y, start_dir} = wait_for_start(%{A: nil, B: nil}, channel) #{1, :a, :north}
 
     {:ok, robot} = start(start_x, start_y, start_dir)
 
+    goal_locs = calculate_goals(robot, goals_string)
+    IO.inspect(goal_locs, label: "Goal locs NEW")
     stop(robot, goal_locs, channel)
-
-    ###########################
-    ## complete this funcion ##
-    ###########################
 
   end
 
-  def calculate_goals(goals_string) do
+  def calculate_goals(robot, goals_string) do
     #Arena description
-
     #########################
     # 31# 32# 33# 34# 35# 36#
     #########################
@@ -121,65 +123,57 @@ defmodule FWClientRobotA do
     #########################
 
     goal_locs = Enum.reduce(goals_string, [], fn s, acc ->
-      i = String.to_integer(s)
-      last_digit = rem(i, 10)
-      first_digit = Integer.floor_div(i, 10)
-      convert_to_loc(first_digit, last_digit, acc)
+      {bl, br, tl, tr} = convert_goal_to_locations(s)
+      # Now find the closest goal location to the robot
+      {x, y} = find_minimum(robot, bl, br, tl, tr)
+      y = @robot_map_y_num_to_atom[y] |> Atom.to_string
+      x = Integer.to_string(x)
+      acc ++ [[x,y]]
     end)
   end
 
-  def convert_to_loc(first_digit, last_digit, acc) do
-    acc = if (first_digit == 0) do
-      if last_digit <= 5 do
-        x = Integer.to_string(last_digit)
-        x = if x == "0", do: "5", else: x
-        y = "a"
-        acc ++ [[x,y]]
-      else
-        x = Integer.to_string(last_digit - 5)
-        x = if x == "0", do: "5", else: x
-        y = "b"
-        acc ++ [[x,y]]
-      end
+  def find_minimum(robot, bl, br, tl, tr) do
+    {rx, ry, _} = report(robot)
+    ry = @robot_map_y_atom_to_num[ry]
+    d_bl = distance(rx, ry, elem(bl, 0), elem(bl, 1))
+    d_br = distance(rx, ry, elem(br, 0), elem(br, 1))
+    d_tl = distance(rx, ry, elem(tl, 0), elem(tl, 1))
+    d_tr = distance(rx, ry, elem(tr, 0), elem(tr, 1))
+    ans = bl
+    ans = if d_bl <= d_br and d_bl <= d_tl and d_bl <= d_tr do
+      bl
     else
-      if (first_digit == 1) do
-        if last_digit <= 5 do
-          x = Integer.to_string(last_digit)
-          y = if x == "0", do: "b", else: "c" #This line needs to be above as x's val is changed below
-          x = if x == "0", do: "5", else: x
-          acc ++ [[x,y]]
-        else
-          x = Integer.to_string(last_digit - 5)
-          x = if x == "0", do: "5", else: x
-          y = "d"
-          acc ++ [[x,y]]
-        end
-      else
-        if (first_digit == 2) do
-          if last_digit <= 5 do
-            x = Integer.to_string(last_digit)
-            y = if x == "0", do: "d", else: "e"
-            x = if x == "0", do: "5", else: x
-            acc ++ [[x,y]]
-          else
-            x = Integer.to_string(last_digit - 5)
-            x = if x == "0", do: "5", else: x
-            y = "f"
-            acc ++ [[x,y]]
-          end
-        else
-          acc
-        end
-
-      end
+      ans
     end
+    ans = if d_br <= d_bl and d_br <= d_tl and d_br <= d_tr do
+      br
+    else
+      ans
+    end
+    ans = if d_tl <= d_bl and d_tl <= d_br and d_tl <= d_tr do
+      tl
+    else
+      ans
+    end
+    ans = if d_tr <= d_bl and d_tr <= d_br and d_tr <= d_tl do
+      tr
+    else
+      ans
+    end
+    ans
   end
 
   def convert_goal_to_locations(loc) do
     no = String.to_integer(loc) - 1
     x = rem(no, 5) + 1
     y = Integer.floor_div(no, 5) + 1
-    {x, y}
+
+    bl = {x, y} # Bottom left
+    br = {x + 1, y} # Bottom right
+    tl = {x, y + 1} # Top left
+    tr = {x + 1, y + 1} # Top right
+
+    {bl, br, tl, tr}
   end
 
   @doc """
@@ -197,9 +191,9 @@ defmodule FWClientRobotA do
 
     FWClientRobotA.PhoenixSocketClient.coords_store_update(channel, report(robot))
 
-    # goal_loc format => [["3", "d"], ["2", "c"]]
     {r_x, r_y, _facing} = report(robot)
 
+    # goal_loc format => [["3", "d"], ["2", "c"]]
     # Sort out the goal locs
     distance_array = sort_according_to_distance(r_x, r_y, goal_locs)
 
@@ -213,7 +207,7 @@ defmodule FWClientRobotA do
     Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(k_a)))
 
     #function to compare the agent with the current and return only vals that satisy
-    distance_array = compare_with_store(distance_array, channel)
+    # distance_array = compare_with_store(distance_array, channel)
 
     if length(distance_array) == 0 do
       # send status of the start location
@@ -237,7 +231,6 @@ defmodule FWClientRobotA do
   def compare_with_store(distance_array, channel) do
     # key_list = FWClientRobotA.PhoenixSocketClient.goal_store_get(channel)
     key_list = Agent.get(:goal_storeA, fn list -> list end)
-    IO.inspect(key_list, label: "Key List")
     Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
   end
 
@@ -290,7 +283,7 @@ defmodule FWClientRobotA do
       # FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
       Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(key_current)))
 
-      distance_array = compare_with_store(distance_array, channel)
+      # distance_array = compare_with_store(distance_array, channel)
 
       visited = []
 
@@ -310,6 +303,37 @@ defmodule FWClientRobotA do
           goal_locs,
           channel
         )
+        # This implies that the robot has reached the goal location
+        # If robot has reached goal, update the main_goal array
+        {rx, ry, _} = report(robot)
+        rtup = {rx, @robot_map_y_atom_to_num[ry]}
+        goals_list = Agent.get(:main_goal_storeA, fn list -> list end)
+
+
+        IO.inspect(goals_list, label: "Goals List")
+
+        goals_list = Enum.reject(goals_list, fn s ->
+          {bl, br, tl, tr} = convert_goal_to_locations(s)
+          if (rtup == bl or rtup == br or rtup == tl or rtup == tr) do
+            Agent.update(:weeded_store, fn list -> list ++ [s] end)
+          end
+
+          (rtup == bl or rtup == br or rtup == tl or rtup == tr)
+        end)
+
+        Agent.update(:main_goal_storeA, fn list -> goals_list end)
+        distance_array = sort_according_to_distance(robot, rx, ry, 0)
+        IO.inspect({rx, ry}, label: "Current Location")
+        IO.inspect(distance_array, label: "New Distance array")
+
+        # If robot has reached goal, activate seeding/weeding for square in the main_goal array
+        weeded = Agent.get(:weeded_store, fn list -> list end) |> List.last
+        if length(goals_list) > 0 do
+          weeding(robot, weeded, channel)
+        end
+        IO.puts("-----------------")
+
+
       if length(distance_array) > 0 do
         loop_through_goal_locs(distance_array, robot, goal_locs, channel)
       end
@@ -335,6 +359,30 @@ defmodule FWClientRobotA do
       Process.sleep(500)
       wait_and_send(robot, channel, goal_locs)
     end
+  end
+
+  def sort_according_to_distance(robot, r_x, r_y, _) do
+    goals_string = Agent.get(:main_goal_storeA, fn list -> list end)
+    goal_locs = calculate_goals(robot, goals_string)
+    distance_array =
+      Enum.map(goal_locs, fn [x, y] ->
+        {p_x, _} = Integer.parse(x)
+        p_y = @robot_map_y_atom_to_num[String.to_atom(y)]
+
+        d =
+          distance(
+            p_x,
+            p_y,
+            r_x,
+            @robot_map_y_atom_to_num[r_y]
+          )
+
+        s = String.to_atom(x <> y)
+        {s, d}
+      end)
+
+    # Re-arrange goal locs according to distance array
+    distance_array |> List.keysort(1)
   end
 
   def sort_according_to_distance(r_x, r_y, goal_locs) do
@@ -368,7 +416,6 @@ defmodule FWClientRobotA do
 
         # add the square it is at to the list
         {x, y, _facing} = report(robot)
-        IO.puts("In loop")
 
         # Update position in :coords_store
         #Agent.update(:coords_store, fn map -> Map.put(map, :A, report(robot)) end)
@@ -418,10 +465,9 @@ defmodule FWClientRobotA do
         # FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
         Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(key_current)))
 
-        weeding(robot, distance_array, String.to_atom(key_current), channel)
 
         #get the updated distance array
-        distance_array = compare_with_store(distance_array, channel)
+        # distance_array = compare_with_store(distance_array, channel)
 
         #Re-sort the list and change the goals
         # {distance_array, goal_x, goal_y} = if length(distance_array) > 0 do
@@ -443,15 +489,15 @@ defmodule FWClientRobotA do
     end
   end
 
-  def weeding(robot, distance_array, key_current, channel) do
+  def weeding(robot, weeded, channel) do
     #If the position the robot is at is a goal, then weed the plant
-    if Enum.member?(distance_array, key_current) do
+
       # 4 ways to weed a robot depending on which direction the robot is facing
       IO.puts("Weeding Started")
       {x, y, facing} = report(robot)
 
       IO.puts("Weeding Done")
-      FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, x, y)
+      FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, weeded)
 
       #Two options now
       # 1. Go to deposition zone
@@ -460,7 +506,7 @@ defmodule FWClientRobotA do
       # 2. Put it in box at the back (best imo)
       # Zyada kuch nahi karna padega
 
-    end
+
   end
 
   def reorder_by_distance(r_x, r_y, distance_array) do

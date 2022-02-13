@@ -77,14 +77,12 @@ defmodule FWClientRobotA.PhoenixSocketClient do
     {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
   end
 
-  def send_weeding_msg(channel, x, y) do
-    {location} = convert_to_location(x, y)
+  def send_weeding_msg(channel, location) do
     event_message = %{"event_id" => 4, "sender" => "A", "value" => location}
     {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
   end
 
-  def send_seeding_msg(channel, x, y) do
-    {location} = convert_to_location(x, y)
+  def send_seeding_msg(channel, location) do
     event_message = %{"event_id" => 3, "sender" => "A", "value" => location}
     {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
   end

@@ -409,8 +409,9 @@ defmodule FWServerWeb.ArenaLive do
 
   def convert_to_coord(loc) do
     loc = if !is_integer(loc), do: String.to_integer(loc), else: loc
-    x = if rem(loc, 5) == 0, do: 5, else: rem(loc, 5)
-    y = if floor((loc+5) / 5) == 0, do: 5, else: floor((loc+5) / 5)
+    loc = loc - 1
+    x = rem(loc, 5) + 1
+    y = Integer.floor_div(loc, 5) + 1
     {x, y}
   end
 end
