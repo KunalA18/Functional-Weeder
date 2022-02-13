@@ -312,14 +312,26 @@ defmodule FWClientRobotA do
 
         IO.inspect(goals_list, label: "Goals List")
 
-        goals_list = Enum.reject(goals_list, fn s ->
+        {goals_list, _} = Enum.reduce(goals_list, {[], false}, fn s, {acc, detect} ->
           {bl, br, tl, tr} = convert_goal_to_locations(s)
-          if (rtup == bl or rtup == br or rtup == tl or rtup == tr) do
+          if (rtup == bl or rtup == br or rtup == tl or rtup == tr) and !detect do
             Agent.update(:weeded_store, fn list -> list ++ [s] end)
+            {acc, true}
+          else
+            {acc ++ [s], detect}
           end
-
-          (rtup == bl or rtup == br or rtup == tl or rtup == tr)
         end)
+
+        IO.inspect(goals_list, label: "Goals List after reduction")
+
+        # goals_list = Enum.reject(goals_list, fn s ->
+        #   {bl, br, tl, tr} = convert_goal_to_locations(s)
+        #   if (rtup == bl or rtup == br or rtup == tl or rtup == tr) do
+        #     Agent.update(:weeded_store, fn list -> list ++ [s] end)
+        #   end
+
+        #   (rtup == bl or rtup == br or rtup == tl or rtup == tr)
+        # end)
 
         Agent.update(:main_goal_storeA, fn list -> goals_list end)
         distance_array = sort_according_to_distance(robot, rx, ry, 0)
@@ -328,9 +340,9 @@ defmodule FWClientRobotA do
 
         # If robot has reached goal, activate seeding/weeding for square in the main_goal array
         weeded = Agent.get(:weeded_store, fn list -> list end) |> List.last
-        if length(goals_list) > 0 do
-          weeding(robot, weeded, channel)
-        end
+
+        {robot, distance_array} = weeding(robot, weeded, distance_array, channel)
+
         IO.puts("-----------------")
 
 
@@ -489,15 +501,42 @@ defmodule FWClientRobotA do
     end
   end
 
-  def weeding(robot, weeded, channel) do
+  def weeding(robot, weeded, distance_array, channel) do
     #If the position the robot is at is a goal, then weed the plant
 
       # 4 ways to weed a robot depending on which direction the robot is facing
       IO.puts("Weeding Started")
       {x, y, facing} = report(robot)
+      {{n_x, n_y}, n_facing} = get_clockwise_node(x, y, weeded)
+      IO.inspect({n_x, n_y})
+      # Rotate to face clockwise node
+      should_face = n_facing
+      face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
+      {robot, obs_ahead} = rotate(robot, should_face, face_diff, false, 0, channel)
+      # Check obstacle, if it exists then carry out other behaviour
 
-      IO.puts("Weeding Done")
-      FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, weeded)
+      {robot, distance_array} = if obs_ahead do
+        # Add previous clockwise node to distance_array and :main_goal_store
+        {{n_x, n_y}, n_facing} = get_anticlockwise_node(x, y, weeded)
+        d = distance(x, @robot_map_y_atom_to_num[y], n_x, n_y)
+        n_y = @robot_map_y_num_to_atom[n_y] |> Atom.to_string
+        n_x = Integer.to_string(n_x)
+        pos = String.to_atom(n_x <> n_y)
+        distance_array = [{pos, d}] ++ distance_array
+        IO.inspect(distance_array, label: "Updated dist array after weeding fail")
+        Agent.update(:main_goal_storeA, fn list -> [weeded] ++ list end)
+        {robot, distance_array}
+      else
+        # Go to next clockwise node
+        robot = move(robot)
+        IO.inspect(report(robot),label: "Weeding Done")
+        FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, String.to_integer(weeded))
+        {robot, distance_array}
+      end
+
+
+
+
 
       #Two options now
       # 1. Go to deposition zone
@@ -507,6 +546,24 @@ defmodule FWClientRobotA do
       # Zyada kuch nahi karna padega
 
 
+  end
+
+  def get_clockwise_node(x, y, weeded) do
+    {bl, br, tl, tr} = convert_goal_to_locations(weeded)
+    next_loc = %{bl => tl, br => bl, tl => tr, tr => br}
+    next_facing = %{bl => :north, br => :west, tl => :east, tr => :south}
+    y = @robot_map_y_atom_to_num[y]
+    ans = next_loc[{x,y}]
+    {ans, next_facing[{x,y}]}
+  end
+
+  def get_anticlockwise_node(x, y, weeded) do
+    {bl, br, tl, tr} = convert_goal_to_locations(weeded)
+    next_loc = %{bl => br, br => tr, tl => bl, tr => tl}
+    next_facing = %{bl => :west, br => :north, tl => :south, tr => :east}
+    y = @robot_map_y_atom_to_num[y]
+    ans = next_loc[{x,y}]
+    {ans, next_facing[{x,y}]}
   end
 
   def reorder_by_distance(r_x, r_y, distance_array) do
