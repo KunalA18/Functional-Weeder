@@ -34,9 +34,9 @@ defmodule Line_follower do
   @white_MARGIN 1000
   @weights [0, -3, -1, 0, 1, 3]
 
-  @optimum_duty_cycle 105
-  @lower_duty_cycle 80
-  @higher_duty_cycle 130
+  @optimum_duty_cycle 100
+  @lower_duty_cycle 75
+  @higher_duty_cycle 125
   @kp 5
   @ki 0
   @kd 5
@@ -153,19 +153,6 @@ defmodule Line_follower do
 
         main_node
       end
-
-    # motor_action(motor_ref, @forward)
-    # my_motion(left_duty_cycle, right_duty_cycle)
-
-    # line_follow(
-    #   error,
-    #   prev_error,
-    #   cumulative_error,
-    #   left_duty_cycle,
-    #   right_duty_cycle,
-    #   main_node,
-    #   same_node
-    # )
   end
 
   def get_high_no(map_sens_list) do
@@ -269,20 +256,32 @@ defmodule Line_follower do
     map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
-    my_motion(120, 120)
+    my_motion(110, 110)
 
     right_detect =
-      if Enum.at(map_sens_list, 3) < 600 do
+      if Enum.at(map_sens_list, 3) < 900 do
         right_detect = true
       else
         right_detect
       end
 
-    if Enum.at(map_sens_list, 3) > 600 && right_detect == true do
+    if Enum.at(map_sens_list, 3) > 900 && right_detect == true do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
+      # motor_action(motor_ref, @backward)
+      # my_motion(105,105)
+      # Process.sleep(300)
+      # motor_action(motor_ref, @stop)
+      # my_motion(0, 0)
     else
       move_right(right_detect)
+    end
+
+    map_sens_list = test_wlf_sensors()
+
+    if Enum.at(map_sens_list, 2) < 900 || Enum.at(map_sens_list, 3) < 900 ||
+         Enum.at(map_sens_list, 4) < 900 do
+      slide_left()
     end
   end
 
@@ -295,30 +294,174 @@ defmodule Line_follower do
     map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyleft)
-    my_motion(120, 120)
+    my_motion(110, 110)
 
     left_detect =
-      if Enum.at(map_sens_list, 3) < 600 do
+      if Enum.at(map_sens_list, 3) < 900 do
         left_detect = true
       else
         left_detect
       end
 
-    if Enum.at(map_sens_list, 3) > 600 && left_detect == true do
+    if Enum.at(map_sens_list, 3) > 900 && left_detect == true do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
     else
       move_left(left_detect)
     end
+
+    if Enum.at(map_sens_list, 2) < 900 || Enum.at(map_sens_list, 3) < 900 ||
+         Enum.at(map_sens_list, 4) < 900 do
+      slide_right()
+    end
   end
 
-  def u_turn() do
+  def slide_left do
+    left_detect = false
+    drift_left(left_detect)
+  end
+
+  def drift_left(left_detect) do
+    map_sens_list = test_wlf_sensors()
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    motor_action(motor_ref, @onlyleft)
+    my_motion(60, 60)
+
+    left_detect =
+      if Enum.at(map_sens_list, 3) < 900 do
+        left_detect = true
+      else
+        left_detect
+      end
+
+    if (Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
+          Enum.at(map_sens_list, 4) > 900) && left_detect == true do
+      motor_action(motor_ref, @stop)
+      my_motion(0, 0)
+    else
+      drift_left(left_detect)
+    end
+  end
+
+  def slide_right do
+    left_detect = false
+    drift_right(left_detect)
+  end
+
+  def drift_right(left_detect) do
+    map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
-    my_motion(110, 110)
-    Process.sleep(700)
+    my_motion(60, 60)
+
+    left_detect =
+      if Enum.at(map_sens_list, 3) < 900 do
+        left_detect = true
+      else
+        left_detect
+      end
+
+    if (Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
+          Enum.at(map_sens_list, 4) > 900) && left_detect == true do
+      motor_action(motor_ref, @stop)
+      my_motion(0, 0)
+    else
+      drift_right(left_detect)
+    end
+  end
+
+  def move_back do
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    motor_action(motor_ref, @backward)
+    my_motion(105, 105)
+    Process.sleep(300)
     motor_action(motor_ref, @stop)
     my_motion(0, 0)
+  end
+
+  def stop_seeder do
+    error = 0
+    prev_error = 0
+    cumulative_error = 0
+    left_duty_cycle = 0
+    right_duty_cycle = 0
+
+    seed_follow(
+      error,
+      prev_error,
+      cumulative_error,
+      left_duty_cycle,
+      right_duty_cycle
+    )
+  end
+
+  def seed_follow(
+        error,
+        prev_error,
+        cumulative_error,
+        left_duty_cycle,
+        right_duty_cycle
+      ) do
+    map_sens_list = test_wlf_sensors()
+    # IO.inspect(map_sens_list)
+
+    {error, prev_error} = calculate_error(map_sens_list, error, prev_error)
+
+    {error, prev_error, cumulative_error, correction} =
+      calculate_correction(error, prev_error, cumulative_error)
+
+    # IO.inspect(main_node)
+
+    left_duty_cycle = round(@optimum_duty_cycle - correction)
+    right_duty_cycle = round(@optimum_duty_cycle + correction)
+
+    left_duty_cycle =
+      if left_duty_cycle > @higher_duty_cycle do
+        left_duty_cycle = @higher_duty_cycle
+      else
+        left_duty_cycle
+      end
+
+    left_duty_cycle =
+      if left_duty_cycle < @lower_duty_cycle do
+        left_duty_cycle = @lower_duty_cycle
+      else
+        left_duty_cycle
+      end
+
+    right_duty_cycle =
+      if right_duty_cycle < @lower_duty_cycle do
+        right_duty_cycle = @lower_duty_cycle
+      else
+        right_duty_cycle
+      end
+
+    right_duty_cycle =
+      if right_duty_cycle > @higher_duty_cycle do
+        right_duty_cycle = @higher_duty_cycle
+      else
+        right_duty_cycle
+      end
+
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+
+    seed_value = side_ir()
+
+    if seed_value == true do
+      motor_action(motor_ref, @stop)
+      my_motion(0, 0)
+    else
+      motor_action(motor_ref, @forward)
+      my_motion(left_duty_cycle, right_duty_cycle)
+
+      seed_follow(
+        error,
+        prev_error,
+        cumulative_error,
+        left_duty_cycle,
+        right_duty_cycle
+      )
+    end
   end
 
   @doc """
@@ -373,6 +516,8 @@ defmodule Line_follower do
       else
         sense
       end
+
+    sense
   end
 
   def side_ir do
@@ -388,6 +533,8 @@ defmodule Line_follower do
       else
         sense
       end
+
+    sense
   end
 
   @doc """
