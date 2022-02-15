@@ -94,6 +94,9 @@ defmodule FWClientRobotA do
     {:ok, pid_goals} = Agent.start_link(fn -> [] end)
     Process.register(pid_goals, :main_goal_storeA)
 
+    {:ok, pid_uturn} = Agent.start_link(fn -> false end)
+    Process.register(pid_uturn, :continuous_turns)
+
     {:ok, _response, channel} = FWClientRobotA.PhoenixSocketClient.connect_server()
 
     #function to get goal positions
@@ -848,6 +851,12 @@ defmodule FWClientRobotA do
   """
   def right(%FWClientRobotA.Position{facing: facing} = robot) do
     # FWClientRobotA.LineFollower.turn_right
+    if Agent.get(:continuous_turns, fn val -> val end) == true do
+      # Backwards movement
+      IO.puts("U-Turn, move backwards")
+    end
+
+    Agent.update(:continuous_turns, fn val -> true end)
     %FWClientRobotA.Position{robot | facing: @directions_to_the_right[facing]}
   end
 
@@ -857,6 +866,13 @@ defmodule FWClientRobotA do
   """
   def left(%FWClientRobotA.Position{facing: facing} = robot) do
     # FWClientRobotA.LineFollower.turn_left
+    if Agent.get(:continuous_turns, fn val -> val end) == true do
+      # Backwards movement
+      IO.puts("U-Turn, move backwards")
+
+    end
+
+    Agent.update(:continuous_turns, fn val -> true end)
     %FWClientRobotA.Position{robot | facing: @directions_to_the_left[facing]}
   end
 
@@ -865,6 +881,7 @@ defmodule FWClientRobotA do
   """
   def move(%FWClientRobotA.Position{x: _, y: y, facing: :north} = robot) when y < @table_top_y do
     # FWClientRobotA.LineFollower.start
+    Agent.update(:continuous_turns, fn val -> false end)
     %FWClientRobotA.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) + 1 end) |> elem(0)
     }
   end
@@ -874,6 +891,8 @@ defmodule FWClientRobotA do
   """
   def move(%FWClientRobotA.Position{x: x, y: _, facing: :east} = robot) when x < @table_top_x do
     # FWClientRobotA.LineFollower.start
+    Agent.update(:continuous_turns, fn val -> false end)
+
     %FWClientRobotA.Position{robot | x: x + 1}
   end
 
@@ -882,6 +901,8 @@ defmodule FWClientRobotA do
   """
   def move(%FWClientRobotA.Position{x: _, y: y, facing: :south} = robot) when y > :a do
     # FWClientRobotA.LineFollower.start
+    Agent.update(:continuous_turns, fn val -> false end)
+
     %FWClientRobotA.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) - 1 end) |> elem(0)}
   end
 
@@ -890,6 +911,8 @@ defmodule FWClientRobotA do
   """
   def move(%FWClientRobotA.Position{x: x, y: _, facing: :west} = robot) when x > 1 do
     # FWClientRobotA.LineFollower.start
+    Agent.update(:continuous_turns, fn val -> false end)
+
     %FWClientRobotA.Position{robot | x: x - 1}
   end
 

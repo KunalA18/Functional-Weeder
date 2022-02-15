@@ -24,8 +24,8 @@ defmodule FWClientRobotA.LineFollower do
   # @left [0, 1, 1, 0]
   # @right [1, 0, 0, 1]
   @stop [0, 0, 0, 0]
-  @onlyright [0, 0, 1, 0]
-  @onlyleft [0, 1, 0, 0]
+  @onlyright [1, 0, 1, 0]
+  @onlyleft [0, 1, 0, 1]
 
   @duty_cycles [100, 70, 0]
   @pwm_frequency 50
@@ -269,7 +269,7 @@ defmodule FWClientRobotA.LineFollower do
     map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
-    my_motion(120,120)
+    my_motion(100,120)
     right_detect =
       if Enum.at(map_sens_list, 3) < 600 do
         right_detect = true
