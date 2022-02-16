@@ -40,8 +40,8 @@ defmodule FWClientRobotA.LineFollower do
   @lower_duty_cycle 95
   @higher_duty_cycle 145
 
-  @turn 120
-  @slight_turn 100
+  @turn 125
+  @slight_turn 115
 
   @kp 5
   @ki 0
@@ -255,17 +255,18 @@ defmodule FWClientRobotA.LineFollower do
 
   def turn_right do
     right_detect = false
-    move_right(right_detect)
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    move_right(right_detect, motor_ref)
   end
 
-  def move_right(right_detect) do
+  def move_right(right_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
-    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
     my_motion(@turn, @turn)
 
     right_detect =
-      if Enum.at(map_sens_list, 3) < 900 do
+      if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
+      Enum.at(map_sens_list, 4) < 900 do
         right_detect = true
       else
         right_detect
@@ -274,36 +275,33 @@ defmodule FWClientRobotA.LineFollower do
     if Enum.at(map_sens_list, 3) > 900 && right_detect == true do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
-      # motor_action(motor_ref, @backward)
-      # my_motion(105,105)
-      # Process.sleep(300)
-      # motor_action(motor_ref, @stop)
-      # my_motion(0, 0)
     else
-      move_right(right_detect)
+      move_right(right_detect, motor_ref)
     end
 
     map_sens_list = test_wlf_sensors()
 
-    if Enum.at(map_sens_list, 2) < 900 || Enum.at(map_sens_list, 3) < 900 ||
+    if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
          Enum.at(map_sens_list, 4) < 900 do
+      IO.puts("Sliding Left")
       slide_left()
     end
   end
 
   def turn_left do
     left_detect = false
-    move_left(left_detect)
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    move_left(left_detect, motor_ref)
   end
 
-  def move_left(left_detect) do
+  def move_left(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
-    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyleft)
     my_motion(@turn, @turn)
 
     left_detect =
-      if Enum.at(map_sens_list, 3) < 900 do
+      if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
+      Enum.at(map_sens_list, 4) < 900 do
         left_detect = true
       else
         left_detect
@@ -312,67 +310,55 @@ defmodule FWClientRobotA.LineFollower do
     if Enum.at(map_sens_list, 3) > 900 && left_detect == true do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
+
     else
-      move_left(left_detect)
+      move_left(left_detect, motor_ref)
     end
 
-    if Enum.at(map_sens_list, 2) < 900 || Enum.at(map_sens_list, 3) < 900 ||
+    if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
          Enum.at(map_sens_list, 4) < 900 do
-      slide_right()
+          IO.puts("Sliding Right")
+          slide_right()
     end
   end
 
   def slide_left do
     left_detect = false
-    drift_left(left_detect)
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    drift_left(left_detect, motor_ref)
   end
 
-  def drift_left(left_detect) do
+  def drift_left(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
-    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
-    motor_action(motor_ref, @onlyleft)
-    my_motion(@slight_turn, @slight_turn)
-
-    left_detect =
-      if Enum.at(map_sens_list, 3) < 900 do
-        left_detect = true
-      else
-        left_detect
-      end
-
     if (Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
-          Enum.at(map_sens_list, 4) > 900) && left_detect == true do
+          Enum.at(map_sens_list, 4) > 900) do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
     else
-      drift_left(left_detect)
+      motor_action(motor_ref, @onlyleft)
+      my_motion(@slight_turn, @slight_turn)
+      drift_left(left_detect, motor_ref)
     end
   end
 
   def slide_right do
     left_detect = false
-    drift_right(left_detect)
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    drift_right(left_detect, motor_ref)
   end
 
-  def drift_right(left_detect) do
+  def drift_right(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
-    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
     my_motion(@slight_turn, @slight_turn)
 
-    left_detect =
-      if Enum.at(map_sens_list, 3) < 900 do
-        left_detect = true
-      else
-        left_detect
-      end
-
     if (Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
-          Enum.at(map_sens_list, 4) > 900) && left_detect == true do
+          Enum.at(map_sens_list, 4) > 900) do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
+
     else
-      drift_right(left_detect)
+      drift_right(left_detect, motor_ref)
     end
   end
 
