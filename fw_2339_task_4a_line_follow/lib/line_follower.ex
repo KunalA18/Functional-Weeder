@@ -279,7 +279,7 @@ defmodule Line_follower do
 
     map_sens_list = test_wlf_sensors()
 
-    if Enum.at(map_sens_list, 2) < 900 || Enum.at(map_sens_list, 3) < 900 ||
+    if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
          Enum.at(map_sens_list, 4) < 900 do
       slide_left()
     end
@@ -310,7 +310,7 @@ defmodule Line_follower do
       move_left(left_detect)
     end
 
-    if Enum.at(map_sens_list, 2) < 900 || Enum.at(map_sens_list, 3) < 900 ||
+    if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
          Enum.at(map_sens_list, 4) < 900 do
       slide_right()
     end
