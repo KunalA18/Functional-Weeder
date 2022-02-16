@@ -7,6 +7,8 @@ defmodule FWClientRobotA.LineFollower do
   @ir_pins [dr: 16, dl: 19]
   @motor_pins [lf: 12, lb: 13, rf: 20, rb: 21]
   @pwm_pins [enl: 6, enr: 26]
+  @servo_a_pin 27
+  @servo_b_pin 22
 
   @ref_atoms [:cs, :clock, :address, :dataout]
   @lf_sensor_data %{sensor0: 0, sensor1: 0, sensor2: 0, sensor3: 0, sensor4: 0, sensor5: 0}
@@ -34,9 +36,13 @@ defmodule FWClientRobotA.LineFollower do
   @white_MARGIN 1000
   @weights [0, -3, -1, 0, 1, 3]
 
-  @optimum_duty_cycle 100
-  @lower_duty_cycle 75
-  @higher_duty_cycle 125
+  @optimum_duty_cycle 120
+  @lower_duty_cycle 95
+  @higher_duty_cycle 145
+
+  @turn 120
+  @slight_turn 100
+
   @kp 5
   @ki 0
   @kd 5
@@ -256,7 +262,7 @@ defmodule FWClientRobotA.LineFollower do
     map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
-    my_motion(110, 110)
+    my_motion(@turn, @turn)
 
     right_detect =
       if Enum.at(map_sens_list, 3) < 900 do
@@ -294,7 +300,7 @@ defmodule FWClientRobotA.LineFollower do
     map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyleft)
-    my_motion(110, 110)
+    my_motion(@turn, @turn)
 
     left_detect =
       if Enum.at(map_sens_list, 3) < 900 do
@@ -325,7 +331,7 @@ defmodule FWClientRobotA.LineFollower do
     map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyleft)
-    my_motion(60, 60)
+    my_motion(@slight_turn, @slight_turn)
 
     left_detect =
       if Enum.at(map_sens_list, 3) < 900 do
@@ -352,7 +358,7 @@ defmodule FWClientRobotA.LineFollower do
     map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
-    my_motion(60, 60)
+    my_motion(@slight_turn, @slight_turn)
 
     left_detect =
       if Enum.at(map_sens_list, 3) < 900 do
@@ -373,7 +379,7 @@ defmodule FWClientRobotA.LineFollower do
   def move_back do
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @backward)
-    my_motion(105, 105)
+    my_motion(@optimum_duty_cycle, @optimum_duty_cycle)
     Process.sleep(300)
     motor_action(motor_ref, @stop)
     my_motion(0, 0)
@@ -462,6 +468,16 @@ defmodule FWClientRobotA.LineFollower do
         right_duty_cycle
       )
     end
+  end
+  @doc """
+  Note: On executing above function servo motor A will rotate by 90 degrees. You can provide
+  values from 0 to 180
+  """
+  def test_servo_a(angle) do
+    Logger.debug("Testing Servo A")
+    val = trunc(((2.5 + 10.0 * angle / 180) / 100 ) * 255)
+    Pigpiox.Pwm.set_pwm_frequency(@servo_a_pin, @pwm_frequency)
+    Pigpiox.Pwm.gpio_pwm(@servo_a_pin, val)
   end
 
   @doc """
@@ -715,7 +731,7 @@ defmodule FWClientRobotA.LineFollower do
   defp motion_pwm(value) do
     IO.puts("Forward with pwm value = #{value}")
     pwm(value)
-    # Process.sleep(2000)
+    Process.sleep(2000)
   end
 
   @doc """
