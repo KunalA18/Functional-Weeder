@@ -249,10 +249,11 @@ defmodule Line_follower do
 
   def turn_right do
     right_detect = false
-    move_right(right_detect)
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    move_right(right_detect,motor_ref)
   end
 
-  def move_right(right_detect) do
+  def move_right(right_detect,motor_ref) do
     map_sens_list = test_wlf_sensors()
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
@@ -268,31 +269,25 @@ defmodule Line_follower do
     if Enum.at(map_sens_list, 3) > 900 && right_detect == true do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
-      # motor_action(motor_ref, @backward)
-      # my_motion(105,105)
-      # Process.sleep(300)
-      # motor_action(motor_ref, @stop)
-      # my_motion(0, 0)
     else
-      move_right(right_detect)
+      move_right(right_detect,motor_ref)
     end
 
     map_sens_list = test_wlf_sensors()
-
-    if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
-         Enum.at(map_sens_list, 4) < 900 do
+    if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 && Enum.at(map_sens_list, 4) < 900  do
       slide_left()
     end
   end
 
   def turn_left do
     left_detect = false
-    move_left(left_detect)
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    move_left(left_detect,motor_ref)
   end
 
-  def move_left(left_detect) do
+  def move_left(left_detect,motor_ref) do
     map_sens_list = test_wlf_sensors()
-    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+
     motor_action(motor_ref, @onlyleft)
     my_motion(110, 110)
 
@@ -307,25 +302,26 @@ defmodule Line_follower do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
     else
-      move_left(left_detect)
+      move_left(left_detect,motor_ref)
     end
 
-    if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
-         Enum.at(map_sens_list, 4) < 900 do
+    map_sens_list = test_wlf_sensors()
+    if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 && Enum.at(map_sens_list, 4) < 900  do
       slide_right()
     end
+
   end
 
   def slide_left do
     left_detect = false
-    drift_left(left_detect)
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    drift_left(left_detect,motor_ref)
   end
 
-  def drift_left(left_detect) do
+  def drift_left(left_detect,motor_ref) do
     map_sens_list = test_wlf_sensors()
-    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyleft)
-    my_motion(60, 60)
+    my_motion(80, 80)
 
     left_detect =
       if Enum.at(map_sens_list, 3) < 900 do
@@ -334,39 +330,37 @@ defmodule Line_follower do
         left_detect
       end
 
-    if (Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
-          Enum.at(map_sens_list, 4) > 900) && left_detect == true do
+    if ((Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 || Enum.at(map_sens_list, 4) > 900) && left_detect == true) do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
     else
-      drift_left(left_detect)
+      drift_left(left_detect,motor_ref)
     end
   end
 
   def slide_right do
-    left_detect = false
-    drift_right(left_detect)
+    right_detect = false
+    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
+    drift_right(right_detect,motor_ref)
   end
 
-  def drift_right(left_detect) do
+  def drift_right(right_detect,motor_ref) do
     map_sens_list = test_wlf_sensors()
-    motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @onlyright)
-    my_motion(60, 60)
+    my_motion(80, 80)
 
-    left_detect =
+    right_detect =
       if Enum.at(map_sens_list, 3) < 900 do
-        left_detect = true
+        right_detect = true
       else
-        left_detect
+        right_detect
       end
 
-    if (Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
-          Enum.at(map_sens_list, 4) > 900) && left_detect == true do
+    if ((Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 || Enum.at(map_sens_list, 4) > 900) && right_detect == true) do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
     else
-      drift_right(left_detect)
+      drift_right(right_detect,motor_ref)
     end
   end
 
