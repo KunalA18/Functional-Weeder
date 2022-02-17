@@ -118,11 +118,11 @@ defmodule FWServerWeb.RobotChannel do
     ############################
     ## complete this function ##
     ############################
-    if is_obs_ahead do
-      {left, bottom} = get_obs_pixels(left_value, bottom_value, facing)
-      msg_obs = %{"position" => {left, bottom}}
-      Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update_obs", msg_obs})
-    end
+    # if is_obs_ahead do
+    #   {left, bottom} = get_obs_pixels(left_value, bottom_value, facing)
+    #   msg_obs = %{"position" => {left, bottom}}
+    #   Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update_obs", msg_obs})
+    # end
 
     {:reply, {:ok, is_obs_ahead}, socket}
   end
@@ -132,8 +132,25 @@ defmodule FWServerWeb.RobotChannel do
     {:noreply, socket}
   end
 
+  def handle_in("event_msg", message = %{"event_id" => 2, "sender" => sender, "value" => value}, socket) do
+    message = Map.put(message, "timer", socket.assigns[:timer_tick])
+    x = value["x"]
+    y = value["y"]
+    facing = value["face"]
+    y = @robot_map_y_string_to_num[y] #converts y's string to a number
+    left_value = 150 * (x - 1)
+    bottom_value = 150 * (y - 1)
+    {left, bottom} = get_obs_pixels(left_value, bottom_value, facing)
+    msg_obs = %{"position" => {left, bottom}}
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update_obs", msg_obs})
+
+    FWServerWeb.Endpoint.broadcast_from(self(), "robot:status", "event_msg", message)
+    {:reply, {:ok, true}, socket}
+  end
+
   def handle_in("event_msg", message, socket) do
     message = Map.put(message, "timer", socket.assigns[:timer_tick])
+    IO.inspect(message)
     FWServerWeb.Endpoint.broadcast_from(self(), "robot:status", "event_msg", message)
     {:reply, {:ok, true}, socket}
   end
@@ -332,6 +349,8 @@ defmodule FWServerWeb.RobotChannel do
     Agent.update(:goal_store, fn list -> list ++ message["list"] end)
     {:reply, :ok, socket}
   end
+
+
 
   ############
   ## DELETE ##

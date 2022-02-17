@@ -63,6 +63,7 @@ defmodule FWClientRobotA.PhoenixSocketClient do
 
     {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
 
+
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
 
     {:obstacle_presence, obstaclePresence}
