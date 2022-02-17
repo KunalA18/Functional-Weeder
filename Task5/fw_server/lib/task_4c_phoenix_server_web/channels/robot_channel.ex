@@ -260,7 +260,7 @@ defmodule FWServerWeb.RobotChannel do
   end
 
   def handle_in("stopped_get", message, socket) do
-    status  = Agent.get(:stopped, fn map -> map end)
+    status = Agent.get(:stopped, fn map -> map end)
     {:reply, {:ok, status}, socket}
   end
 

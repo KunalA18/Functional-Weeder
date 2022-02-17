@@ -72,6 +72,21 @@ defmodule FWClientRobotA.PhoenixSocketClient do
     ###########################
   end
 
+  def work_complete(channel) do
+    event_message = %{"event_id" => 9, "sender" => "A", "value" => nil}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
+  def acknowledge_stop(channel) do
+    event_message = %{"event_id" => 7, "sender" => "A", "value" => nil}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
+  def wake_up(channel) do
+    event_message = %{"event_id" => 8, "sender" => "A", "value" => nil}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
   def send_obstacle_presence(channel, %FWClientRobotA.Position{x: x, y: y, facing: facing} = _robot) do
     event_message = %{"event_id" => 2, "sender" => "A", "value" => %{"x" => x, "y" => y, "face" => facing}}
     {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
@@ -98,6 +113,11 @@ defmodule FWClientRobotA.PhoenixSocketClient do
   ###########
   ### GET ###
   ###########
+  def get_stopped(channel) do
+    {:ok, status} = PhoenixClient.Channel.push(channel, "stopped_get", %{"sender" => "A"})
+    {:ok, status["A"]}
+  end
+
   def get_goals (channel) do
     {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goals_msg", %{"sender" => "A"})
   end
