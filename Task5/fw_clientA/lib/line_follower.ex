@@ -266,6 +266,7 @@ defmodule FWClientRobotA.LineFollower do
     {old_map_sens,i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
     speed = if old_map_sens == map_sens_list do
       Agent.update(:line_sensor, fn {list, i} ->  {list, i+1} end)
+      IO.inspect(@slight_turn + (i*5), label: "Speed is increasing")
       @turn + (i*5)
     else
       Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
@@ -274,26 +275,24 @@ defmodule FWClientRobotA.LineFollower do
     my_motion(speed, speed)
 
     right_detect =
-      if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
+      if Enum.at(map_sens_list, 1) < 900 && Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
       Enum.at(map_sens_list, 4) < 900 do
         right_detect = true
       else
         right_detect
       end
 
-    if Enum.at(map_sens_list, 3) > 900 && right_detect == true do
-      motor_action(motor_ref, @stop)
-      my_motion(0, 0)
+      if Enum.at(map_sens_list, 3) > 900 && right_detect == true do
+        motor_action(motor_ref, @stop)
+        my_motion(0, 0)
+        # map_sens_list = test_wlf_sensors()
+      if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
+         Enum.at(map_sens_list, 4) < 900 do
+        IO.puts("Sliding Left")
+        slide_left()
+      end
     else
       move_right(right_detect, motor_ref)
-    end
-
-    map_sens_list = test_wlf_sensors()
-
-    if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
-         Enum.at(map_sens_list, 4) < 900 do
-      IO.puts("Sliding Left")
-      slide_left()
     end
   end
 
@@ -306,7 +305,6 @@ defmodule FWClientRobotA.LineFollower do
   def move_left(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
     motor_action(motor_ref, @onlyleft)
-
 
     {old_map_sens,i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
     speed = if old_map_sens == map_sens_list do
@@ -330,15 +328,13 @@ defmodule FWClientRobotA.LineFollower do
     if Enum.at(map_sens_list, 3) > 900 && left_detect == true do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
-
+      if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
+        Enum.at(map_sens_list, 4) < 900 do
+        IO.puts("Sliding Right")
+        slide_right()
+      end
     else
       move_left(left_detect, motor_ref)
-    end
-
-    if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
-         Enum.at(map_sens_list, 4) < 900 do
-          IO.puts("Sliding Right")
-          slide_right()
     end
   end
 
@@ -353,10 +349,21 @@ defmodule FWClientRobotA.LineFollower do
     if (Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
           Enum.at(map_sens_list, 4) > 900) do
       motor_action(motor_ref, @stop)
+      IO.puts("Stopped")
       my_motion(0, 0)
     else
       motor_action(motor_ref, @onlyleft)
-      my_motion(@slight_turn, @slight_turn)
+      {old_map_sens,i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
+      speed = if old_map_sens == map_sens_list do
+        Agent.update(:line_sensor, fn {list, i} ->  {list, i+1} end)
+        IO.inspect(@slight_turn + (i*5), label: "Speed is increasing")
+
+        @slight_turn + (i*5)
+      else
+        Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
+        @slight_turn
+      end
+      my_motion(speed, speed)
       drift_left(left_detect, motor_ref)
     end
   end
@@ -369,15 +376,23 @@ defmodule FWClientRobotA.LineFollower do
 
   def drift_right(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
-    motor_action(motor_ref, @onlyright)
-    my_motion(@slight_turn, @slight_turn)
-
     if (Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
           Enum.at(map_sens_list, 4) > 900) do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
 
     else
+      motor_action(motor_ref, @onlyright)
+      {old_map_sens,i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
+      speed = if old_map_sens == map_sens_list do
+        Agent.update(:line_sensor, fn {list, i} ->  {list, i+1} end)
+        IO.inspect(@slight_turn + (i*5), label: "Speed is increasing")
+        @slight_turn + (i*5)
+      else
+        Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
+        @slight_turn
+      end
+      my_motion(speed, speed)
       drift_right(left_detect, motor_ref)
     end
   end
