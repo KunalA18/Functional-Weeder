@@ -262,7 +262,16 @@ defmodule FWClientRobotA.LineFollower do
   def move_right(right_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
     motor_action(motor_ref, @onlyright)
-    my_motion(@turn, @turn)
+
+    {old_map_sens,i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
+    speed = if old_map_sens == map_sens_list do
+      Agent.update(:line_sensor, fn {list, i} ->  {list, i+1} end)
+      @turn + (i*5)
+    else
+      Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
+      @turn
+    end
+    my_motion(speed, speed)
 
     right_detect =
       if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
@@ -297,7 +306,18 @@ defmodule FWClientRobotA.LineFollower do
   def move_left(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
     motor_action(motor_ref, @onlyleft)
-    my_motion(@turn, @turn)
+
+
+    {old_map_sens,i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
+    speed = if old_map_sens == map_sens_list do
+      Agent.update(:line_sensor, fn {list, i} ->  {list, i+1} end)
+      @turn + (i*5)
+    else
+      Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
+      @turn
+    end
+    my_motion(speed, speed)
+
 
     left_detect =
       if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&

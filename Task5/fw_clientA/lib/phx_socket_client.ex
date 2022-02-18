@@ -142,7 +142,7 @@ defmodule FWClientRobotA.PhoenixSocketClient do
   def goal_choice_get(channel) do
     {:ok, choice_map} = PhoenixClient.Channel.push(channel, "goal_choice_get", %{A: "A", B: nil})
     #Add further processing according to requirements
-    IO.inspect(choice_map, label: "Choice Map recieved from Server")
+    # IO.inspect(choice_map, label: "Choice Map recieved from Server")
     choice_map
   end
 
