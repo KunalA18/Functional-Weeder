@@ -31,11 +31,6 @@ defmodule FWClientRobotB.PhoenixSocketClient do
     {:ok, _response, channel} = PhoenixClient.Channel.join(socket, "robot:status")
 
     {:ok, _response, channel}
-
-    ###########################
-    ## complete this funcion ##
-    ###########################
-
   end
 
   def wait_for_socket(socket) do
@@ -56,19 +51,20 @@ defmodule FWClientRobotB.PhoenixSocketClient do
   Create a tuple of this format: '{:obstacle_presence, < true or false >}' as a return of this function.
   """
   def send_robot_status(channel, %FWClientRobotB.Position{x: x, y: y, facing: facing} = _robot, goal_locs) do
-    goals_string = convert_to_numbers(goal_locs)
+
+    # goals_string = convert_to_numbers(goal_locs)
     # IO.inspect(goals_string, label: "Goal string to be sent")
 
-    message = %{client: "robot_B", x: x, y: y, face: facing, goals: goals_string} #formats the message
+    message = %{client: "robot_B", x: x, y: y, face: facing, goals: goal_locs} #formats the message
 
+    #New format for task 5
+    # %{"event_id" => <integer>, "sender" => <"A" OR "B" OR "Server">, "value" => <data_required_by_server>, ...}
     event_message = %{"event_id" => 1, "sender" => "B", "value" => %{"x" => x, "y" => y, "face" => facing}} #formats the message
 
-    {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
 
-    if obstaclePresence do
-      event_message = %{"event_id" => 2, "sender" => "B", "value" => %{"x" => x, "y" => y, "face" => facing}}
-      {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
-    end
+
+    {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
 
     {:obstacle_presence, obstaclePresence}
 
@@ -77,14 +73,32 @@ defmodule FWClientRobotB.PhoenixSocketClient do
     ###########################
   end
 
-  def send_weeding_msg(channel, x, y) do
-    {location} = convert_to_location(x, y)
+  def work_complete(channel) do
+    event_message = %{"event_id" => 9, "sender" => "B", "value" => nil}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
+  def acknowledge_stop(channel) do
+    event_message = %{"event_id" => 7, "sender" => "B", "value" => nil}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
+  def wake_up(channel) do
+    event_message = %{"event_id" => 8, "sender" => "B", "value" => nil}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
+  def send_obstacle_presence(channel, %FWClientRobotB.Position{x: x, y: y, facing: facing} = _robot) do
+    event_message = %{"event_id" => 2, "sender" => "B", "value" => %{"x" => x, "y" => y, "face" => facing}}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
+  def send_weeding_msg(channel, location) do
     event_message = %{"event_id" => 4, "sender" => "B", "value" => location}
     {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
   end
 
-  def send_seeding_msg(channel, x, y) do
-    {location} = convert_to_location(x, y)
+  def send_seeding_msg(channel, location) do
     event_message = %{"event_id" => 3, "sender" => "B", "value" => location}
     {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
   end
@@ -100,6 +114,11 @@ defmodule FWClientRobotB.PhoenixSocketClient do
   ###########
   ### GET ###
   ###########
+  def get_stopped(channel) do
+    {:ok, status} = PhoenixClient.Channel.push(channel, "stopped_get", %{"sender" => "B"})
+    {:ok, status["B"]}
+  end
+
   def get_goals (channel) do
     {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goals_msg", %{"sender" => "B"})
   end
@@ -109,21 +128,21 @@ defmodule FWClientRobotB.PhoenixSocketClient do
   end
 
   def coords_store_get(channel) do
-    {:ok, coord_map} = PhoenixClient.Channel.push(channel, "coords_store_get", %{A: "A", B: nil})
+    {:ok, coord_map} = PhoenixClient.Channel.push(channel, "coords_store_get", %{A: nil, B: "B"})
     #Add further processing according to requirements
     # IO.inspect(coord_map, label: "Co-ord Map recieved from Server")
     new_coord_map = {coord_map["face"] |> String.to_atom, coord_map["x"], coord_map["y"] |> String.to_atom}
   end
 
   def previous_store_get(channel) do
-    {:ok, prev_map} = PhoenixClient.Channel.push(channel, "previous_store_get", %{A: nil, B: "B"})
+    {:ok, prev_map} = PhoenixClient.Channel.push(channel, "previous_store_get", %{A: "B", B: nil})
     new_prev_map = {prev_map["face"] |> String.to_atom, prev_map["x"], prev_map["y"] |> String.to_atom}
   end
 
   def goal_choice_get(channel) do
-    {:ok, choice_map} = PhoenixClient.Channel.push(channel, "goal_choice_get", %{A: nil, B: "B"})
+    {:ok, choice_map} = PhoenixClient.Channel.push(channel, "goal_choice_get", %{A: "B", B: nil})
     #Add further processing according to requirements
-    IO.inspect(choice_map, label: "Choice Map recieved from Server for B")
+    # IO.inspect(choice_map, label: "Choice Map recieved from Server")
     choice_map
   end
 
@@ -142,9 +161,15 @@ defmodule FWClientRobotB.PhoenixSocketClient do
     else
       nil
     end
-
   end
 
+  def stopped_get(channel) do
+    {:ok, status} = PhoenixClient.Channel.push(channel, "stopped_get", %{})
+    if status["B"] == true do
+      # Acknowledge stop
+      event_msg = %{"event_id" => 7, "sender" => "B", "value" => nil}
+    end
+  end
 
   ##############
   ### UPDATE ###
@@ -179,6 +204,7 @@ defmodule FWClientRobotB.PhoenixSocketClient do
   ######################################################
   ## You may create extra helper functions as needed. ##
   ######################################################
+  # mapping of y-coordinates
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5, :f => 6}
   def convert_to_numbers(goal_locs) do
     # Goals: [

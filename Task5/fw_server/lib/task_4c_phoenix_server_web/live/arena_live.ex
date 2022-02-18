@@ -318,10 +318,16 @@ defmodule FWServerWeb.ArenaLive do
     # Gray Out
     # Search the plant pos mapset the location sent by the robot
     # If location exists, gray it out
-    socket = gray_out(socket, data)
+    # socket = gray_out(socket, data)s
 
     {:noreply, socket}
 
+  end
+
+  def handle_info({"gray_out", data}, socket) do
+    socket = gray_out(socket, data)
+
+    {:noreply, socket}
   end
 
   def gray_out(socket, data) do

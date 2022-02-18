@@ -148,6 +148,26 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, {:ok, true}, socket}
   end
 
+  def handle_in("event_msg", message = %{"event_id" => 4, "sender" => sender, "value" => value}, socket) do
+    message = Map.put(message, "timer", socket.assigns[:timer_tick])
+    {x,y} = convert_goal_to_locations(value)
+    left_value = 150 * (x - 1)
+    bottom_value = 150 * (y - 1)
+    msg_map = %{"left" => left_value, "bottom" => bottom_value}
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"gray_out", msg_map})
+
+    {:reply, {:ok, true}, socket}
+  end
+
+  def convert_goal_to_locations(loc) do
+    loc = if is_bitstring(loc), do: String.to_integer(loc), else: loc
+    no =  loc - 1
+    x = rem(no, 5) + 1
+    y = Integer.floor_div(no, 5) + 1
+
+    bl = {x, y} # Bottom left
+  end
+
   def handle_in("event_msg", message, socket) do
     message = Map.put(message, "timer", socket.assigns[:timer_tick])
     IO.inspect(message)
