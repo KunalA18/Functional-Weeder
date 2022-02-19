@@ -95,7 +95,7 @@ defmodule FWServerWeb.RobotChannel do
     y = message["y"]
     facing = message["face"]
     client = message["client"] #robot_A or robot_B
-    goals = Agent.get(:goal_store, fn list -> list end)
+    # goals = Agent.get(:goal_store, fn list -> list end)
     # pixel values and facing
     y = @robot_map_y_string_to_num[y] #converts y's string to a number
     left_value = 150 * (x - 1)
@@ -103,7 +103,7 @@ defmodule FWServerWeb.RobotChannel do
     face_value = facing
 
     # creates a map for the output message
-    msg_map = %{"client" => client,"left" => left_value, "bottom" => bottom_value,"face" => face_value, "goals" => goals}
+    msg_map = %{"client" => client,"left" => left_value, "bottom" => bottom_value,"face" => face_value}
 
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update", msg_map})
 
@@ -148,12 +148,23 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, {:ok, true}, socket}
   end
 
+  def handle_in("event_msg", message = %{"event_id" => 3, "sender" => sender, "value" => value}, socket) do
+    message = Map.put(message, "timer", socket.assigns[:timer_tick])
+    {x,y} = convert_goal_to_locations(value)
+    left_value = 150 * (x - 1)
+    bottom_value = 150 * (y - 1)
+    msg_map = %{"left" => left_value, "bottom" => bottom_value, "plant" => value}
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"gray_out", msg_map})
+
+    {:reply, {:ok, true}, socket}
+  end
+
   def handle_in("event_msg", message = %{"event_id" => 4, "sender" => sender, "value" => value}, socket) do
     message = Map.put(message, "timer", socket.assigns[:timer_tick])
     {x,y} = convert_goal_to_locations(value)
     left_value = 150 * (x - 1)
     bottom_value = 150 * (y - 1)
-    msg_map = %{"left" => left_value, "bottom" => bottom_value}
+    msg_map = %{"left" => left_value, "bottom" => bottom_value, "plant" => value}
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"gray_out", msg_map})
 
     {:reply, {:ok, true}, socket}
@@ -297,7 +308,11 @@ defmodule FWServerWeb.RobotChannel do
   end
 
   def handle_in("stopped_get", message, socket) do
-    status = Agent.get(:stopped, fn map -> map end)
+    status = if Process.whereis(:stopped) != nil do
+      Agent.get(:stopped, fn map -> map end)
+    else
+      %{"A" => false, "B" => false}
+    end
     {:reply, {:ok, status}, socket}
   end
 
