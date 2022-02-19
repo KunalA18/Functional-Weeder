@@ -361,9 +361,6 @@ defmodule FWClientRobotA do
           end
         end)
 
-
-
-
         {rx, ry, _} = report(robot)
 
         distance_array = if !obstacle, do: sort_according_to_distance(robot, rx, ry, 0), else: distance_array
