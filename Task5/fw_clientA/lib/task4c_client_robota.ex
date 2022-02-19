@@ -347,8 +347,9 @@ defmodule FWClientRobotA do
         # If robot has reached goal, activate seeding/weeding for square in the main_goal array
         weeded = Agent.get(:weeded_store, fn list -> list end) |> List.last
 
-        {robot, distance_array} = weeding(robot, weeded, distance_array, channel)
+        {robot, distance_array, obstacle} = weeding(robot, weeded, distance_array, channel)
         send_robot_status(channel, robot, goal_locs)
+
 
         {goals_list, _} = Enum.reduce(goals_list, {[], false}, fn s, {acc, detect} ->
           {bl, br, tl, tr} = convert_goal_to_locations(s)
@@ -359,9 +360,13 @@ defmodule FWClientRobotA do
             {acc ++ [s], detect}
           end
         end)
+
+
+
+
         {rx, ry, _} = report(robot)
 
-        distance_array = sort_according_to_distance(robot, rx, ry, 0)
+        distance_array = if !obstacle, do: sort_according_to_distance(robot, rx, ry, 0), else: distance_array
         Agent.update(:main_goal_storeA, fn list -> goals_list end)
         IO.inspect(distance_array, label: "Distance array after weeding")
 
@@ -534,10 +539,11 @@ defmodule FWClientRobotA do
       # Rotate to face clockwise node
       should_face = n_facing
       face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
-      {robot, obs_ahead} = rotate(robot, should_face, face_diff, false, 0, channel)
+      {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot, [])
+      {robot, obs_ahead} = rotate(robot, should_face, face_diff, obs_ahead, 0, channel)
       # Check obstacle, if it exists then carry out other behaviour
 
-      {robot, distance_array} = if obs_ahead do
+      {robot, distance_array, obstacle} = if obs_ahead do
         # Add previous clockwise node to distance_array and :main_goal_store
         {{n_x, n_y}, n_facing} = get_anticlockwise_node(x, y, weeded)
         d = distance(x, @robot_map_y_atom_to_num[y], n_x, n_y)
@@ -547,7 +553,7 @@ defmodule FWClientRobotA do
         distance_array = [{pos, d}] ++ distance_array
         IO.inspect(distance_array, label: "Updated dist array after weeding fail")
         Agent.update(:main_goal_storeA, fn list -> [weeded] ++ list end)
-        {robot, distance_array}
+        {robot, distance_array, true}
       else
         # Go to next clockwise node
         # FWClientRobotA.LineFollower.stop_seeder()
@@ -564,7 +570,7 @@ defmodule FWClientRobotA do
         robot = move(robot)
         IO.inspect(report(robot),label: "Weeding Done")
         FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, String.to_integer(weeded))
-        {robot, distance_array}
+        {robot, distance_array, false}
       end
 
 
