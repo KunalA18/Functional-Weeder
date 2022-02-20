@@ -354,6 +354,19 @@ defmodule FWServerWeb.RobotChannel do
 
   end
 
+  def handle_info({"stop_event", data}, socket) do
+
+    #IO.inspect(data, label: "Data is sent to Channel PubSub")
+    msg = %{"event_id" => 6, "sender" => "Server", "value" => data}
+    broadcast!(socket, "event_msg", msg)
+    ###########################
+    ## complete this funcion ##
+    ###########################
+
+    {:noreply, socket}
+
+  end
+
   def handle_info({"stop_robot", data}, socket) do
     IO.inspect(data["robot"], label: "Stopped")
     Agent.update(:stopped, fn map -> Map.put(map, data["robot"], true) end)
