@@ -27,14 +27,14 @@ defmodule FWServerWeb.ArenaLive do
     socket = assign(socket, :img_robotA, "robot_facing_north.png")
     socket = assign(socket, :bottom_robotA, 0)
     socket = assign(socket, :left_robotA, 0)
-    socket = assign(socket, :robotA_start, "1, a, north")
+    socket = assign(socket, :robotA_start, "6, a, west")
     socket = assign(socket, :robotA_goals, weeding)
     socket = assign(socket, :robotA_status, "Inactive")
 
     socket = assign(socket, :img_robotB, "robot_facing_south.png")
     socket = assign(socket, :bottom_robotB, 750)
     socket = assign(socket, :left_robotB, 750)
-    socket = assign(socket, :robotB_start, "6, f, south")
+    socket = assign(socket, :robotB_start, "2, e, south")
     socket = assign(socket, :robotB_goals, seeding)
     socket = assign(socket, :robotB_status, "Inactive")
 

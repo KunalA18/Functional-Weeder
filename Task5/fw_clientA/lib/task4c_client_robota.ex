@@ -229,6 +229,8 @@ defmodule FWClientRobotA do
       {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot, goal_locs)
     else
       # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
+      robot = loop_through_goal_locs(distance_array, robot, goal_locs, channel)
+      distance_array = ["1f": 3]
       loop_through_goal_locs(distance_array, robot, goal_locs, channel)
     end
 
@@ -324,55 +326,63 @@ defmodule FWClientRobotA do
         rtup = {rx, @robot_map_y_atom_to_num[ry]}
         goals_list = Agent.get(:main_goal_storeA, fn list -> list end)
 
+        {distance_array, robot} =
+          if goals_list != [] do
+          IO.inspect(goals_list, label: "Goals List")
 
-        IO.inspect(goals_list, label: "Goals List")
+          {goals_list, _} = Enum.reduce(goals_list, {[], false}, fn s, {acc, detect} ->
+            {bl, br, tl, tr} = convert_goal_to_locations(s)
+            if (rtup == bl or rtup == br or rtup == tl or rtup == tr) and !detect do
+              Agent.update(:weeded_store, fn list -> list ++ [s] end)
+              {acc, true}
+            else
+              {acc ++ [s], detect}
+            end
+          end)
 
-        {goals_list, _} = Enum.reduce(goals_list, {[], false}, fn s, {acc, detect} ->
-          {bl, br, tl, tr} = convert_goal_to_locations(s)
-          if (rtup == bl or rtup == br or rtup == tl or rtup == tr) and !detect do
-            Agent.update(:weeded_store, fn list -> list ++ [s] end)
-            {acc, true}
-          else
-            {acc ++ [s], detect}
-          end
-        end)
+          IO.inspect(goals_list, label: "Goals List after reduction")
 
-        IO.inspect(goals_list, label: "Goals List after reduction")
+          Agent.update(:main_goal_storeA, fn list -> goals_list end)
+          distance_array = sort_according_to_distance(robot, rx, ry, 0)
+          IO.inspect({rx, ry}, label: "Current Location")
+          IO.inspect(distance_array, label: "Distance array before weeding")
 
-        Agent.update(:main_goal_storeA, fn list -> goals_list end)
-        distance_array = sort_according_to_distance(robot, rx, ry, 0)
-        IO.inspect({rx, ry}, label: "Current Location")
-        IO.inspect(distance_array, label: "Distance array before weeding")
+          # If robot has reached goal, activate seeding/weeding for square in the main_goal array
+          weeded = Agent.get(:weeded_store, fn list -> list end) |> List.last
 
-        # If robot has reached goal, activate seeding/weeding for square in the main_goal array
-        weeded = Agent.get(:weeded_store, fn list -> list end) |> List.last
+          {robot, distance_array, obstacle} = weeding(robot, weeded, distance_array, channel)
+          send_robot_status(channel, robot, goal_locs)
 
-        {robot, distance_array, obstacle} = weeding(robot, weeded, distance_array, channel)
-        send_robot_status(channel, robot, goal_locs)
+          {goals_list, _} = Enum.reduce(goals_list, {[], false}, fn s, {acc, detect} ->
+            {bl, br, tl, tr} = convert_goal_to_locations(s)
+            if (rtup == bl or rtup == br or rtup == tl or rtup == tr) and !detect do
+              Agent.update(:weeded_store, fn list -> list ++ [s] end)
+              {acc, true}
+            else
+              {acc ++ [s], detect}
+            end
+          end)
 
+          {rx, ry, _} = report(robot)
 
-        {goals_list, _} = Enum.reduce(goals_list, {[], false}, fn s, {acc, detect} ->
-          {bl, br, tl, tr} = convert_goal_to_locations(s)
-          if (rtup == bl or rtup == br or rtup == tl or rtup == tr) and !detect do
-            Agent.update(:weeded_store, fn list -> list ++ [s] end)
-            {acc, true}
-          else
-            {acc ++ [s], detect}
-          end
-        end)
-
-        {rx, ry, _} = report(robot)
-
-        distance_array = if !obstacle, do: sort_according_to_distance(robot, rx, ry, 0), else: distance_array
-        Agent.update(:main_goal_storeA, fn list -> goals_list end)
-        IO.inspect(distance_array, label: "Distance array after weeding")
+          distance_array = if !obstacle, do: sort_according_to_distance(robot, rx, ry, 0), else: distance_array
+          Agent.update(:main_goal_storeA, fn list -> goals_list end)
+          IO.inspect(distance_array, label: "Distance array after weeding")
 
 
-        IO.puts("-----------------")
+          IO.puts("-----------------")
+          {distance_array, robot}
+        else
+          distance_array = Keyword.delete(distance_array, :"1f")
+          {distance_array, robot}
+        end
+
 
 
       if length(distance_array) > 0 do
         loop_through_goal_locs(distance_array, robot, goal_locs, channel)
+      else
+        robot
       end
     end
   end
@@ -491,26 +501,7 @@ defmodule FWClientRobotA do
         # navigate according to the list
         {robot, obs_ahead} = move_with_priority(robot, sq_keys, obs_ahead, 0, false, goal_locs, channel)
 
-        {x_b, y_b, _} = FWClientRobotA.PhoenixSocketClient.coords_store_get(channel)
-
         {x, y, _facing} = report(robot)
-
-        #Update the goal store to delete the goal entry if A has reached a goal
-        key_current = Integer.to_string(x) <> Atom.to_string(y)
-
-        # FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
-        Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(key_current)))
-
-
-        #get the updated distance array
-        # distance_array = compare_with_store(distance_array, channel)
-
-        #Re-sort the list and change the goals
-        # {distance_array, goal_x, goal_y} = if length(distance_array) > 0 do
-        #   reorder_by_distance(x, y, distance_array)
-        # else
-        #   {distance_array, goal_x, goal_y}
-        # end
 
         # +ve implies east and -ve implies west
         diff_x = goal_x - x
@@ -563,24 +554,12 @@ defmodule FWClientRobotA do
           Agent.update(:seeding, fn x -> x - 1 end)
 
         end
-        Process.sleep(3000)
+        Process.sleep(1000)
         robot = move(robot)
         IO.inspect(report(robot),label: "Weeding Done")
         FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, String.to_integer(weeded))
         {robot, distance_array, false}
       end
-
-
-
-
-
-      #Two options now
-      # 1. Go to deposition zone
-      # Kaafi code likhna padega
-
-      # 2. Put it in box at the back (best imo)
-      # Zyada kuch nahi karna padega
-
 
   end
 
@@ -807,6 +786,7 @@ defmodule FWClientRobotA do
       FWClientRobotA.PhoenixSocketClient.acknowledge_stop(channel)
       # Check function
       is_stopped(channel)
+      FWClientRobotA.PhoenixSocketClient.acknowledge_stop(channel)
       FWClientRobotA.PhoenixSocketClient.wake_up(channel)
     end
 
@@ -831,28 +811,9 @@ defmodule FWClientRobotA do
     end
   end
 
-  # def wait_for_movement(robot, channel, _) do
-  #   # get the status of the turns
-  #   a_turn = Agent.get(:turns, fn map -> Map.get(map, :A) end)
-  #   b_turn = Agent.get(:turns, fn map -> Map.get(map, :B) end)
-
-  #   if a_turn do
-  #     # IO.inspect("Wait for movement func")
-  #     obs_ahead = send_robot_status(robot, channel)
-  #     #Now update it to show that it is B's turn
-  #     Agent.update(:turns, fn map -> Map.put(map, :A, false) end)
-  #     Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
-  #   else
-  #     wait_for_b()
-  #   end
-  # end
-
 
   def wait_for_movement(nxt_x, nxt_y) do
     {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
-    #{x_b, y_b, _} = FWClientRobotA.PhoenixSocketClient.coords_store_get(channel)
-    #IO.puts("Waiting for movement")
-
     if x_b == nxt_x and y_b == nxt_y do
       wait_for_movement(nxt_x, nxt_y)
     end

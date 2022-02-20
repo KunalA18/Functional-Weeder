@@ -9,6 +9,8 @@ defmodule FWClientRobotA.LineFollower do
   @pwm_pins [enl: 6, enr: 26]
   @servo_a_pin 27
   @servo_b_pin 22
+  @servo_c_pin 5
+  @servo_d_pin 17
 
   @ref_atoms [:cs, :clock, :address, :dataout]
   @lf_sensor_data %{sensor0: 0, sensor1: 0, sensor2: 0, sensor3: 0, sensor4: 0, sensor5: 0}
@@ -500,6 +502,61 @@ defmodule FWClientRobotA.LineFollower do
     Pigpiox.Pwm.set_pwm_frequency(@servo_a_pin, @pwm_frequency)
     Pigpiox.Pwm.gpio_pwm(@servo_a_pin, val)
   end
+
+  def test_servo_b(angle) do
+    Logger.debug("Testing Servo B")
+    val = trunc((2.5 + 10.0 * angle / 180) / 100 * 255)
+    Pigpiox.Pwm.set_pwm_frequency(@servo_b_pin, @pwm_frequency)
+    Pigpiox.Pwm.gpio_pwm(@servo_b_pin, val)
+  end
+
+  def test_servo_c(angle) do
+    Logger.debug("Testing Servo C")
+    val = trunc((2.5 + 10.0 * angle / 180) / 100 * 255)
+    Pigpiox.Pwm.set_pwm_frequency(@servo_c_pin, @pwm_frequency)
+    Pigpiox.Pwm.gpio_pwm(@servo_c_pin, val)
+  end
+
+  def servo_initialize do
+    test_servo_a(100)
+    Process.sleep(500)
+    test_servo_b(90)
+    Process.sleep(500)
+    test_servo_c(60)
+    Process.sleep(500)
+  end
+
+  def weeder do
+    test_servo_a(100)
+    Process.sleep(1000)
+    test_servo_c(60)
+    Process.sleep(1000)
+    test_servo_b(90)
+    Process.sleep(1000)
+    test_servo_b(60)
+    Process.sleep(500)
+    test_servo_c(0)
+    Process.sleep(1500)
+    test_servo_b(140)
+    Process.sleep(1250)
+    test_servo_a(0)
+    Process.sleep(1000)
+    test_servo_c(60)
+    Process.sleep(500)
+  end
+
+  def depo do
+    test_servo_a(100)
+    Process.sleep(1000)
+    test_servo_c(0)
+    Process.sleep(1000)
+    test_servo_b(80)
+    Process.sleep(1000)
+    test_servo_a(0)
+    Process.sleep(1000)
+  end
+
+
 
   @doc """
   Tests white line sensor modules reading
