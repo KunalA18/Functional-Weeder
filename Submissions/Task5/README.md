@@ -11,3 +11,9 @@ A few points to note about our submission:
 4. The code for FWClientRobotB is the same as A, the only difference is instead of weeding, in the seeding function, we give angles to a servo in increments of `60 degrees`. I've mentioned it here as it isn't in the flowchart
 
 5. We weren't able to get a way to receive the `"event_msg"` with `"event_id" => 6` sent from the Server in the Client, however the message is still being sent. We've implemented stopping the robot with a different method.
+
+<object data="Task5_Diagrams.pdf" type="application/pdf" >
+    <embed src="Task5_Diagrams.pdf">
+        <p>This browser does not support PDFs. Please download the PDF to view it: <a href="Task5_Diagrams.pdf">Download PDF</a>.</p>
+    </embed>
+</object>
