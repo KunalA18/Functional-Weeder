@@ -529,7 +529,7 @@ defmodule FWClientRobotB do
     #If the position the robot is at is a goal, then weed the plant
 
       # 4 ways to weed a robot depending on which direction the robot is facing
-      IO.puts("Weeding Started")
+      IO.puts("Seeding Started")
       {x, y, facing} = report(robot)
       {{n_x, n_y}, n_facing} = get_clockwise_node(x, y, weeded)
       IO.inspect({n_x, n_y})
@@ -552,6 +552,8 @@ defmodule FWClientRobotB do
         {robot, distance_array, true}
       else
         # Go to next clockwise node
+        FWClientRobotB.PhoenixSocketClient.start_seeding(channel)
+
         # FWClientRobotA.LineFollower.stop_seeder()
 
         x = Agent.get(:seeding, fn x -> x end)
@@ -564,8 +566,9 @@ defmodule FWClientRobotB do
         end
         Process.sleep(3000)
         robot = move(robot)
-        IO.inspect(report(robot),label: "Weeding Done")
-        FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, String.to_integer(weeded))
+        IO.inspect(report(robot),label: "Seeding Done")
+        FWClientRobotB.PhoenixSocketClient.send_weeding_msg(channel, String.to_integer(weeded))
+        FWClientRobotB.PhoenixSocketClient.stop_seeding(channel)
         {robot, distance_array, false}
       end
 
