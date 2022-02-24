@@ -230,19 +230,37 @@ defmodule FWClientRobotA do
     else
       # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
       robot = loop_through_goal_locs(distance_array, robot, goal_locs, channel)
-      distance_array = ["1f": 3]
+      distance_array = get_deposition_positions(robot)
       loop_through_goal_locs(distance_array, robot, goal_locs, channel)
     end
+  end
 
+  def get_deposition_positions(robot) do
+    # 1-6f
+    # 6a-f
+    {r_x, r_y, _} = report(robot)
+    #positions of nodes next to the deposition zone
+    deps = [["1", "f"], ["2", "f"], ["3", "f"], ["4", "f"], ["5", "f"], ["6", "f"],
+    ["6", "a"], ["6", "b"], ["6", "c"], ["6", "d"], ["6", "e"]]
+    #create a distance array of the following
+    distance_array =
+      Enum.map(deps, fn [x, y] ->
+        {p_x, _} = Integer.parse(x)
+        p_y = @robot_map_y_atom_to_num[String.to_atom(y)]
 
-    # msg = %{"A" => false, "B" => true}
-    # FWClientRobotA.PhoenixSocketClient.turns_update(channel, msg)
-    # {x, y, _facing} = report(robot)
-    # key_current = Integer.to_string(x) <> Atom.to_string(y)
-    # # FWClientRobotA.PhoenixSocketClient.goal_store_delete(channel, key_current)
-    # Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(k_a)))
+        d =
+          distance(
+            p_x,
+            p_y,
+            r_x,
+            @robot_map_y_atom_to_num[r_y]
+          )
 
-    # IO.inspect(distance_array, label: "Distance_array")
+        s = String.to_atom(x <> y)
+        {s, d}
+      end)
+
+      distance_array = distance_array |> List.keysort(1) |> List.first() |> List.wrap
   end
 
   def compare_with_store(distance_array, channel) do
