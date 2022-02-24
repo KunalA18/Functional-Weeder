@@ -247,6 +247,8 @@ defmodule FWServerWeb.ArenaLive do
       robot = Enum.at(kill_list, 1)
       msg = %{"robot" => robot}
       Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", {"stop_robot", msg})
+      Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "stop_event", {"stop_robot", stop_list})
+
       if robot == "A" do
         assign(socket, :robotA_status, "Inactive")
       else
