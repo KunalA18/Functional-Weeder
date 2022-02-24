@@ -573,6 +573,7 @@ defmodule FWClientRobotA do
         {robot, distance_array, true}
       else
         # Go to next clockwise node
+        FWClientRobotA.PhoenixSocketClient.start_weeding(channel)
         # FWClientRobotA.LineFollower.stop_seeder()
 
         x = Agent.get(:seeding, fn x -> x end)
@@ -587,6 +588,7 @@ defmodule FWClientRobotA do
         robot = move(robot)
         IO.inspect(report(robot),label: "Weeding Done")
         FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, String.to_integer(weeded))
+        FWClientRobotA.PhoenixSocketClient.stop_weeding(channel)
         {robot, distance_array, false}
       end
 

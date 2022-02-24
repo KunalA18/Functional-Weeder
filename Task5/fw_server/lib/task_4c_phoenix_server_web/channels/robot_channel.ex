@@ -127,6 +127,26 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, {:ok, is_obs_ahead}, socket}
   end
 
+  def handle_in("start_weeding", message, socket) do
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"start_weeding", message})
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("stop_weeding", message, socket) do
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"stop_weeding", message})
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("start_seeding", message, socket) do
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"start_seeding", message})
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("stop_seeding", message, socket) do
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"stop_seeding", message})
+    {:reply, :ok, socket}
+  end
+
   def handle_info(%{event: "update_timer_tick", payload: timer_data, topic: "timer:update"}, socket) do
     socket = assign(socket, :timer_tick, timer_data.time)
     {:noreply, socket}

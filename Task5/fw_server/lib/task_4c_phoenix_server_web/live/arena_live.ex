@@ -373,6 +373,27 @@ defmodule FWServerWeb.ArenaLive do
     socket = assign(socket, :obstacle_pos, mapset)
     {:noreply, socket}
   end
+
+  def handle_info({"start_weeding", data}, socket) do
+    socket = assign(socket, :robotA_status, "Weeding")
+    {:noreply, socket}
+  end
+
+  def handle_info({"stop_weeding", data}, socket) do
+    socket = assign(socket, :robotA_status, "Active")
+    {:noreply, socket}
+  end
+
+  def handle_info({"start_seeding", data}, socket) do
+    socket = assign(socket, :robotB_status, "Seeding")
+    {:noreply, socket}
+  end
+
+  def handle_info({"stop_seeding", data}, socket) do
+    socket = assign(socket, :robotB_status, "Active")
+    {:noreply, socket}
+  end
+
   ######################################################
   ## You may create extra helper functions as needed  ##
   ## and update remaining assign variables.           ##
