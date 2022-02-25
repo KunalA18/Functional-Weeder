@@ -95,7 +95,7 @@ defmodule FWServerWeb.RobotChannel do
     y = message["y"]
     facing = message["face"]
     client = message["client"] #robot_A or robot_B
-    # goals = Agent.get(:goal_store, fn list -> list end)
+
     # pixel values and facing
     y = @robot_map_y_string_to_num[y] #converts y's string to a number
     left_value = 150 * (x - 1)
@@ -114,15 +114,6 @@ defmodule FWServerWeb.RobotChannel do
     {:ok, out_file} = File.open("task_4c_output.txt", [:append])
     # write the robot actions to a text file
     IO.binwrite(out_file, "#{message["client"]} => #{message["x"]}, #{message["y"]}, #{message["face"]}\n")
-
-    ############################
-    ## complete this function ##
-    ############################
-    # if is_obs_ahead do
-    #   {left, bottom} = get_obs_pixels(left_value, bottom_value, facing)
-    #   msg_obs = %{"position" => {left, bottom}}
-    #   Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update_obs", msg_obs})
-    # end
 
     {:reply, {:ok, is_obs_ahead}, socket}
   end

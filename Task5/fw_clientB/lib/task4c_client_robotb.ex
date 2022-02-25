@@ -215,7 +215,7 @@ defmodule FWClientRobotB do
 
     if length(distance_array) == 0 do
       # send status of the start location
-      {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot, goal_locs)
+      {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
     else
       # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
       loop_through_goal_locs(distance_array, robot, goal_locs, channel)
@@ -258,7 +258,7 @@ defmodule FWClientRobotB do
       # -ve implies that it needs to go down
 
       # send status of the start location
-      {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot, goal_locs)
+      {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
       {x, y, _facing} = report(robot)
       key_current = Integer.to_string(x) <> Atom.to_string(y)
 
@@ -313,7 +313,7 @@ defmodule FWClientRobotB do
         weeded = Agent.get(:weeded_store, fn list -> list end) |> List.last
 
         {robot, distance_array, obstacle} = weeding(robot, weeded, distance_array, channel)
-        send_robot_status(channel, robot, goal_locs)
+        send_robot_status(channel, robot)
 
 
         {goals_list, _} = Enum.reduce(goals_list, {[], false}, fn s, {acc, detect} ->
@@ -349,7 +349,7 @@ defmodule FWClientRobotB do
     b_turn = turn["B"]
     if (a_turn == true and b_turn == false) do
 
-      {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot, goal_locs)
+      {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
 
       #Now update it to show that it is A's turn
       msg = %{"A" => true, "B" => false}
@@ -623,12 +623,12 @@ defmodule FWClientRobotB do
         if face_diff == -3 or face_diff == 1 do
           # rotate left
           robot = left(robot)
-          {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot, goal_locs)
+          {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
           rotate(robot, should_face, face_diff, obs_ahead, goal_locs, channel)
         else
           # rotate right
           robot = right(robot)
-          {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot, goal_locs)
+          {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
           rotate(robot, should_face, face_diff, obs_ahead, goal_locs, channel)
         end
 
@@ -723,17 +723,17 @@ defmodule FWClientRobotB do
       FWClientRobotB.PhoenixSocketClient.coords_store_update(channel, report(robot))
 
       # obs_ahead = wait_and_send(robot, channel, goal_locs)
-      {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot, goal_locs)
+      {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
 
       {robot, obs_ahead}
     end
   end
 
-  def send_robot_status(channel, robot, goal_locs) do
+  def send_robot_status(channel, robot) do
     # Here send the status of the robot
     # Check server to see if robot has stopped
     # If obstacle detected, send message to the server
-    {:obstacle_presence, obs_ahead} = FWClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot, goal_locs)
+    {:obstacle_presence, obs_ahead} = FWClientRobotB.PhoenixSocketClient.send_robot_status(channel, robot)
     # obs_ahead = FWClientRobotB.LineFollower.detect_obstacle()
 
     if obs_ahead do
