@@ -1,0 +1,12 @@
+{application,makeup_elixir,
+             [{applications,[kernel,stdlib,elixir,makeup,nimble_parsec]},
+              {description,"Elixir lexer for the Makeup syntax highlighter.\n"},
+              {modules,['Elixir.Makeup.Lexers.ElixirLexer',
+                        'Elixir.Makeup.Lexers.ElixirLexer.Application',
+                        'Elixir.Makeup.Lexers.ElixirLexer.Atoms',
+                        'Elixir.Makeup.Lexers.ElixirLexer.Helper',
+                        'Elixir.Makeup.Lexers.ElixirLexer.Testing',
+                        'Elixir.Makeup.Lexers.ElixirLexer.Variables']},
+              {registered,[]},
+              {vsn,"0.15.2"},
+              {mod,{'Elixir.Makeup.Lexers.ElixirLexer.Application',[]}}]}.

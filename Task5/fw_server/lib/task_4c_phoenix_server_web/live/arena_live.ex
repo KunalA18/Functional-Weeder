@@ -22,22 +22,22 @@ defmodule FWServerWeb.ArenaLive do
       Process.register(pid_stop, :stop_times)
       read_stop_times()
     end
-    {plants_list, seeding, weeding} = get_plants()
 
     socket = assign(socket, :img_robotA, "robot_facing_north.png")
     socket = assign(socket, :bottom_robotA, 0)
     socket = assign(socket, :left_robotA, 0)
     socket = assign(socket, :robotA_start, "1, a, north")
-    socket = assign(socket, :robotA_goals, weeding)
+    socket = assign(socket, :robotA_goals, [])
     socket = assign(socket, :robotA_status, "Inactive")
 
     socket = assign(socket, :img_robotB, "robot_facing_south.png")
     socket = assign(socket, :bottom_robotB, 750)
     socket = assign(socket, :left_robotB, 750)
     socket = assign(socket, :robotB_start, "6, f, south")
-    socket = assign(socket, :robotB_goals, seeding)
+    socket = assign(socket, :robotB_goals, [])
     socket = assign(socket, :robotB_status, "Inactive")
 
+    plants_list = get_plants()
     socket = assign(socket, :obstacle_pos, MapSet.new())
     socket = assign(socket, :plant_pos, plants_list)
     socket = assign(socket, :timer_tick, 180)
@@ -306,46 +306,30 @@ defmodule FWServerWeb.ArenaLive do
       socket = assign(socket, :bottom_robotA, data["bottom"])
       socket = assign(socket, :left_robotA, data["left"])
       #Need to add goal updation somehow
-      # socket = assign(socket, :robotA_goals, data["goals"])
+      socket = assign(socket, :robotA_goals, data["goals"])
     else
       socket = assign(socket, :img_robotB, img_name)
       socket = assign(socket, :bottom_robotB, data["bottom"])
       socket = assign(socket, :left_robotB, data["left"])
-      # socket = assign(socket, :robotB_goals, data["goals"])
+      socket = assign(socket, :robotB_goals, data["goals"])
     end
     # assigns data to the socket to update the LiveView
 
     # Gray Out
     # Search the plant pos mapset the location sent by the robot
     # If location exists, gray it out
-    # socket = gray_out(socket, data)s
-
-    {:noreply, socket}
-
-  end
-
-  def handle_info({"gray_out", data}, socket) do
     socket = gray_out(socket, data)
 
-    #Remove position sent from seeding/weeding list
-
-    new_goalsA = Enum.reject(socket.assigns.robotA_goals, fn s -> s == Integer.to_string(data["plant"]) end)
-    new_goalsB = Enum.reject(socket.assigns.robotB_goals, fn s -> s == Integer.to_string(data["plant"]) end)
-
-    socket = assign(socket, :robotA_goals, new_goalsA)
-    socket = assign(socket, :robotB_goals, new_goalsB)
-
     {:noreply, socket}
+
   end
 
   def gray_out(socket, data) do
     x = floor(data["left"] / 150) + 1
     y = floor(data["bottom"] / 150) + 1
-
     left_pos = 150 * (x-1) + 75
     bottom_pos = 150 * (y-1) + 75
     IO.puts("Left: #{left_pos}, Bottom: #{bottom_pos}")
-
     plants_list = Enum.map(socket.assigns.plant_pos, fn {left, bottom, img} ->
       if ((left >= left_pos - 10 and left <= left_pos + 10)
       and (bottom >= bottom_pos - 10 and bottom <= bottom_pos + 10 ))
@@ -355,8 +339,6 @@ defmodule FWServerWeb.ArenaLive do
        {left, bottom, img}
       end
    end)
-
-
    socket = assign(socket, :plant_pos, plants_list)
   end
 
@@ -395,8 +377,6 @@ defmodule FWServerWeb.ArenaLive do
     seeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 0 do x end end) |> Enum.reject(fn x -> x == nil end)# 0, 2, 4
     weeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 1 do x end end) |> Enum.reject(fn x -> x == nil end)# 1, 3, 5
 
-
-
     # Red for Seeding
     map = Enum.reduce(seeding, [], fn loc, acc ->
       {x, y} = convert_to_coord(loc)
@@ -414,7 +394,7 @@ defmodule FWServerWeb.ArenaLive do
       bottom = 150 * (y-1) + 75
       acc ++ [{left, bottom, "green_plant.png"}]
     end)
-    {map, seeding, weeding}
+    map
   end
 
   # Note change to 300 in final run

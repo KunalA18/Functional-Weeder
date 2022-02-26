@@ -347,8 +347,9 @@ defmodule FWClientRobotB do
         # If robot has reached goal, activate seeding/weeding for square in the main_goal array
         weeded = Agent.get(:weeded_store, fn list -> list end) |> List.last
 
-        {robot, distance_array} = weeding(robot, weeded, distance_array, channel)
+        {robot, distance_array, obstacle} = weeding(robot, weeded, distance_array, channel)
         send_robot_status(channel, robot, goal_locs)
+
 
         {goals_list, _} = Enum.reduce(goals_list, {[], false}, fn s, {acc, detect} ->
           {bl, br, tl, tr} = convert_goal_to_locations(s)
@@ -359,9 +360,10 @@ defmodule FWClientRobotB do
             {acc ++ [s], detect}
           end
         end)
+
         {rx, ry, _} = report(robot)
 
-        distance_array = sort_according_to_distance(robot, rx, ry, 0)
+        distance_array = if !obstacle, do: sort_according_to_distance(robot, rx, ry, 0), else: distance_array
         Agent.update(:main_goal_storeA, fn list -> goals_list end)
         IO.inspect(distance_array, label: "Distance array after weeding")
 
@@ -537,7 +539,7 @@ defmodule FWClientRobotB do
       {robot, obs_ahead} = rotate(robot, should_face, face_diff, false, 0, channel)
       # Check obstacle, if it exists then carry out other behaviour
 
-      {robot, distance_array} = if obs_ahead do
+      {robot, distance_array, obstacle} = if obs_ahead do
         # Add previous clockwise node to distance_array and :main_goal_store
         {{n_x, n_y}, n_facing} = get_anticlockwise_node(x, y, weeded)
         d = distance(x, @robot_map_y_atom_to_num[y], n_x, n_y)
@@ -547,13 +549,13 @@ defmodule FWClientRobotB do
         distance_array = [{pos, d}] ++ distance_array
         IO.inspect(distance_array, label: "Updated dist array after weeding fail")
         Agent.update(:main_goal_storeA, fn list -> [weeded] ++ list end)
-        {robot, distance_array}
+        {robot, distance_array, true}
       else
         # Go to next clockwise node
-        # FWClientRobotB.LineFollower.stop_seeder()
+        FWClientRobotB.LineFollower.stop_seeder
 
         x = Agent.get(:seeding, fn x -> x end)
-        # FWClientRobotB.LineFollower.test_servo_a(x * 60)
+        FWClientRobotB.LineFollower.test_servo_a(x * 60)
         if x < 3 do
           Agent.update(:seeding, fn x -> x + 1 end)
         else
@@ -564,7 +566,7 @@ defmodule FWClientRobotB do
         robot = move(robot)
         IO.inspect(report(robot),label: "Weeding Done")
         FWClientRobotB.PhoenixSocketClient.send_weeding_msg(channel, String.to_integer(weeded))
-        {robot, distance_array}
+        {robot, distance_array, false}
       end
 
 
@@ -898,10 +900,10 @@ defmodule FWClientRobotB do
   def right(%FWClientRobotB.Position{facing: facing} = robot) do
     if Agent.get(:continuous_turns, fn val -> val end) == true do
       # Backwards movement
-      # FWClientRobotB.LineFollower.move_back()
+      FWClientRobotB.LineFollower.move_back()
       IO.puts("U-Turn, move backwards")
     end
-    # FWClientRobotB.LineFollower.turn_right
+    FWClientRobotB.LineFollower.turn_right
 
     Agent.update(:continuous_turns, fn val -> true end)
     %FWClientRobotB.Position{robot | facing: @directions_to_the_right[facing]}
@@ -914,11 +916,11 @@ defmodule FWClientRobotB do
   def left(%FWClientRobotB.Position{facing: facing} = robot) do
     if Agent.get(:continuous_turns, fn val -> val end) == true do
       # Backwards movement
-      # FWClientRobotB.LineFollower.move_back()
+      FWClientRobotB.LineFollower.move_back()
       IO.puts("U-Turn, move backwards")
 
     end
-    # FWClientRobotB.LineFollower.turn_left
+    FWClientRobotB.LineFollower.turn_left
 
     Agent.update(:continuous_turns, fn val -> true end)
     %FWClientRobotB.Position{robot | facing: @directions_to_the_left[facing]}
@@ -928,7 +930,7 @@ defmodule FWClientRobotB do
   Moves the robot to the north, but prevents it to fall
   """
   def move(%FWClientRobotB.Position{x: _, y: y, facing: :north} = robot) when y < @table_top_y do
-    # FWClientRobotB.LineFollower.start
+    FWClientRobotB.LineFollower.start
     Agent.update(:continuous_turns, fn val -> false end)
     %FWClientRobotB.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) + 1 end) |> elem(0)
     }
@@ -938,7 +940,7 @@ defmodule FWClientRobotB do
   Moves the robot to the east, but prevents it to fall
   """
   def move(%FWClientRobotB.Position{x: x, y: _, facing: :east} = robot) when x < @table_top_x do
-    # FWClientRobotB.LineFollower.start
+    FWClientRobotB.LineFollower.start
     Agent.update(:continuous_turns, fn val -> false end)
 
     %FWClientRobotB.Position{robot | x: x + 1}
@@ -948,7 +950,7 @@ defmodule FWClientRobotB do
   Moves the robot to the south, but prevents it to fall
   """
   def move(%FWClientRobotB.Position{x: _, y: y, facing: :south} = robot) when y > :a do
-    # FWClientRobotB.LineFollower.start
+    FWClientRobotB.LineFollower.start
     Agent.update(:continuous_turns, fn val -> false end)
 
     %FWClientRobotB.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) - 1 end) |> elem(0)}
@@ -958,7 +960,7 @@ defmodule FWClientRobotB do
   Moves the robot to the west, but prevents it to fall
   """
   def move(%FWClientRobotB.Position{x: x, y: _, facing: :west} = robot) when x > 1 do
-    # FWClientRobotB.LineFollower.start
+    FWClientRobotB.LineFollower.start
     Agent.update(:continuous_turns, fn val -> false end)
 
     %FWClientRobotB.Position{robot | x: x - 1}

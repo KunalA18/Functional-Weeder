@@ -1,0 +1,10 @@
+{application,task_4c_client_robota,
+             [{applications,[kernel,stdlib,elixir,logger,phoenix_client,
+                             circuits_gpio,pigpiox,jason]},
+              {description,"task_4c_client_robota"},
+              {modules,['Elixir.FWClientRobotA',
+                        'Elixir.FWClientRobotA.LineFollower',
+                        'Elixir.FWClientRobotA.PhoenixSocketClient',
+                        'Elixir.FWClientRobotA.Position']},
+              {registered,[]},
+              {vsn,"0.1.0"}]}.
