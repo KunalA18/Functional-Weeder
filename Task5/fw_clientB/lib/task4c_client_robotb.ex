@@ -11,6 +11,8 @@ defmodule FWClientRobotB do
   @dir_to_num %{:north => 1, :east => 2, :south => 3, :west => 4}
   # maps y numbers to atoms
   @robot_map_y_num_to_atom %{1 => :a, 2 => :b, 3 => :c, 4 => :d, 5 => :e, 6 => :f}
+  # If set to true, all LineFollower functions will work
+  @physical false
 
   @doc """
   Places the robot to the default position of (1, A, North)
@@ -440,11 +442,13 @@ defmodule FWClientRobotB do
       else
         # Go to next clockwise node
         FWClientRobotB.PhoenixSocketClient.start_seeding(channel)
-
-        # FWClientRobotA.LineFollower.stop_seeder()
-
         x = Agent.get(:seeding, fn x -> x end)
-        # FWClientRobotA.LineFollower.test_servo_a(x * 60)
+
+        if @physical do
+          FWClientRobotA.LineFollower.stop_seeder()
+          FWClientRobotA.LineFollower.test_servo_a(x * 60)
+        end
+
         if x < 3 do
           Agent.update(:seeding, fn x -> x + 1 end)
         else
@@ -735,10 +739,15 @@ defmodule FWClientRobotB do
   def right(%FWClientRobotB.Position{facing: facing} = robot) do
     if Agent.get(:continuous_turns, fn val -> val end) == true do
       # Backwards movement
-      # FWClientRobotB.LineFollower.move_back()
+      if @physical do
+        FWClientRobotB.LineFollower.move_back()
+      end
       IO.puts("U-Turn, move backwards")
     end
-    # FWClientRobotB.LineFollower.turn_right
+
+    if @physical do
+      FWClientRobotB.LineFollower.turn_right
+    end
 
     Agent.update(:continuous_turns, fn _val -> true end)
     %FWClientRobotB.Position{robot | facing: @directions_to_the_right[facing]}
@@ -752,11 +761,15 @@ defmodule FWClientRobotB do
   def left(%FWClientRobotB.Position{facing: facing} = robot) do
     if Agent.get(:continuous_turns, fn val -> val end) == true do
       # Backwards movement
-      # FWClientRobotB.LineFollower.move_back()
+      if @physical do
+        FWClientRobotB.LineFollower.move_back()
+      end
       IO.puts("U-Turn, move backwards")
-
     end
-    # FWClientRobotB.LineFollower.turn_left
+
+    if @physical do
+      FWClientRobotB.LineFollower.turn_left
+    end
 
     Agent.update(:continuous_turns, fn val -> true end)
     %FWClientRobotB.Position{robot | facing: @directions_to_the_left[facing]}
@@ -766,7 +779,9 @@ defmodule FWClientRobotB do
   Moves the robot to the north, but prevents it to fall
   """
   def move(%FWClientRobotB.Position{x: _, y: y, facing: :north} = robot) when y < @table_top_y do
-    # FWClientRobotB.LineFollower.start
+    if @physical do
+      FWClientRobotB.LineFollower.start
+    end
     Agent.update(:continuous_turns, fn _val -> false end)
     %FWClientRobotB.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) + 1 end) |> elem(0)
     }
@@ -776,7 +791,9 @@ defmodule FWClientRobotB do
   Moves the robot to the east, but prevents it to fall
   """
   def move(%FWClientRobotB.Position{x: x, y: _, facing: :east} = robot) when x < @table_top_x do
-    # FWClientRobotB.LineFollower.start
+    if @physical do
+      FWClientRobotB.LineFollower.start
+    end
     Agent.update(:continuous_turns, fn _val -> false end)
 
     %FWClientRobotB.Position{robot | x: x + 1}
@@ -786,7 +803,9 @@ defmodule FWClientRobotB do
   Moves the robot to the south, but prevents it to fall
   """
   def move(%FWClientRobotB.Position{x: _, y: y, facing: :south} = robot) when y > :a do
-    # FWClientRobotB.LineFollower.start
+    if @physical do
+      FWClientRobotB.LineFollower.start
+    end
     Agent.update(:continuous_turns, fn _val -> false end)
 
     %FWClientRobotB.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) - 1 end) |> elem(0)}
@@ -796,7 +815,9 @@ defmodule FWClientRobotB do
   Moves the robot to the west, but prevents it to fall
   """
   def move(%FWClientRobotB.Position{x: x, y: _, facing: :west} = robot) when x > 1 do
-    # FWClientRobotB.LineFollower.start
+    if @physical do
+      FWClientRobotB.LineFollower.start
+    end
     Agent.update(:continuous_turns, fn _val -> false end)
 
     %FWClientRobotB.Position{robot | x: x - 1}

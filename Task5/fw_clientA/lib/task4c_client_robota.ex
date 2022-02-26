@@ -11,6 +11,8 @@ defmodule FWClientRobotA do
   @dir_to_num %{:north => 1, :east => 2, :south => 3, :west => 4}
   # maps y numbers to atoms
   @robot_map_y_num_to_atom %{1 => :a, 2 => :b, 3 => :c, 4 => :d, 5 => :e, 6 => :f}
+  # If set to true, all LineFollower functions will work
+  @physical false
 
   @doc """
   Places the robot to the default position of (1, A, North)
@@ -491,10 +493,13 @@ defmodule FWClientRobotA do
       else
         # Go to next clockwise node
         FWClientRobotA.PhoenixSocketClient.start_weeding(channel)
-        # FWClientRobotA.LineFollower.stop_seeder()
-
         x = Agent.get(:seeding, fn x -> x end)
-        # FWClientRobotA.LineFollower.test_servo_a(x * 60)
+
+        if @physical do
+          FWClientRobotA.LineFollower.stop_seeder()
+          FWClientRobotA.LineFollower.test_servo_a(x * 60)
+        end
+
         if x < 3 do
           Agent.update(:seeding, fn x -> x + 1 end)
         else
@@ -790,10 +795,16 @@ defmodule FWClientRobotA do
   def right(%FWClientRobotA.Position{facing: facing} = robot) do
     if Agent.get(:continuous_turns, fn val -> val end) == true do
       # Backwards movement
-      # FWClientRobotA.LineFollower.move_back()
+      if @physical do
+        FWClientRobotA.LineFollower.move_back()
+      end
+
       IO.puts("U-Turn, move backwards")
     end
-    # FWClientRobotA.LineFollower.turn_right
+
+    if @physical do
+      FWClientRobotA.LineFollower.turn_right
+    end
 
     Agent.update(:continuous_turns, fn _val -> true end)
     %FWClientRobotA.Position{robot | facing: @directions_to_the_right[facing]}
@@ -806,11 +817,15 @@ defmodule FWClientRobotA do
   def left(%FWClientRobotA.Position{facing: facing} = robot) do
     if Agent.get(:continuous_turns, fn val -> val end) == true do
       # Backwards movement
-      # FWClientRobotA.LineFollower.move_back()
+      if @physical do
+        FWClientRobotA.LineFollower.move_back()
+      end
       IO.puts("U-Turn, move backwards")
-
     end
-    # FWClientRobotA.LineFollower.turn_left
+
+    if @physical do
+      FWClientRobotA.LineFollower.turn_left
+    end
 
     Agent.update(:continuous_turns, fn _val -> true end)
     %FWClientRobotA.Position{robot | facing: @directions_to_the_left[facing]}
@@ -820,7 +835,10 @@ defmodule FWClientRobotA do
   Moves the robot to the north, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: _, y: y, facing: :north} = robot) when y < @table_top_y do
-    # FWClientRobotA.LineFollower.start
+    if @physical do
+      FWClientRobotA.LineFollower.start
+    end
+
     Agent.update(:continuous_turns, fn _val -> false end)
     %FWClientRobotA.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) + 1 end) |> elem(0)
     }
@@ -830,9 +848,11 @@ defmodule FWClientRobotA do
   Moves the robot to the east, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: x, y: _, facing: :east} = robot) when x < @table_top_x do
-    # FWClientRobotA.LineFollower.start
-    Agent.update(:continuous_turns, fn _val -> false end)
+    if @physical do
+      FWClientRobotA.LineFollower.start
+    end
 
+    Agent.update(:continuous_turns, fn _val -> false end)
     %FWClientRobotA.Position{robot | x: x + 1}
   end
 
@@ -840,9 +860,11 @@ defmodule FWClientRobotA do
   Moves the robot to the south, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: _, y: y, facing: :south} = robot) when y > :a do
-    # FWClientRobotA.LineFollower.start
-    Agent.update(:continuous_turns, fn _val -> false end)
+    if @physical do
+      FWClientRobotA.LineFollower.start
+    end
 
+    Agent.update(:continuous_turns, fn _val -> false end)
     %FWClientRobotA.Position{ robot | y: Enum.find(@robot_map_y_atom_to_num, fn {_, val} -> val == Map.get(@robot_map_y_atom_to_num, y) - 1 end) |> elem(0)}
   end
 
@@ -850,9 +872,11 @@ defmodule FWClientRobotA do
   Moves the robot to the west, but prevents it to fall
   """
   def move(%FWClientRobotA.Position{x: x, y: _, facing: :west} = robot) when x > 1 do
-    # FWClientRobotA.LineFollower.start
-    Agent.update(:continuous_turns, fn _val -> false end)
+    if @physical do
+      FWClientRobotA.LineFollower.start
+    end
 
+    Agent.update(:continuous_turns, fn _val -> false end)
     %FWClientRobotA.Position{robot | x: x - 1}
   end
 
