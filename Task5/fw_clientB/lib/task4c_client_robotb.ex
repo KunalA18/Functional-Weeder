@@ -105,26 +105,31 @@ defmodule FWClientRobotB do
   You may create extra helper functions as needed.
   """
   def main(args) do
-    #Connect to server
+    # Start agents required by the program
     start_agents()
 
+    # Connect to the server
     {:ok, _response, channel} = FWClientRobotB.PhoenixSocketClient.connect_server()
 
-    #function to get goal positions
-
+    # Function to get goal positions
     {:ok, goals_string} = FWClientRobotB.PhoenixSocketClient.get_goals(channel)
 
-    IO.inspect(goals_string)
-
+    # Update the goal positions in the main_store Agent
     Agent.update(:main_goal_storeA, fn list -> list ++ goals_string end)
 
+    # Wait for user to click on start button
     {start_x, start_y, start_dir} = wait_for_start(%{A: nil, B: nil}, channel) #{1, :a, :north}
 
+    # Start robot in the internal navigation system of the program
     {:ok, robot} = start(start_x, start_y, start_dir)
 
+    # Convert the number 11, 22 etc. into goal positions
     goal_locs = calculate_goals(robot, goals_string)
-    IO.inspect(goal_locs, label: "Goal locs NEW")
+
+    # Start main algorithm
     stop(robot, goal_locs, channel)
+
+    # Send message that signifies work completion
     FWClientRobotB.PhoenixSocketClient.work_complete(channel)
   end
 
