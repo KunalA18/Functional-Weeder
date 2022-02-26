@@ -82,8 +82,6 @@ defmodule FWClientRobotB do
   def start_agents() do
     {:ok, agent} = Agent.start_link(fn -> [] end)
     Process.register(agent, :weeded_store)
-    {:ok, pid_goal} = Agent.start_link(fn -> [] end)
-    Process.register(pid_goal, :goal_storeA)
 
     {:ok, pid_goals} = Agent.start_link(fn -> [] end)
     Process.register(pid_goals, :main_goal_storeA)
@@ -135,11 +133,11 @@ defmodule FWClientRobotB do
 
   def calculate_goals(robot, goals_string) do
     #Arena description
-    #########################
-    # 31# 32# 33# 34# 35# 36#
-    #########################
-    # 1 # 2 # 3 # 4 # 5 # 6 #
-    #########################
+    #####################
+    # 21# 22# 23# 24# 25#
+    #####################
+    # 1 # 2 # 3 # 4 # 5 #
+    #####################
 
     goal_locs = Enum.reduce(goals_string, [], fn s, acc ->
       {bl, br, tl, tr} = convert_goal_to_locations(s)
@@ -208,33 +206,12 @@ defmodule FWClientRobotB do
     # Sort out the goal locs
     distance_array = sort_according_to_distance(r_x, r_y, goal_locs)
 
-    # ["2d":4]
-    Agent.update(:goal_storeA, fn list -> list ++ Keyword.keys(distance_array) end)
-
-    k_a = Integer.to_string(r_x) <> Atom.to_string(r_y)
-
-    # FWClientRobotB.PhoenixSocketClient.goal_store_delete(channel, k_a)
-    Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(k_a)))
-
-    #function to compare the agent with the current and return only vals that satisy
-
     if length(distance_array) == 0 do
       # send status of the start location
       {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
     else
       # Feed the distance_array to a function which loops through the thing giving goal co-ordinates one by one
       loop_through_goal_locs(distance_array, robot, goal_locs, channel)
-    end
-  end
-
-  def compare_with_store(distance_array, channel) do
-    key_list = Agent.get(:goal_storeA, fn list -> list end)
-    Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
-  end
-
-  def wait_for_b_choice() do
-    if Agent.get(:goal_choice, fn map -> Map.get(map, :B) end) == nil do
-      wait_for_b_choice()
     end
   end
 
@@ -265,10 +242,6 @@ defmodule FWClientRobotB do
       # send status of the start location
       {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
       {x, y, _facing} = report(robot)
-      key_current = Integer.to_string(x) <> Atom.to_string(y)
-
-      # FWClientRobotB.PhoenixSocketClient.goal_store_delete(channel, key_current)
-      Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(key_current)))
 
       visited = []
 
@@ -344,26 +317,6 @@ defmodule FWClientRobotB do
       if length(distance_array) > 0 do
         loop_through_goal_locs(distance_array, robot, goal_locs, channel)
       end
-    end
-  end
-
-
-  def wait_and_send(robot, channel, goal_locs) do
-    turn = FWClientRobotB.PhoenixSocketClient.turns_get(channel)
-    a_turn = turn["A"]
-    b_turn = turn["B"]
-    if (a_turn == true and b_turn == false) do
-
-      {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
-
-      #Now update it to show that it is A's turn
-      msg = %{"A" => true, "B" => false}
-      FWClientRobotB.PhoenixSocketClient.turns_update(channel, msg)
-
-      obs_ahead
-    else
-      Process.sleep(500)
-      wait_and_send(robot, channel, goal_locs)
     end
   end
 
@@ -463,12 +416,6 @@ defmodule FWClientRobotB do
         {x_b, y_b, _} = FWClientRobotB.PhoenixSocketClient.coords_store_get(channel)
 
         {x, y, _facing} = report(robot)
-
-        #Update the goal store to delete the goal entry if A has reached a goal
-        key_current = Integer.to_string(x) <> Atom.to_string(y)
-
-        # FWClientRobotB.PhoenixSocketClient.goal_store_delete(channel, key_current)
-        Agent.update(:goal_storeA, &List.delete(&1, String.to_atom(key_current)))
 
         # +ve implies east and -ve implies west
         diff_x = goal_x - x
@@ -903,3 +850,38 @@ defmodule FWClientRobotB do
     raise "Connection has been lost"
   end
 end
+
+
+####################
+# UNUSED FUNCTIONS #
+####################
+
+# def wait_and_send(robot, channel, goal_locs) do
+#   turn = FWClientRobotB.PhoenixSocketClient.turns_get(channel)
+#   a_turn = turn["A"]
+#   b_turn = turn["B"]
+#   if (a_turn == true and b_turn == false) do
+
+#     {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
+
+#     #Now update it to show that it is A's turn
+#     msg = %{"A" => true, "B" => false}
+#     FWClientRobotB.PhoenixSocketClient.turns_update(channel, msg)
+
+#     obs_ahead
+#   else
+#     Process.sleep(500)
+#     wait_and_send(robot, channel, goal_locs)
+#   end
+# end
+
+# def compare_with_store(distance_array, channel) do
+#   key_list = Agent.get(:goal_storeA, fn list -> list end)
+#   Enum.filter(distance_array, fn {key, _val} -> Enum.member?(key_list, key) end)
+# end
+
+# def wait_for_b_choice() do
+#   if Agent.get(:goal_choice, fn map -> Map.get(map, :B) end) == nil do
+#     wait_for_b_choice()
+#   end
+# end
