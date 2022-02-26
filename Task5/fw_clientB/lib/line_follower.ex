@@ -1,4 +1,4 @@
-defmodule FWClientRobotB.LineFollower do
+defmodule FWClientRobotA.LineFollower do
   require Logger
   use Bitwise
   alias Circuits.GPIO
@@ -25,8 +25,8 @@ defmodule FWClientRobotB.LineFollower do
 
   @forward [0, 1, 1, 0]
   @backward [1, 0, 0, 1]
-  # @left [0, 1, 1, 0]
-  # @right [1, 0, 0, 1]
+  @left [0, 1, 0, 1]
+  @right [1, 0, 1, 0]
   @stop [0, 0, 0, 0]
   @onlyright [0, 0, 1, 0]
   @onlyleft [0, 1, 0, 0]
@@ -34,17 +34,20 @@ defmodule FWClientRobotB.LineFollower do
   @duty_cycles [100, 70, 0]
   @pwm_frequency 50
 
+  # Margin values set to distinguish between black and white lines
   @black_MARGIN 400
   @white_MARGIN 1000
+
+  # weights assigned to wlf_sensors for error calculation
   @weights [0, -3, -1, 0, 1, 3]
 
-  #Speed given to motors while straight motion
+  # Speed given to motors for straight motion
   @optimum_duty_cycle 120
   @lower_duty_cycle 95
   @higher_duty_cycle 145
 
-  # Speed Given to motors while turning
-  @turn 125
+  # Speed Given to motors for turning
+  @turn 115
   @slight_turn 115
 
   # Pid constants
@@ -52,7 +55,9 @@ defmodule FWClientRobotB.LineFollower do
   @ki 0
   @kd 5
 
-  # Function for Straight motion of robot
+  @doc """
+    Function for Straight motion of robot
+  """
   def start do
     error = 0
     prev_error = 0
@@ -73,7 +78,9 @@ defmodule FWClientRobotB.LineFollower do
     )
   end
 
-  # Line following Function with PID implementation
+  @doc """
+    Line following Function with PID implementation
+  """
   def line_follow(
         error,
         prev_error,
@@ -91,7 +98,7 @@ defmodule FWClientRobotB.LineFollower do
     {error, prev_error, cumulative_error, correction} =
       calculate_correction(error, prev_error, cumulative_error)
 
-    # Node detection for stopping on nodes
+    # Node detection for the robot to stop on nodes
     {main_node, same_node} =
       if same_node == false && get_high_no(map_sens_list) >= 3 do
         same_node = true
@@ -111,6 +118,7 @@ defmodule FWClientRobotB.LineFollower do
 
     IO.inspect(main_node)
 
+    # assigning corrected speeds to variables
     left_duty_cycle = round(@optimum_duty_cycle - correction)
     right_duty_cycle = round(@optimum_duty_cycle + correction)
 
@@ -183,13 +191,16 @@ defmodule FWClientRobotB.LineFollower do
     end)
   end
 
-  # Function to Calculate error in LSA readings for Line following
+  @doc """
+  Function to Calculate error based on LSA readings for Line following
+  """
   def calculate_error(map_sens_list, error, prev_error) do
     all_black_flag = 1
     weighted_sum = 0
     sum = 0
     pos = 0
 
+    # flag which is set to 1 if all sensors are on black surface (not on white line)
     all_black_flag =
       Enum.reduce(map_sens_list, 1, fn val, acc ->
         if val > @black_MARGIN do
@@ -228,12 +239,15 @@ defmodule FWClientRobotB.LineFollower do
     {error, prev_error}
   end
 
-  #Function to calculate correction value for duty cycles after PID tuning
+  @doc """
+  Function to calculate correction value for duty cycles after PID tuning
+  """
   def calculate_correction(error, prev_error, cumulative_error) do
     error = error * 10
     difference = error - prev_error
     cumulative_error = cumulative_error + error
 
+    # bounding cumulative_error between -30 to 30
     cumulative_error =
       if cumulative_error < -30 do
         cumulative_error = -30
@@ -248,6 +262,7 @@ defmodule FWClientRobotB.LineFollower do
         cumulative_error
       end
 
+    # calculating correction value by adjusting values of PID constants
     correction = @kp * error + @ki * cumulative_error + @kd * difference
 
     prev_error = error
@@ -255,55 +270,66 @@ defmodule FWClientRobotB.LineFollower do
     {error, prev_error, cumulative_error, correction}
   end
 
-  # Assigning duty_cycles (speed) to both motors via pwm pins
-
+  @doc """
+   Assigning duty_cycles (speed) to both motors via pwm pins
+  """
   def my_motion(left_duty_cycle, right_duty_cycle) do
-    # IO.inspect(left_duty_cycle,label: "left_motor_speed")
-    # IO.inspect(right_duty_cycle,label: "right_motor_speed")
+    IO.inspect(left_duty_cycle, label: "left_motor_speed")
+    IO.inspect(right_duty_cycle, label: "right_motor_speed")
     {_, lvalue} = Enum.at(@pwm_pins, 0)
     {_, rvalue} = Enum.at(@pwm_pins, 1)
     Pigpiox.Pwm.gpio_pwm(lvalue, left_duty_cycle)
     Pigpiox.Pwm.gpio_pwm(rvalue, right_duty_cycle)
   end
 
-   # Function call to give robot a right turn
+  @doc """
+   Function for turning the bot right
+  """
   def turn_right do
     right_detect = false
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     move_right(right_detect, motor_ref)
   end
 
-   # Helper Function for right motion of robot
+  @doc """
+   Supporting function for turning the bot right
+  """
   def move_right(right_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
-    motor_action(motor_ref, @onlyright)
+    motor_action(motor_ref, @right)
 
-    {old_map_sens,i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
-    speed = if old_map_sens == map_sens_list do
-      Agent.update(:line_sensor, fn {list, i} ->  {list, i+1} end)
-      IO.inspect(@slight_turn + (i*5), label: "Speed is increasing")
-      @turn + (i*5)
-    else
-      Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
-      @turn
-    end
-    my_motion(speed, speed)
+    {old_map_sens, i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
+
+    # increasing speed if robot takes time to take turn/doesn't turn by comparing wlf_sensor readings
+    speed =
+      if old_map_sens == map_sens_list do
+        Agent.update(:line_sensor, fn {list, i} -> {list, i + 1} end)
+        IO.inspect(@slight_turn + i * 5, label: "Speed is increasing")
+        @turn + i * 5
+      else
+        Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
+        @turn
+      end
+
+    my_motion(speed, speed - 10)
 
     right_detect =
-      if Enum.at(map_sens_list, 1) < 900 && Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
-      Enum.at(map_sens_list, 4) < 900 do
+      if Enum.at(map_sens_list, 1) < 900 && Enum.at(map_sens_list, 2) < 900 &&
+           Enum.at(map_sens_list, 3) < 900 &&
+           Enum.at(map_sens_list, 4) < 900 do
         right_detect = true
       else
         right_detect
       end
 
-      #stopping right turn of robot when white line is detected
-      if Enum.at(map_sens_list, 3) > 900 && right_detect == true do
-        motor_action(motor_ref, @stop)
-        my_motion(0, 0)
-        # map_sens_list = test_wlf_sensors()
+    # stopping right turn of robot when white line is detected
+    if Enum.at(map_sens_list, 3) > 900 && right_detect == true do
+      motor_action(motor_ref, @stop)
+      my_motion(0, 0)
+      # map_sens_list = test_wlf_sensors()
+      # Call the slide_left function if any of the middle 3 sensors are not on the white line
       if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
-         Enum.at(map_sens_list, 4) < 900 do
+           Enum.at(map_sens_list, 4) < 900 do
         IO.puts("Sliding Left")
         slide_left()
       end
@@ -312,33 +338,39 @@ defmodule FWClientRobotB.LineFollower do
     end
   end
 
-   # Function to be called for turning the robot left
+  @doc """
+   Function for turning the bot left
+  """
   def turn_left do
     left_detect = false
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     move_left(left_detect, motor_ref)
   end
 
-
-  #Helper Function for left turn
+  @doc """
+   Supporting function for turn_left
+  """
   def move_left(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
     motor_action(motor_ref, @onlyleft)
 
-    {old_map_sens,i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
-    speed = if old_map_sens == map_sens_list do
-      Agent.update(:line_sensor, fn {list, i} ->  {list, i+1} end)
-      @turn + (i*5)
-    else
-      Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
-      @turn
-    end
-    my_motion(speed, speed)
+    {old_map_sens, i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
 
+    # increasing speed if robot takes time to take turn/doesn't turn by comparing wlf_sensor readings
+    speed =
+      if old_map_sens == map_sens_list do
+        Agent.update(:line_sensor, fn {list, i} -> {list, i + 1} end)
+        @turn + i * 5
+      else
+        Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
+        @turn
+      end
+
+    my_motion(speed, speed)
 
     left_detect =
       if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
-      Enum.at(map_sens_list, 4) < 900 do
+           Enum.at(map_sens_list, 4) < 900 do
         left_detect = true
       else
         left_detect
@@ -348,8 +380,9 @@ defmodule FWClientRobotB.LineFollower do
     if Enum.at(map_sens_list, 3) > 900 && left_detect == true do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
+
       if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
-        Enum.at(map_sens_list, 4) < 900 do
+           Enum.at(map_sens_list, 4) < 900 do
         IO.puts("Sliding Right")
         slide_right()
       end
@@ -358,68 +391,92 @@ defmodule FWClientRobotB.LineFollower do
     end
   end
 
-  #Helper Function for when bot overshoots while turning right
+  @doc """
+  Function to move the robot slightly towards left if it overshoots while turning right
+  """
   def slide_left do
     left_detect = false
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     drift_left(left_detect, motor_ref)
   end
 
+  @doc """
+  Supporting Function for slide_left
+  """
   def drift_left(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
-    if (Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
-          Enum.at(map_sens_list, 4) > 900) do
+
+    # stop the robot if any of the middle 3 sensors read value > 900 else continue moving left
+    if Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
+         Enum.at(map_sens_list, 4) > 900 do
       motor_action(motor_ref, @stop)
       IO.puts("Stopped")
       my_motion(0, 0)
     else
       motor_action(motor_ref, @onlyleft)
-      {old_map_sens,i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
-      speed = if old_map_sens == map_sens_list do
-        Agent.update(:line_sensor, fn {list, i} ->  {list, i+1} end)
-        IO.inspect(@slight_turn + (i*5), label: "Speed is increasing")
+      {old_map_sens, i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
 
-        @slight_turn + (i*5)
-      else
-        Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
-        @slight_turn
-      end
+      # increasing speed if robot takes time to take turn/doesn't turn by comparing wlf_sensor readings
+      speed =
+        if old_map_sens == map_sens_list do
+          Agent.update(:line_sensor, fn {list, i} -> {list, i + 1} end)
+          IO.inspect(@slight_turn + i * 5, label: "Speed is increasing")
+
+          @slight_turn + i * 5
+        else
+          Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
+          @slight_turn
+        end
+
       my_motion(speed, speed)
       drift_left(left_detect, motor_ref)
     end
   end
 
-  #Helper Function for when bot overshoots while turning left
+  @doc """
+  Function to move the robot slightly towards right if it overshoots while turning left
+  """
+
   def slide_right do
     left_detect = false
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     drift_right(left_detect, motor_ref)
   end
 
+  @doc """
+  Supporting Function for slide_right
+  """
   def drift_right(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
-    if (Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
-          Enum.at(map_sens_list, 4) > 900) do
+
+    # stop the robot if any of the middle 3 sensors read value > 900 else continue moving right
+    if Enum.at(map_sens_list, 2) > 900 || Enum.at(map_sens_list, 3) > 900 ||
+         Enum.at(map_sens_list, 4) > 900 do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
-
     else
       motor_action(motor_ref, @onlyright)
-      {old_map_sens,i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
-      speed = if old_map_sens == map_sens_list do
-        Agent.update(:line_sensor, fn {list, i} ->  {list, i+1} end)
-        IO.inspect(@slight_turn + (i*5), label: "Speed is increasing")
-        @slight_turn + (i*5)
-      else
-        Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
-        @slight_turn
-      end
+      {old_map_sens, i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
+
+      # increasing speed if robot takes time to take turn/doesn't turn by comparing wlf_sensor readings
+      speed =
+        if old_map_sens == map_sens_list do
+          Agent.update(:line_sensor, fn {list, i} -> {list, i + 1} end)
+          IO.inspect(@slight_turn + i * 5, label: "Speed is increasing")
+          @slight_turn + i * 5
+        else
+          Agent.update(:line_sensor, fn list -> {map_sens_list, 0} end)
+          @slight_turn
+        end
+
       my_motion(speed, speed)
       drift_right(left_detect, motor_ref)
     end
   end
 
-  # Function for backward movement of robot
+  @doc """
+  Function to move the robot backwards
+  """
   def move_back do
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
     motor_action(motor_ref, @backward)
@@ -429,7 +486,10 @@ defmodule FWClientRobotB.LineFollower do
     my_motion(0, 0)
   end
 
-  # Function to be called for stopping the bot based on side IR sensor for seeding/weeding
+  @doc """
+  Function to stop the robot when plant is detected by side IR sensor for Seeding and Weeding
+  """
+
   def stop_seeder do
     error = 0
     prev_error = 0
@@ -446,7 +506,10 @@ defmodule FWClientRobotB.LineFollower do
     )
   end
 
-  #Helper Function for stopping the bot for seeding/weeding
+  @doc """
+   Supporting Function for stop_seeder
+   Implementation of Line following algorithm (with PID tuning) for stop_seeder
+  """
   def seed_follow(
         error,
         prev_error,
@@ -497,8 +560,10 @@ defmodule FWClientRobotB.LineFollower do
 
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
 
+    # Reading boolean value from side IR sensor via side_ir()
     seed_value = side_ir()
 
+    # stop when seed_value is true else continue following line
     if seed_value == true do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
@@ -515,19 +580,87 @@ defmodule FWClientRobotB.LineFollower do
       )
     end
   end
+
   @doc """
   Note: On executing above function servo motor A will rotate by 90 degrees. You can provide
   values from 0 to 180
   """
-  #Function used for giving angles to servo for seeding
   def test_servo_a(angle) do
     Logger.debug("Testing Servo A")
-    val = trunc(((2.5 + 10.0 * angle / 180) / 100 ) * 255)
+    val = trunc((2.5 + 10.0 * angle / 180) / 100 * 255)
     Pigpiox.Pwm.set_pwm_frequency(@servo_a_pin, @pwm_frequency)
     Pigpiox.Pwm.gpio_pwm(@servo_a_pin, val)
   end
 
+  @doc """
+  Note: On executing above function servo motor B will rotate by 90 degrees. You can provide
+  values from 0 to 180
+  """
+  def test_servo_b(angle) do
+    Logger.debug("Testing Servo B")
+    val = trunc((2.5 + 10.0 * angle / 180) / 100 * 255)
+    Pigpiox.Pwm.set_pwm_frequency(@servo_b_pin, @pwm_frequency)
+    Pigpiox.Pwm.gpio_pwm(@servo_b_pin, val)
+  end
 
+  @doc """
+  Note: On executing above function servo motor C will rotate by 90 degrees. You can provide
+  values from 0 to 180
+  """
+  def test_servo_c(angle) do
+    Logger.debug("Testing Servo C")
+    val = trunc((2.5 + 10.0 * angle / 180) / 100 * 255)
+    Pigpiox.Pwm.set_pwm_frequency(@servo_c_pin, @pwm_frequency)
+    Pigpiox.Pwm.gpio_pwm(@servo_c_pin, val)
+  end
+
+  @doc """
+  function to intialize servos to default angles before Weeding
+  """
+  def servo_initialize do
+    test_servo_a(100)
+    Process.sleep(500)
+    test_servo_b(90)
+    Process.sleep(500)
+    test_servo_c(60)
+    Process.sleep(500)
+  end
+
+  @doc """
+  function to give angles to servos for Weeding
+  """
+  def weeder do
+    test_servo_a(100)
+    Process.sleep(1000)
+    test_servo_c(60)
+    Process.sleep(1000)
+    test_servo_b(90)
+    Process.sleep(1000)
+    test_servo_b(60)
+    Process.sleep(500)
+    test_servo_c(0)
+    Process.sleep(1500)
+    test_servo_b(140)
+    Process.sleep(1250)
+    test_servo_a(0)
+    Process.sleep(1000)
+    test_servo_c(60)
+    Process.sleep(500)
+  end
+
+  @doc """
+  function to give angles to servos for deposition of basket
+  """
+  def depo do
+    test_servo_a(100)
+    Process.sleep(1000)
+    test_servo_c(0)
+    Process.sleep(1000)
+    test_servo_b(80)
+    Process.sleep(1000)
+    test_servo_a(0)
+    Process.sleep(1000)
+  end
 
   @doc """
   Tests white line sensor modules reading
@@ -568,7 +701,13 @@ defmodule FWClientRobotB.LineFollower do
     ir_values = Enum.map(ir_ref, fn {_, ref_no} -> GPIO.read(ref_no) end)
   end
 
-  # Function returns true when front IR sensor detects obstacle else false
+  @doc """
+   function to check obstacle detection by front IR sensor
+
+   true // obstacle detected
+   false // No obstacle
+  """
+
   def front_ir do
     sense = false
     {_, rvalue} = Enum.at(@ir_pins, 0)
@@ -586,7 +725,13 @@ defmodule FWClientRobotB.LineFollower do
     sense
   end
 
-  # Function returns true when side IR sensor detects obstacle else false
+  @doc """
+  function to check obstacle detection by side IR sensor
+
+  true // obstacle detected
+  false // No obstacle
+  """
+
   def side_ir do
     sense = false
     {_, lvalue} = Enum.at(@ir_pins, 1)
