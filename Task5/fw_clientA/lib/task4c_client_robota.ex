@@ -157,27 +157,10 @@ defmodule FWClientRobotA do
     d_tl = distance(rx, ry, elem(tl, 0), elem(tl, 1))
     d_tr = distance(rx, ry, elem(tr, 0), elem(tr, 1))
     ans = bl
-    ans = if d_bl <= d_br and d_bl <= d_tl and d_bl <= d_tr do
-      bl
-    else
-      ans
-    end
-    ans = if d_br <= d_bl and d_br <= d_tl and d_br <= d_tr do
-      br
-    else
-      ans
-    end
-    ans = if d_tl <= d_bl and d_tl <= d_br and d_tl <= d_tr do
-      tl
-    else
-      ans
-    end
-    ans = if d_tr <= d_bl and d_tr <= d_br and d_tr <= d_tl do
-      tr
-    else
-      ans
-    end
-    ans
+    ans = if d_bl <= d_br and d_bl <= d_tl and d_bl <= d_tr, do: bl, else: ans
+    ans = if d_br <= d_bl and d_br <= d_tl and d_br <= d_tr, do: br, else: ans
+    ans = if d_tl <= d_bl and d_tl <= d_br and d_tl <= d_tr, do: tl, else: ans
+    ans = if d_tr <= d_bl and d_tr <= d_br and d_tr <= d_tl, do: tr, else: ans
   end
 
   def convert_goal_to_locations(loc) do
@@ -483,7 +466,6 @@ defmodule FWClientRobotA do
   def weeding(robot, weeded, distance_array, channel) do
     #If the position the robot is at is a goal, then weed the plant
 
-      # 4 ways to weed a robot depending on which direction the robot is facing
       IO.puts("Weeding Started")
       {x, y, facing} = report(robot)
       {{n_x, n_y}, n_facing} = get_clockwise_node(x, y, weeded)
@@ -493,8 +475,8 @@ defmodule FWClientRobotA do
       face_diff = @dir_to_num[facing] - @dir_to_num[should_face]
       {:obstacle_presence, obs_ahead} = send_robot_status(channel, robot)
       {robot, obs_ahead} = rotate(robot, should_face, face_diff, obs_ahead, 0, channel)
-      # Check obstacle, if it exists then carry out other behaviour
 
+      # Check obstacle, if it exists then carry out other behaviour
       {robot, distance_array, obstacle} = if obs_ahead do
         # Add previous clockwise node to distance_array and :main_goal_store
         {{n_x, n_y}, n_facing} = get_anticlockwise_node(x, y, weeded)
@@ -764,23 +746,6 @@ defmodule FWClientRobotA do
     end
   end
 
-  def wait_for_b(channel) do
-    turn = FWClientRobotA.PhoenixSocketClient.turns_get(channel)
-    a_turn = turn["A"]
-    b_turn = turn["B"]
-
-    if a_turn == "false" and b_turn == "true" do
-      wait_for_b(channel)
-    end
-  end
-
-
-  def wait_for_movement(nxt_x, nxt_y) do
-    {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
-    if x_b == nxt_x and y_b == nxt_y do
-      wait_for_movement(nxt_x, nxt_y)
-    end
-  end
 
   def calculate_next_position(x, y, facing) do
     y = @robot_map_y_atom_to_num[y]
@@ -934,5 +899,23 @@ end
 #   else
 #     Process.sleep(500)
 #     wait_and_send(robot, channel, goal_locs)
+#   end
+# end
+
+# def wait_for_b(channel) do
+#   turn = FWClientRobotA.PhoenixSocketClient.turns_get(channel)
+#   a_turn = turn["A"]
+#   b_turn = turn["B"]
+
+#   if a_turn == "false" and b_turn == "true" do
+#     wait_for_b(channel)
+#   end
+# end
+
+
+# def wait_for_movement(nxt_x, nxt_y) do
+#   {x_b, y_b, _} = Agent.get(:coords_store, fn map -> Map.get(map, :B) end)
+#   if x_b == nxt_x and y_b == nxt_y do
+#     wait_for_movement(nxt_x, nxt_y)
 #   end
 # end
