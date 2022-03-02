@@ -27,7 +27,7 @@ defmodule Task4CPhoenixServer.Timer do
 
   def handle_info(%{event: "start_timer"}, %{timer_ref: old_timer_ref}) do
     cancel_timer(old_timer_ref)
-    duration = 180
+    duration = 300
     timer_ref = schedule_timer 1_000
     broadcast duration, "Started timer!"
     {:noreply, %{timer_ref: timer_ref, timer: duration}}

@@ -2,7 +2,7 @@ defmodule FWServerWeb.ArenaLive do
   use FWServerWeb,:live_view
   require Logger
 
-  @duration 180
+  @duration 300
   @doc """
   Mount the Dashboard when this module is called with request
   for the Arena view from the client like browser.
@@ -27,20 +27,20 @@ defmodule FWServerWeb.ArenaLive do
     socket = assign(socket, :img_robotA, "robot_facing_northA.png")
     socket = assign(socket, :bottom_robotA, 0)
     socket = assign(socket, :left_robotA, 0)
-    socket = assign(socket, :robotA_start, "6, a, west")
+    socket = assign(socket, :robotA_start, "2, a, north")
     socket = assign(socket, :robotA_goals, weeding)
     socket = assign(socket, :robotA_status, "Inactive")
 
     socket = assign(socket, :img_robotB, "robot_facing_southB.png")
     socket = assign(socket, :bottom_robotB, 750)
     socket = assign(socket, :left_robotB, 750)
-    socket = assign(socket, :robotB_start, "2, e, south")
+    socket = assign(socket, :robotB_start, "5, f, south")
     socket = assign(socket, :robotB_goals, seeding)
     socket = assign(socket, :robotB_status, "Inactive")
 
     socket = assign(socket, :obstacle_pos, MapSet.new())
     socket = assign(socket, :plant_pos, plants_list)
-    socket = assign(socket, :timer_tick, 180)
+    socket = assign(socket, :timer_tick, @duration)
 
     {:ok,socket}
   end
@@ -446,7 +446,7 @@ defmodule FWServerWeb.ArenaLive do
   def read_stop_times() do
     csv = "../../../Robots_handle.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take_every(1)
     |> Enum.filter(fn {:ok, [a, b, c, d]} -> (b != "Robot") end)
-    |> Enum.map(fn {:ok, [a, b, c, d]} -> [a, b, @duration - String.to_integer(c), @duration - String.to_integer(c) - String.to_integer(d)] end)
+    |> Enum.map(fn {:ok, [a, b, c, d]} -> [a, b, @duration - String.to_integer(c), @duration - String.to_integer(d)] end)
 
     IO.inspect(csv, label: "Robot stop times")
     Agent.update(:stop_times, fn list -> csv end)

@@ -64,7 +64,7 @@ defmodule FWServerWeb.RobotChannel do
     start_agents()
 
     FWServerWeb.Endpoint.subscribe("timer:update")
-    socket = assign(socket, :timer_tick, 180)
+    socket = assign(socket, :timer_tick, 300)
 
     {:ok, socket}
   end
