@@ -95,7 +95,7 @@ defmodule FWServerWeb.RobotChannel do
     y = message["y"]
     facing = message["face"]
     client = message["client"] #robot_A or robot_B
-    # goals = Agent.get(:goal_store, fn list -> list end)
+
     # pixel values and facing
     y = @robot_map_y_string_to_num[y] #converts y's string to a number
     left_value = 150 * (x - 1)
@@ -115,16 +115,27 @@ defmodule FWServerWeb.RobotChannel do
     # write the robot actions to a text file
     IO.binwrite(out_file, "#{message["client"]} => #{message["x"]}, #{message["y"]}, #{message["face"]}\n")
 
-    ############################
-    ## complete this function ##
-    ############################
-    # if is_obs_ahead do
-    #   {left, bottom} = get_obs_pixels(left_value, bottom_value, facing)
-    #   msg_obs = %{"position" => {left, bottom}}
-    #   Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update_obs", msg_obs})
-    # end
-
     {:reply, {:ok, is_obs_ahead}, socket}
+  end
+
+  def handle_in("start_weeding", message, socket) do
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"start_weeding", message})
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("stop_weeding", message, socket) do
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"stop_weeding", message})
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("start_seeding", message, socket) do
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"start_seeding", message})
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("stop_seeding", message, socket) do
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"stop_seeding", message})
+    {:reply, :ok, socket}
   end
 
   def handle_info(%{event: "update_timer_tick", payload: timer_data, topic: "timer:update"}, socket) do
@@ -400,6 +411,19 @@ defmodule FWServerWeb.RobotChannel do
 
     #IO.inspect(data, label: "Data is sent to Channel PubSub")
     Agent.update(:start_store, fn map -> data end)
+    ###########################
+    ## complete this funcion ##
+    ###########################
+
+    {:noreply, socket}
+
+  end
+
+  def handle_info({"stop_event", data}, socket) do
+
+    #IO.inspect(data, label: "Data is sent to Channel PubSub")
+    msg = %{"event_id" => 6, "sender" => "Server", "value" => data}
+    broadcast!(socket, "event_msg", msg)
     ###########################
     ## complete this funcion ##
     ###########################

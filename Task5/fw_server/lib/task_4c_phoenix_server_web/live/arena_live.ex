@@ -247,6 +247,8 @@ defmodule FWServerWeb.ArenaLive do
       robot = Enum.at(kill_list, 1)
       msg = %{"robot" => robot}
       Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "start", {"stop_robot", msg})
+      Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "stop_event", {"stop_robot", stop_list})
+
       if robot == "A" do
         assign(socket, :robotA_status, "Inactive")
       else
@@ -371,6 +373,27 @@ defmodule FWServerWeb.ArenaLive do
     socket = assign(socket, :obstacle_pos, mapset)
     {:noreply, socket}
   end
+
+  def handle_info({"start_weeding", data}, socket) do
+    socket = assign(socket, :robotA_status, "Weeding")
+    {:noreply, socket}
+  end
+
+  def handle_info({"stop_weeding", data}, socket) do
+    socket = assign(socket, :robotA_status, "Active")
+    {:noreply, socket}
+  end
+
+  def handle_info({"start_seeding", data}, socket) do
+    socket = assign(socket, :robotB_status, "Seeding")
+    {:noreply, socket}
+  end
+
+  def handle_info({"stop_seeding", data}, socket) do
+    socket = assign(socket, :robotB_status, "Active")
+    {:noreply, socket}
+  end
+
   ######################################################
   ## You may create extra helper functions as needed  ##
   ## and update remaining assign variables.           ##

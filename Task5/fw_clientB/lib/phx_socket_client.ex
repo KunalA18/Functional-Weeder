@@ -50,12 +50,12 @@ defmodule FWClientRobotB.PhoenixSocketClient do
   in this format: {:ok, < true OR false >}.
   Create a tuple of this format: '{:obstacle_presence, < true or false >}' as a return of this function.
   """
-  def send_robot_status(channel, %FWClientRobotB.Position{x: x, y: y, facing: facing} = _robot, goal_locs) do
+  def send_robot_status(channel, %FWClientRobotB.Position{x: x, y: y, facing: facing} = _robot) do
 
     # goals_string = convert_to_numbers(goal_locs)
     # IO.inspect(goals_string, label: "Goal string to be sent")
 
-    message = %{client: "robot_B", x: x, y: y, face: facing, goals: goal_locs} #formats the message
+    message = %{client: "robot_B", x: x, y: y, face: facing} #formats the message
 
     #New format for task 5
     # %{"event_id" => <integer>, "sender" => <"A" OR "B" OR "Server">, "value" => <data_required_by_server>, ...}
@@ -109,6 +109,26 @@ defmodule FWClientRobotB.PhoenixSocketClient do
   def convert_to_location(x, y) do
     y = @robot_map_y_atom_to_num[y]
     location = x + ((y-1) * 5)
+  end
+
+  def start_weeding(channel) do
+    event_message = %{"sender" => "A"}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "start_weeding", event_message)
+  end
+
+  def stop_weeding(channel) do
+    event_message = %{"sender" => "A"}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "stop_weeding", event_message)
+  end
+
+  def start_seeding(channel) do
+    event_message = %{"sender" => "A"}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "start_seeding", event_message)
+  end
+
+  def stop_seeding(channel) do
+    event_message = %{"sender" => "A"}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "stop_seeding", event_message)
   end
 
   ###########
