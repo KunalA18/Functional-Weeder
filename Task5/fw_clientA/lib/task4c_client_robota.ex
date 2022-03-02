@@ -124,6 +124,7 @@ defmodule FWClientRobotA do
     {:ok, robot} = start(start_x, start_y, start_dir)
 
     # Convert the number 11, 22 etc. into goal positions
+    IO.inspect(goals_string, label: "Goals string")
     goal_locs = calculate_goals(robot, goals_string)
 
     # Start main algorithm
@@ -202,7 +203,14 @@ defmodule FWClientRobotA do
 
       robot = loop_through_goal_locs(distance_array, robot, goal_locs, channel)
       {robot, obs_ahead} = rotate_for_deposition(robot, channel)
+      deposit()
 
+    end
+  end
+
+  def deposit() do
+    if @physical do
+      FWClientRobotA.LineFollower.depo()
     end
   end
 
@@ -479,7 +487,8 @@ defmodule FWClientRobotA do
       {robot, obs_ahead} = rotate(robot, should_face, face_diff, obs_ahead, 0, channel)
 
       # Check obstacle, if it exists then carry out other behaviour
-      {robot, distance_array, obstacle} = if obs_ahead do
+      {robot, distance_array, obstacle} =
+        if obs_ahead do
         # Add previous clockwise node to distance_array and :main_goal_store
         {{n_x, n_y}, n_facing} = get_anticlockwise_node(x, y, weeded)
         d = distance(x, @robot_map_y_atom_to_num[y], n_x, n_y)
@@ -496,8 +505,10 @@ defmodule FWClientRobotA do
         x = Agent.get(:seeding, fn x -> x end)
 
         if @physical do
-          FWClientRobotA.LineFollower.stop_seeder()
-          FWClientRobotA.LineFollower.test_servo_a(x * 60)
+          # FWClientRobotA.LineFollower.stop_seeder()
+          # FWClientRobotA.LineFollower.test_servo_a(x * 60)
+          FWClientRobotA.LineFollower.servo_initialize()
+          FWClientRobotA.LineFollower.weeder()
         end
 
         if x < 3 do

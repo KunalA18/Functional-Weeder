@@ -231,6 +231,7 @@ defmodule FWServerWeb.RobotChannel do
 
   def handle_in("goals_msg", message, socket) do
     csv = "../../../Plant_Positions.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take_every(1)
+    |> Enum.filter(fn {:ok, [a, _]} -> (a != "Configuration for Plants") end)
     |> Enum.filter(fn {:ok, [a, b]} -> (a != "Sowing") end)
     |> Enum.map(fn {:ok, [a, b]} -> [a, b] end)
     |> Enum.reduce(fn [a, b], acc -> acc ++ [a, b] end )

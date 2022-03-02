@@ -1,5 +1,5 @@
 defmodule FWClientRobotB do
-  # WEEDING ROBOT
+  # SEEDING ROBOT
 
   # max x-coordinate of table top
   @table_top_x 6
@@ -445,8 +445,8 @@ defmodule FWClientRobotB do
         x = Agent.get(:seeding, fn x -> x end)
 
         if @physical do
-          FWClientRobotA.LineFollower.stop_seeder()
-          FWClientRobotA.LineFollower.test_servo_a(x * 60)
+          FWClientRobotB.LineFollower.stop_seeder()
+          FWClientRobotB.LineFollower.test_servo_a(x * 60)
         end
 
         if x < 3 do
@@ -458,7 +458,7 @@ defmodule FWClientRobotB do
         Process.sleep(3000)
         robot = move(robot)
         IO.inspect(report(robot),label: "Seeding Done")
-        FWClientRobotB.PhoenixSocketClient.send_weeding_msg(channel, String.to_integer(weeded))
+        FWClientRobotB.PhoenixSocketClient.send_seeding_msg(channel, String.to_integer(weeded))
         FWClientRobotB.PhoenixSocketClient.stop_seeding(channel)
         {robot, distance_array, false}
       end

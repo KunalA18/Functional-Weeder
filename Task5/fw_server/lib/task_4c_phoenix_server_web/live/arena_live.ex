@@ -24,14 +24,14 @@ defmodule FWServerWeb.ArenaLive do
     end
     {plants_list, seeding, weeding} = get_plants()
 
-    socket = assign(socket, :img_robotA, "robot_facing_north.png")
+    socket = assign(socket, :img_robotA, "robot_facing_northA.png")
     socket = assign(socket, :bottom_robotA, 0)
     socket = assign(socket, :left_robotA, 0)
     socket = assign(socket, :robotA_start, "6, a, west")
     socket = assign(socket, :robotA_goals, weeding)
     socket = assign(socket, :robotA_status, "Inactive")
 
-    socket = assign(socket, :img_robotB, "robot_facing_south.png")
+    socket = assign(socket, :img_robotB, "robot_facing_southB.png")
     socket = assign(socket, :bottom_robotB, 750)
     socket = assign(socket, :left_robotB, 750)
     socket = assign(socket, :robotB_start, "2, e, south")
@@ -301,7 +301,7 @@ defmodule FWServerWeb.ArenaLive do
     ## complete this funcion ##
     ###########################
     img_name = get_img(data["face"])
-
+    img_name = if data["client"] == "robot_A", do: img_name <> "A.png", else: img_name <> "B.png"
     #Assign values according to the robot it is
     socket = if data["client"] == "robot_A" do
       socket = assign(socket, :img_robotA, img_name)
@@ -400,16 +400,17 @@ defmodule FWServerWeb.ArenaLive do
   ######################################################
 
   def get_img(direction) do
-    ans = "robot_facing_north.png"
-    ans = if direction == "south", do: "robot_facing_south.png", else: ans
-    ans = if direction == "east", do: "robot_facing_east.png", else: ans
-    ans = if direction == "west", do: "robot_facing_west.png", else: ans
+    ans = "robot_facing_north"
+    ans = if direction == "south", do: "robot_facing_south", else: ans
+    ans = if direction == "east", do: "robot_facing_east", else: ans
+    ans = if direction == "west", do: "robot_facing_west", else: ans
     ans
   end
 
   def get_plants() do
 
     csv = "../../../Plant_Positions.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take_every(1)
+    |> Enum.filter(fn {:ok, [a, _]} -> (a != "Configuration for Plants") end)
     |> Enum.filter(fn {:ok, [a, b]} -> (a != "Sowing") end)
     |> Enum.map(fn {:ok, [a, b]} -> [a, b] end)
     |> Enum.reduce(fn [a, b], acc -> acc ++ [a, b] end )
@@ -418,7 +419,8 @@ defmodule FWServerWeb.ArenaLive do
     seeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 0 do x end end) |> Enum.reject(fn x -> x == nil end)# 0, 2, 4
     weeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 1 do x end end) |> Enum.reject(fn x -> x == nil end)# 1, 3, 5
 
-
+    IO.inspect(seeding, label: "Seeding")
+    IO.inspect(weeding, label: "Weeding")
 
     # Red for Seeding
     map = Enum.reduce(seeding, [], fn loc, acc ->
