@@ -9,7 +9,7 @@ defmodule FWClientRobotB.LineFollower do
   @pwm_pins [enl: 6, enr: 26]
   @servo_a_pin 27
   @servo_b_pin 22
-  @servo_c_pin 5
+  @servo_c_pin 4
   @servo_d_pin 17
 
   @ref_atoms [:cs, :clock, :address, :dataout]
