@@ -964,7 +964,6 @@ defmodule FWClientRobotA do
   Example Call:
   """
   def send_robot_status(channel, robot) do
-    Process.sleep(3000)
     # Here send the status of the robot
     # Check server to see if robot has stopped
     # If obstacle detected, send message to the server
