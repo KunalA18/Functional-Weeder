@@ -362,6 +362,15 @@ defmodule FWServerWeb.ArenaLive do
    socket = assign(socket, :plant_pos, plants_list)
   end
 
+  def handle_info({"work_complete", data}, socket) do
+    socket = if data["sender"] == "A" do
+      socket = assign(socket, :robotA_status, "Work Complete")
+    else
+      socket = assign(socket, :robotB_status, "Work Complete")
+    end
+    {:noreply, socket}
+  end
+
   def handle_info({"update_obs", data}, socket) do
     IO.inspect(data, label: "Data send to update_obs")
     #elem(obs,0)

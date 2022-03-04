@@ -469,11 +469,14 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
-  Example Call:
+  Function Name:  sort_according_to_distance
+  Input:          robot -> Robot Struct
+                  r_x -> Robot's current x coordinate
+                  r_y -> Robot's current y coordinate
+                  _ -> Unused variable
+  Output:         Sorted distance_array Keyword List
+  Logic:          Recalculates the distance_array from the goal positions stored in :main_goal_storeA
+  Example Call:   sort_according_to_distance(robot, 2, :b, 0)
   """
   def sort_according_to_distance(robot, r_x, r_y, _) do
     goals_string = Agent.get(:main_goal_storeA, fn list -> list end)
@@ -500,10 +503,12 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
+  Function Name:  sort_according_to_distance
+  Input:          r_x -> Robot's current x coordinate
+                  r_y -> Robot's current y coordinate
+                  goal_locs -> List of goal positions E.g. [["1", "c"], ["2", "e"]]
   Output:
-  Logic:
+  Logic:          Recalculates the distance_array from the goal positions given to it in goal_locs
   Example Call:
   """
   def sort_according_to_distance(r_x, r_y, goal_locs) do
@@ -529,11 +534,30 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
-  Example Call:
+  Function Name:  loop
+
+  Input:          robot ->    Robot struct
+                  visited ->  List of previously visited positions on the grid
+                  diff_x ->   Numerical difference between goal_x and robot_x (goal_x - x)
+                  diff_y ->   Numerical difference between goal_y and robot_y (goal_y - y)
+                  goal_x ->   Goal X of the Robot
+                  goal_y ->   Goal Y of the Robot
+                  obs_ahead ->Boolean value to show obstacle presence
+                  distance_array -> List of goal positions arranged according to distance from robot
+                  goal_locs ->  List of goal locations (Unused)
+                  channel ->    Channel for communication with server
+
+  Output:         {robot, distance_array}
+
+  Logic:          Repeat the following steps until the diff_x and diff_y become 0:
+                  1. Generate a list of all squares a robot can visit
+                  2. Re-arrange the list of possibles squares (squares) by the absolute distance heuristic
+                  3. Remove all out of bounds square
+                  4. Send all the previously visited squares to the back of the list
+                  5. If multiple are previously visited arrange the previously visited ones in order of visits [normal dirs, dir of old visited node, dir of recently visited node]
+                  6. Move in the desired direction with move_with_priority
+
+  Example Call:   loop(robot, [], 2, 3, 3, :c, false, distance_array, goal_locs, channel)
   """
   def loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, goal_locs, channel) do
     case diff_y == 0 and diff_x == 0 do
@@ -597,11 +621,28 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
-  Example Call:
+  Function Name:  weeding/4
+  Input:          robot -> Robot Struct
+                  weeded -> String number of plant that is currently being weeded
+                  distance_array -> List of goal locations of the robot arranged relative to itself
+  Output:         {robot, distance_array, false} -> If the robot is able to weed without any issues
+                  {robot, distance_array, true}  -> If it encounters an obstacle while weeding and has to re-adjust goals
+  Logic:          There are two conditions to weeding, if there is no obstalce in the way of the robot vs if there is an obstacle
+                  General:
+                  1. Get the next clockwise-node relative to the robot
+                  2. Rotate to face said clockwise node
+                  3. Get obstacle presence from sensor
+                  No Obstacle:
+                  1. Initialize servos to default position
+                  2. Carry out weeding
+                  3. Carry out normal line-following until next node
+                  4. return {robot, distance_array, false}
+                  With Obstacle:
+                  1. Get the next anti-clockwise node
+                  2. Add anti-clockwise node to the front of the distance_array
+                  3. Add the weeded plant back to main_goal_storeA
+                  4. return {robot, distance_array, true}
+  Example Call:   weeding(robot, "22", distance_array, channel)
   """
   def weeding(robot, weeded, distance_array, channel) do
     #If the position the robot is at is a goal, then weed the plant
@@ -658,10 +699,14 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
+  Function Name:  get_clockwise_node
+  Input:          x -> Robot's x position
+                  y -> Robot's y position
+                  weeded -> location of the plant around which we get the clockwise node
+  Output:         {ans, next_facing[{x,y}]} <- Tuple with {{1, 2}, :north} coords and direction
+  Logic:          1. Convert the weeded location into the four corresponding goals,
+                  2. Maps these goals to their next clockwise nodes
+                  3.
   Example Call:
   """
   def get_clockwise_node(x, y, weeded) do
