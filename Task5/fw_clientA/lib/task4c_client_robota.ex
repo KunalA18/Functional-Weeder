@@ -2,7 +2,7 @@ defmodule FWClientRobotA do
   # WEEDING ROBOT
   @doc """
   Team ID:          2339
-  Author List:      Toshan Luktuke, Kunal Agarwal
+  Author List:      Toshan Luktuke, Kunal Agarwal, Sagar Chotalia
   Filename:         task4c_client_robota.ex
   Theme:            Functional-Weeder
   Functions:        Too many to meaningfully list here
@@ -80,7 +80,12 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Processes the start string that is recieved from server and returns it in a tuple
+  Function Name:  process_start_message
+  Description:    Processes the start string that is recieved from server and returns it in a tuple
+  Input:          start_map -> A map containing string versions of the start locations of both robots
+  Output:         Tuple of format {int, String, String}
+  Logic:          Get the start tuple of A from the map, convert 'x' to integer, remove all spaces from 'y' and 'dir' parts and return it
+  Example Call:   process_start_message(%{"A" => {"1","a ", " north"}, "B" => nil)
   """
   def process_start_message(start_map) do
     data = start_map["A"]
@@ -94,7 +99,13 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Used to continuously ping the server every two seconds waiting for the start message from server
+  Function Name:  wait_for_start
+  Description:    Used to continuously ping the server every two seconds waiting for the start message from server
+  Input:          start_map -> A map containing string versions of the start locations of both robots
+                  channel -> Channel that has information for server communication
+  Output:         None
+  Logic:          If the start message recieved from the server has nil as the "A" value it will call itself and wait 2 seconds
+  Example Call:   wait_for_start(start_map, channel)
   """
   def wait_for_start(start_map, channel) do
     Process.sleep(2000)
@@ -175,11 +186,11 @@ defmodule FWClientRobotA do
   """
   def calculate_goals(robot, goals_string) do
     #Arena description
-    #########################
-    # 31# 32# 33# 34# 35# 36#
-    #########################
-    # 1 # 2 # 3 # 4 # 5 # 6 #
-    #########################
+    #####################
+    # 21# 22# 23# 24# 25#
+    #####################
+    # 1 # 2 # 3 # 4 # 5 #
+    #####################
 
     goal_locs = Enum.reduce(goals_string, [], fn s, acc ->
       {bl, br, tl, tr} = convert_goal_to_locations(s)
@@ -296,6 +307,14 @@ defmodule FWClientRobotA do
     {robot, obs_ahead} = rotate(robot, should_face, face_diff, false, 0, channel)
   end
 
+
+  @doc """
+  Function Name:  get_deposition_positions
+  Input:          robot -> Robot Struct
+  Output:         distance_array is a Keyword list of the closest deposition position to the robot
+  Logic:
+  Example Call:   get_deposition_positions(robot)
+  """
   def get_deposition_positions(robot) do
     # 1-6f
     # 6a-f
@@ -324,6 +343,17 @@ defmodule FWClientRobotA do
       distance_array = distance_array |> List.keysort(1) |> List.first() |> List.wrap
   end
 
+  @doc """
+  Function Name:  loop_through_goal_locs
+  Input:          distance_array -> Keyword List of goal positions arranged relative to distance from robot
+                  robot -> Robot Struct
+                  goal_locs -> List of goal positions of the robot
+                  channel -> Channel used for communication with server
+  Output:         robot -> Robot Struct
+  Logic:          First it checks the length of distance_array then it loops through said distance_array by feeding its locations
+                  one by one to the loop/10 function. On completion of traversal it initiates the seeding/weeding function
+  Example Call:   loop_through_goal_locs([:"2a":3], robot, [["1","3"]], channel)
+  """
   def loop_through_goal_locs(distance_array, robot, goal_locs, channel) do
     if length(distance_array) > 0 do
       # Extract the current position from the KeyWord List
@@ -353,9 +383,9 @@ defmodule FWClientRobotA do
 
       visited = []
 
-      # start the obstacle avoidance and navigation loop
       goal_y = @robot_map_y_atom_to_num[goal_y]
 
+      # start the obstacle avoidance and navigation loop
       {robot, distance_array} =
         loop(
           robot,
@@ -438,6 +468,13 @@ defmodule FWClientRobotA do
     end
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def sort_according_to_distance(robot, r_x, r_y, _) do
     goals_string = Agent.get(:main_goal_storeA, fn list -> list end)
     goal_locs = calculate_goals(robot, goals_string)
@@ -462,6 +499,13 @@ defmodule FWClientRobotA do
     distance_array |> List.keysort(1)
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def sort_according_to_distance(r_x, r_y, goal_locs) do
     distance_array =
       Enum.map(goal_locs, fn [x, y] ->
@@ -484,7 +528,13 @@ defmodule FWClientRobotA do
     distance_array |> List.keysort(1)
   end
 
-
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def loop(robot, visited, diff_x, diff_y, goal_x, goal_y, obs_ahead, distance_array, goal_locs, channel) do
     case diff_y == 0 and diff_x == 0 do
       false ->
@@ -546,6 +596,13 @@ defmodule FWClientRobotA do
     end
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def weeding(robot, weeded, distance_array, channel) do
     #If the position the robot is at is a goal, then weed the plant
 
@@ -600,6 +657,13 @@ defmodule FWClientRobotA do
 
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def get_clockwise_node(x, y, weeded) do
     {bl, br, tl, tr} = convert_goal_to_locations(weeded)
     next_loc = %{bl => tl, br => bl, tl => tr, tr => br}
@@ -609,6 +673,13 @@ defmodule FWClientRobotA do
     {ans, next_facing[{x,y}]}
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def get_anticlockwise_node(x, y, weeded) do
     {bl, br, tl, tr} = convert_goal_to_locations(weeded)
     next_loc = %{bl => br, br => tr, tl => bl, tr => tl}
@@ -618,6 +689,13 @@ defmodule FWClientRobotA do
     {ans, next_facing[{x,y}]}
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def reorder_by_distance(r_x, r_y, distance_array) do
     distance_array = Enum.map(distance_array, fn {pos, d} ->
       s = Atom.to_string(pos)
@@ -641,6 +719,13 @@ defmodule FWClientRobotA do
     {distance_array, goal_x, @robot_map_y_atom_to_num[goal_y]}
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def arrange_by_visited(x, y, sq_keys, visited) do
     # get a list of tuples with the corresponding directions
     coords =
@@ -675,6 +760,13 @@ defmodule FWClientRobotA do
     sq_keys
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def check_for_existing(x, y, visited) do
     # removes the x,y tuple from the list if it exists in it
     visited = Enum.reject(visited, fn {x_v, y_v} -> x_v == x and y_v == y end)
@@ -682,6 +774,13 @@ defmodule FWClientRobotA do
     visited ++ [{x, y}]
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def rotate(
     %FWClientRobotA.Position{facing: facing} = robot,
         should_face,
@@ -710,8 +809,13 @@ defmodule FWClientRobotA do
     end
   end
 
-
-
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def move_with_priority(
     %FWClientRobotA.Position{facing: facing} = robot,
         sq_keys,
@@ -801,6 +905,13 @@ defmodule FWClientRobotA do
     end
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def send_robot_status(channel, robot) do
     # Here send the status of the robot
     # Check server to see if robot has stopped
@@ -827,6 +938,13 @@ defmodule FWClientRobotA do
     {:obstacle_presence, obs_ahead}
   end
 
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
   def is_stopped(channel) do
     Process.sleep(1000)
     {:ok, status} = FWClientRobotA.PhoenixSocketClient.get_stopped(channel)
@@ -835,7 +953,15 @@ defmodule FWClientRobotA do
     end
   end
 
-
+  @doc """
+  Function Name:  calculate_next_position
+  Input:          x -> integer of robot's current position
+                  y -> integer of robot's current position
+                  facing -> Atom with the direction the robot is facing
+  Output:         tuple of {x, y} ({int, int})
+  Logic:          Depending on the direct add or subtract 1 from the appropriate coords
+  Example Call:   calculate_nest_position(1, 2, :north)
+  """
   def calculate_next_position(x, y, facing) do
     y = @robot_map_y_atom_to_num[y]
     coord = {x, y}
@@ -846,6 +972,15 @@ defmodule FWClientRobotA do
     coord
   end
 
+  @doc """
+  Function Name:  eliminate_out_of_bounds
+  Input:          squares -> Keyword List of directions [:east, :west, :north, :south]
+                  x -> Integer of robot's current position
+                  y -> Integer of robot's current position
+  Output:         squares -> Keyword List of directions with the ones out of bounds removed
+  Logic:          Check the squares the robot can visit in all four directions and if they are out of bounds remove that direction from the list
+  Example Call:   eliminate_out_of_bounds(squares, x, y)
+  """
   def eliminate_out_of_bounds(squares, x, y) do
     {_, squares} = if x + 1 > @table_top_x, do: Keyword.pop(squares, :east), else: {:ok, squares}
     {_, squares} = if x - 1 < 1, do: Keyword.pop(squares, :west), else: {:ok, squares}
@@ -854,6 +989,13 @@ defmodule FWClientRobotA do
     squares
   end
 
+  @doc """
+  Function Name:  distance
+  Input:          x1 -> int, y1 -> int, x2 -> int, y2 -> int
+  Output:         absolute distance between the two coordinate positions
+  Logic:          Get the abs of x1-x2 and add it with abs y1-y2
+  Example Call:   distance(1, 3, 4, 2)
+  """
   def distance(x1, y1, x2, y2) do
     abs(x1 - x2) + abs(y1 - y2)
   end
