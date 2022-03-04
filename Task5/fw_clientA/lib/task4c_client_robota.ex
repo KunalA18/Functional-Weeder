@@ -204,7 +204,8 @@ defmodule FWClientRobotA do
       robot = loop_through_goal_locs(distance_array, robot, goal_locs, channel)
       {robot, obs_ahead} = rotate_for_deposition(robot, channel)
       deposit()
-
+      weeded_locs = Agent.get(:weeded_store, fn x -> x end)
+      FWClientRobotA.PhoenixSocketClient.send_deposition_msg(channel, weeded_locs)
     end
   end
 

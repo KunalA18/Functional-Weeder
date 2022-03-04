@@ -98,6 +98,11 @@ defmodule FWClientRobotA.PhoenixSocketClient do
     {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
   end
 
+  def send_deposition_msg(channel, location_array) do
+    event_message = %{"event_id" => 5, "sender" => "A", "value" => location_array}
+    {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  end
+
   def start_weeding(channel) do
     event_message = %{"sender" => "A"}
     {:ok, _} = PhoenixClient.Channel.push(channel, "start_weeding", event_message)
