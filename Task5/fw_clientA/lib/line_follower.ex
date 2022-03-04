@@ -1,4 +1,15 @@
 defmodule FWClientRobotA.LineFollower do
+  @doc """
+  * Team Id : 2339
+  * Author List : Kunal Agarwal,Om Sheladia,Toshan Luktuke.
+  * Filename: line_follower.ex
+  * Theme: Functional Weeder
+  * Functions: Too many to meaningfully list here
+  * Global Variables: @sensor_pins, @ir_pins, @motor_pins, @pwm_pins, @servo_a_pin, @servo_b_pin, @servo_c_pin, @ref_atoms,
+                      @lf_sensor_data, @lf_sensor_map, @forward, @backward, @left, @right, @stop, @onlyright, @onlyleft,
+                      @duty_cycles, @pwm_frequency, @black_MARGIN, @white_MARGIN,  @weights, @optimum_duty_cycle, @lower_duty_cycle,
+                      @higher_duty_cycle, @turn, @slight_turn, @kp, @ki, @kd
+  """
   require Logger
   use Bitwise
   alias Circuits.GPIO
@@ -9,8 +20,8 @@ defmodule FWClientRobotA.LineFollower do
   @pwm_pins [enl: 6, enr: 26]
   @servo_a_pin 27
   @servo_b_pin 22
-  @servo_c_pin 5
-  @servo_d_pin 17
+  @servo_c_pin 4
+  # @servo_d_pin 17
 
   @ref_atoms [:cs, :clock, :address, :dataout]
   @lf_sensor_data %{sensor0: 0, sensor1: 0, sensor2: 0, sensor3: 0, sensor4: 0, sensor5: 0}
@@ -56,7 +67,11 @@ defmodule FWClientRobotA.LineFollower do
   @kd 5
 
   @doc """
-    Function for Straight motion of robot
+    * Function Name: start
+    * Input: none
+    * Output: Moves the robot straight till a node is detected
+    * Logic: Initialized variables to be used globally and passed them in function call of line_follow()
+    * Example Call: start()
   """
   def start do
     error = 0
@@ -79,7 +94,18 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-    Line following Function with PID implementation
+    * Function Name: line_follow
+    * Input: error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle, main_node, same_node
+    * Output: Moves the robot straight till a node is detected.
+    * Logic: 1) Read values of wlf sensors
+             2) Calculated error in readings (when robot moves) using calculate_error()
+             3) Calculated correction value for error using calculate_correction()
+             4) detected and stored nodes in main_node; main_node = main_node + 1 by setting a flag same_node initially as false
+                so that only 1 white line is counted for node_detection
+             5) Assigned duty cycles (speeds) to left and right motors after error correction
+             6) bounded left and right duty cycles
+             7) Stop the robot if node is detected else continue following line
+    * Example Call: (Supporting function for start(); Need to call start() for line following)
   """
   def line_follow(
         error,
@@ -178,6 +204,13 @@ defmodule FWClientRobotA.LineFollower do
       end
   end
 
+  @doc """
+    * Function Name: get_high_no
+    * Input: map_sens_list
+    * Output: Moves the robot straight till a node is detected
+    * Logic: Initialized variables to be used globally and passed them in function call of line_follow()
+    * Example Call: Supporting function for start()
+  """
   def get_high_no(map_sens_list) do
     Enum.reduce(map_sens_list, 0, fn v, acc ->
       acc =
