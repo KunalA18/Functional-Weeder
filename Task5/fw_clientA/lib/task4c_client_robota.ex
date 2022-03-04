@@ -1,5 +1,14 @@
 defmodule FWClientRobotA do
   # WEEDING ROBOT
+  @doc """
+  Team ID:          2339
+  Author List:      Toshan Luktuke, Kunal Agarwal
+  Filename:         task4c_client_robota.ex
+  Theme:            Functional-Weeder
+  Functions:        Too many to meaningfully list here
+  Global Variables: @table_top_x, @table_top_y, @robot_map_y_atom_to_num, @dir_to_num, @robot_map_y_num_to_atom, @physical
+  Agents:           :weeded_store, :main_goal_storeA, :continuous_turns, :seeding, :line_sensor
+  """
 
   # max x-coordinate of table top
   @table_top_x 6
@@ -13,6 +22,16 @@ defmodule FWClientRobotA do
   @robot_map_y_num_to_atom %{1 => :a, 2 => :b, 3 => :c, 4 => :d, 5 => :e, 6 => :f}
   # If set to true, all LineFollower functions will work
   @physical false
+
+  # Function Description
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
+
 
   @doc """
   Places the robot to the default position of (1, A, North)
@@ -60,17 +79,23 @@ defmodule FWClientRobotA do
     place(x, y, facing)
   end
 
+  @doc """
+  Processes the start string that is recieved from server and returns it in a tuple
+  """
   def process_start_message(start_map) do
     data = start_map["A"]
     x = Enum.at(data, 0) |> String.to_integer
     y = Enum.at(data, 1)
-    y = Regex.replace(~r/ /, y, "") |> String.to_atom #Regex to remove all spaces in the string
+    y = Regex.replace(~r/ /, y, "") |> String.to_atom # Regex to remove all spaces in the string
     dir = Enum.at(data, 2)
-    dir =  Regex.replace(~r/ /, dir, "") |> String.to_atom #Regex to remove all spaces in the string
+    dir =  Regex.replace(~r/ /, dir, "") |> String.to_atom # Regex to remove all spaces in the string
 
     {x,y,dir}
   end
 
+  @doc """
+  Used to continuously ping the server every two seconds waiting for the start message from server
+  """
   def wait_for_start(start_map, channel) do
     Process.sleep(2000)
     {:ok, start_map} = FWClientRobotA.PhoenixSocketClient.get_start(channel)
@@ -81,6 +106,10 @@ defmodule FWClientRobotA do
     end
   end
 
+  @doc """
+  Starts agents used to store state
+  These will be used by various processes later on in the program
+  """
   def start_agents() do
     {:ok, agent} = Agent.start_link(fn -> [] end)
     Process.register(agent, :weeded_store)
@@ -134,6 +163,16 @@ defmodule FWClientRobotA do
     FWClientRobotA.PhoenixSocketClient.work_complete(channel)
   end
 
+  @doc """
+  Function Name:  calculate_goals
+  Description:    Finds the closest out of the 4 possible node locations from a goal location and returns a list of all of them
+                  return
+  Input:          robot -> Robot Struct, goals_string -> List of goal locations obtained from the server
+  Output:         List of node locations for the robot to visit -> [["1","b"], ["3","d"]...]
+  Logic:          Iterate over each goal from the list, calculate four possible node locations, determine nearest one,
+                  convert to desired format, add to list
+  Example Call:   calculate_goals(robot, ["2", "11", "22"])
+  """
   def calculate_goals(robot, goals_string) do
     #Arena description
     #########################
@@ -152,6 +191,17 @@ defmodule FWClientRobotA do
     end)
   end
 
+  @doc """
+  Function Name:  find_minimum
+  Input:          robot -> Robot Struct
+                  bl -> Tuple with bottom left positioned node relative to goal
+                  br -> Tuple with bottom right positioned node relative to goal
+                  tl -> Tuple with top left positioned node relative to goal
+                  tr -> Tuple with top right positioned node relative to goal
+  Output:         Returns the position with the minimum distance from the robot
+  Logic:          Calculated by simple if-else statements, ans stores the result and this variable is always returned
+  Example Call:   find_minimum(robot, {1,2}, {1,3}, {2,2}, {2,3})
+  """
   def find_minimum(robot, bl, br, tl, tr) do
     {rx, ry, _} = report(robot)
     ry = @robot_map_y_atom_to_num[ry]
@@ -166,6 +216,14 @@ defmodule FWClientRobotA do
     ans = if d_tr <= d_bl and d_tr <= d_br and d_tr <= d_tl, do: tr, else: ans
   end
 
+  @doc """
+  Function Name:  convert_goal_to_locations
+  Input:          loc -> This is a string number E.g. "11", "5"
+  Output:         A tuple with the bottom left, bottom right, top left and top right positions relative to loc
+  Logic:          First convert num to integer and then get its remainder+1 for x position and quotient+1 for y position
+                  this will give bottom left position, add and subtract 1 to get the other three
+  Example Call:   convert_goal_to_locations("3")
+  """
   def convert_goal_to_locations(loc) do
     no = String.to_integer(loc) - 1
     x = rem(no, 5) + 1
@@ -208,12 +266,26 @@ defmodule FWClientRobotA do
     end
   end
 
+  @doc """
+  Function Name:  deposit()
+  Input:          None
+  Output:         None
+  Logic:          Used conditionally call the LineFollower.depo function, using @physical you can switch between physical and virtual movement
+  Example Call:   deposit()
+  """
   def deposit() do
     if @physical do
       FWClientRobotA.LineFollower.depo()
     end
   end
 
+  @doc """
+  Function Name:  rotate_for_deposition
+  Input:          robot -> Robot Struct, channel -> Channel information for communicating with server
+  Output:         robot, obs_ahead are returned in struct form
+  Logic:          Checks its current location and accordingly rotates to face either east or south
+  Example Call:   rotate_for_deposition(robot, channel)
+  """
   def rotate_for_deposition(robot, channel) do
     # f --> east
     # else --> south

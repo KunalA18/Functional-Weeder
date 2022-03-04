@@ -1,4 +1,15 @@
 defmodule FWClientRobotB do
+  @doc """
+  Team ID: 2339
+  Author List: Toshan Luktuke, Kunal Agarwal
+  Filename: task4c_client_robotb.ex
+  Theme: Functional-Weeder
+  Functions:
+  Global Variables: @table_top_x, @table_top_y, @robot_map_y_atom_to_num
+    @dir_to_num, @robot_map_y_num_to_atom, @physical
+  Agents: :weeded_store, :main_goal_storeA, :continuous_turns, :seeding, :line_sensor
+  """
+
   # SEEDING ROBOT
 
   # max x-coordinate of table top
