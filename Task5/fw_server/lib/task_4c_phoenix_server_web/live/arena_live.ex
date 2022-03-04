@@ -389,7 +389,13 @@ defmodule FWServerWeb.ArenaLive do
   end
 
   def handle_info({"stop_weeding", data}, socket) do
-    socket = assign(socket, :robotA_status, "Active")
+    map = Agent.get(:stopped, fn map -> map end)
+    socket =
+      if map["A"] == false do
+        socket = assign(socket, :robotA_status, "Active")
+      else
+        socket = assign(socket, :robotA_status, "Inactive")
+      end
     {:noreply, socket}
   end
 
@@ -399,7 +405,13 @@ defmodule FWServerWeb.ArenaLive do
   end
 
   def handle_info({"stop_seeding", data}, socket) do
-    socket = assign(socket, :robotB_status, "Active")
+    map = Agent.get(:stopped, fn map -> map end)
+    socket =
+      if map["B"] == false do
+        socket = assign(socket, :robotB_status, "Active")
+      else
+        socket = assign(socket, :robotB_status, "Inactive")
+      end
     {:noreply, socket}
   end
 

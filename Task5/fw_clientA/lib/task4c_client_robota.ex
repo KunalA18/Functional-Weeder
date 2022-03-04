@@ -706,8 +706,9 @@ defmodule FWClientRobotA do
   Output:         {ans, next_facing[{x,y}]} <- Tuple with {{1, 2}, :north} coords and direction
   Logic:          1. Convert the weeded location into the four corresponding goals,
                   2. Maps these goals to their next clockwise nodes
-                  3.
-  Example Call:
+                  3. Maps goals according to the directions needed to face for traversal
+                  4. Packages and returns this in tuple format
+  Example Call:   get_clockwise_node(2, :b, "7")
   """
   def get_clockwise_node(x, y, weeded) do
     {bl, br, tl, tr} = convert_goal_to_locations(weeded)
@@ -719,11 +720,16 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
-  Example Call:
+  Function Name:  get_anti-clockwise_node
+  Input:          x -> Robot's x position
+                  y -> Robot's y position
+                  weeded -> location of the plant around which we get the anti-clockwise node
+  Output:         {ans, next_facing[{x,y}]} <- Tuple with {{1, 2}, :north} coords and direction
+  Logic:          1. Convert the weeded location into the four corresponding goals,
+                  2. Maps these goals to their next anti-clockwise nodes
+                  3. Maps goals according to the directions needed to face for traversal
+                  4. Packages and returns this in tuple format
+  Example Call:   get_anti-clockwise_node(2, :b, "7")
   """
   def get_anticlockwise_node(x, y, weeded) do
     {bl, br, tl, tr} = convert_goal_to_locations(weeded)
@@ -958,6 +964,7 @@ defmodule FWClientRobotA do
   Example Call:
   """
   def send_robot_status(channel, robot) do
+    Process.sleep(3000)
     # Here send the status of the robot
     # Check server to see if robot has stopped
     # If obstacle detected, send message to the server
