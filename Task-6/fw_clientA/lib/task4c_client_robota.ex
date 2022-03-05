@@ -961,7 +961,9 @@ defmodule FWClientRobotA do
     # Check server to see if robot has stopped
     # If obstacle detected, send message to the server
     {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot)
-    # obs_ahead = FWClientRobotA.LineFollower.detect_obstacle()
+    if @physical do
+      obs_ahead = FWClientRobotA.LineFollower.detect_obstacle()
+    end
 
     if obs_ahead do
       FWClientRobotA.PhoenixSocketClient.send_obstacle_presence(channel, robot)
