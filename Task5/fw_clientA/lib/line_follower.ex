@@ -355,7 +355,16 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-   Supporting function for turning the bot right
+    * Function Name: move_right
+    * Input: right_detect, motor_ref
+    * Output: Turns the robot right
+    * Logic: 1) Increase speed of robot if old_map_list == map_sens_list (if its on the same position)
+             2) Give duty cycles to my_motion()
+             3) set flag value as true if robot is not on white line
+             4) Stop the robot if white line is reached after turn else continue turning.
+                Also a Function slide_left() is called in case robot overshoots while turning right
+    * Example Call: move_right(right_detect, motor_ref)
+                    (Supporting function for turn_right(); Need to call turn_right() for Right turn)
   """
   def move_right(right_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
@@ -402,7 +411,11 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-   Function for turning the bot left
+    * Function Name: turn_left
+    * Input: none
+    * Output: move_left(left_detect, motor_ref) function call
+    * Logic: Initialized variables to be used globally for move_left()
+    * Example Call: turn_left()
   """
   def turn_left do
     left_detect = false
@@ -411,7 +424,16 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-   Supporting function for turn_left
+    * Function Name: move_left
+    * Input: left_detect, motor_ref
+    * Output: Turns the robot left
+    * Logic: 1) Increase speed of robot if old_map_list == map_sens_list (if its on the same position)
+             2) Give duty cycles to my_motion()
+             3) set flag value as true if robot is not on white line
+             4) Stop the robot if white line is reached after turn else continue turning.
+                Also a Function slide_right() is called in case robot overshoots while turning left
+    * Example Call: move_left(left_detect, motor_ref)
+                    (Supporting function for turn_left(); Need to call turn_left() for Left turn)
   """
   def move_left(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
@@ -455,7 +477,11 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  Function to move the robot slightly towards left if it overshoots while turning right
+    * Function Name: slide_left
+    * Input: none
+    * Output: drift_left(left_detect, motor_ref) function call
+    * Logic: Initialized variables to be used globally for drift_left()
+    * Example Call: slide_left()
   """
   def slide_left do
     left_detect = false
@@ -464,7 +490,14 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  Supporting Function for slide_left
+    * Function Name: drift_left
+    * Input: left_detect, motor_ref
+    * Output: Turns the robot a slight left
+    * Logic: 1) Increase speed of robot if old_map_list == map_sens_list (if its on the same position)
+             2) Give duty cycles to my_motion()
+             4) Stop the robot if white line is reached after turn else continue turning.
+    * Example Call: drift_left(left_detect, motor_ref)
+                    (Supporting function for slide_left(); Need to call slide_left() for slight Left turn)
   """
   def drift_left(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
@@ -497,7 +530,11 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  Function to move the robot slightly towards right if it overshoots while turning left
+    * Function Name: slide_right
+    * Input: none
+    * Output: drift_right(right_detect, motor_ref) function call
+    * Logic: Initialized variables to be used globally for drift_right()
+    * Example Call: slide_right()
   """
 
   def slide_right do
@@ -507,7 +544,14 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  Supporting Function for slide_right
+    * Function Name: drift_right
+    * Input: left_detect, motor_ref
+    * Output: Turns the robot a slight right
+    * Logic: 1) Increase speed of robot if old_map_list == map_sens_list (if its on the same position)
+             2) Give duty cycles to my_motion()
+             4) Stop the robot if white line is reached after turn else continue turning.
+    * Example Call: drift_right(left_detect, motor_ref)
+                    (Supporting function for slide_right(); Need to call slide_right() for slight Right turn)
   """
   def drift_right(left_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
@@ -538,7 +582,11 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  Function to move the robot backwards
+    * Function Name: move_back
+    * Input: none
+    * Output: Moves the robot in backward direction
+    * Logic: Set @backward pins in motor_action() and duty_cycles to my_motion. Moves for 3s and then stops
+    * Example Call: move_back()
   """
   def move_back do
     motor_ref = Enum.map(@motor_pins, fn {_atom, pin_no} -> GPIO.open(pin_no, :output) end)
@@ -550,9 +598,12 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  Function to stop the robot when plant is detected by side IR sensor for Seeding and Weeding
+    * Function Name: stop_seeder
+    * Input: none
+    * Output: Moves the robot straight till a plant is detected
+    * Logic: Initialized variables to be used globally and passed them in function call of seed_follow()
+    * Example Call: start()
   """
-
   def stop_seeder do
     error = 0
     prev_error = 0
@@ -570,8 +621,18 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-   Supporting Function for stop_seeder
-   Implementation of Line following algorithm (with PID tuning) for stop_seeder
+    * Function Name: seed_follow
+    * Input: error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle
+    * Output: Moves the robot straight till a node is detected.
+    * Logic: 1) Read values of wlf sensors
+             2) Calculated error in readings (when robot moves) using calculate_error()
+             3) Calculated correction value for error using calculate_correction()
+             4) bounded left and right duty cycles
+             5) Read boolean value from side_ir()
+             6) Assigned duty cycles (speeds) to left and right motors after error correction
+             7) Stop the robot if plant is detected by side IR sensor else continue following line
+    * Example Call: seed_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle)
+                    (Supporting function for start(); Need to call start() for line following)
   """
   def seed_follow(
         error,
@@ -678,7 +739,11 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  function to intialize servos to default angles before Weeding
+    * Function Name: servo_initialize
+    * Input: none
+    * Output: Moves the servos by given degrees
+    * Logic: Called test_servo_a(),test_servo_b(),test_servo_c() with appropriate angles and delays to initialize arm at proper angles
+    * Example Call: servo_initialize()
   """
   def servo_initialize do
     test_servo_a(100)
@@ -690,7 +755,11 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  function to give angles to servos for Weeding
+    * Function Name: weeder
+    * Input: none
+    * Output: Moves the servos by given degrees
+    * Logic: Called test_servo_a(),test_servo_b(),test_servo_c() with appropriate angles and delays for completion of weeding action by arm
+    * Example Call: weeder()
   """
   def weeder do
     test_servo_a(100)
@@ -712,7 +781,11 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  function to give angles to servos for deposition of basket
+    * Function Name: depo
+    * Input: none
+    * Output: Moves the servos by given degrees
+    * Logic: Called test_servo_a(),test_servo_b(),test_servo_c() with appropriate angles and delays for completion of deposition of stalks
+    * Example Call: depo()
   """
   def depo do
     test_servo_a(100)
