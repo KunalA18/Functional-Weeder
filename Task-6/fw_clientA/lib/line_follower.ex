@@ -21,7 +21,6 @@ defmodule FWClientRobotA.LineFollower do
   @servo_a_pin 27
   @servo_b_pin 22
   @servo_c_pin 4
-  # @servo_d_pin 17
 
   @ref_atoms [:cs, :clock, :address, :dataout]
   @lf_sensor_data %{sensor0: 0, sensor1: 0, sensor2: 0, sensor3: 0, sensor4: 0, sensor5: 0}
@@ -53,13 +52,24 @@ defmodule FWClientRobotA.LineFollower do
   @weights [0, -3, -1, 0, 1, 3]
 
   # Speed given to motors for straight motion
-  @optimum_duty_cycle 120
-  @lower_duty_cycle 95
-  @higher_duty_cycle 145
+  # @optimum_duty_cycle 110
+  # @lower_duty_cycle 85
+  # @higher_duty_cycle 135
+
+  @optimum_duty_cycle 115
+  @lower_duty_cycle 90
+  @higher_duty_cycle 140
+
+  # @optimum_duty_cycle 103
+  # @lower_duty_cycle 83
+  # @higher_duty_cycle 128
 
   # Speed Given to motors for turning
   @turn 115
   @slight_turn 115
+
+  # @turn 100
+  # @slight_turn 100
 
   # Pid constants
   @kp 5
@@ -368,7 +378,7 @@ defmodule FWClientRobotA.LineFollower do
   """
   def move_right(right_detect, motor_ref) do
     map_sens_list = test_wlf_sensors()
-    motor_action(motor_ref, @right)
+    motor_action(motor_ref, @onlyright)
 
     {old_map_sens, i} = Agent.get(:line_sensor, fn {list, i} -> {list, i} end)
 
@@ -602,8 +612,9 @@ defmodule FWClientRobotA.LineFollower do
     * Input: none
     * Output: Moves the robot straight till a plant is detected
     * Logic: Initialized variables to be used globally and passed them in function call of seed_follow()
-    * Example Call: start()
+    * Example Call: stop_seeder()
   """
+
   def stop_seeder do
     error = 0
     prev_error = 0
@@ -632,7 +643,7 @@ defmodule FWClientRobotA.LineFollower do
              6) Assigned duty cycles (speeds) to left and right motors after error correction
              7) Stop the robot if plant is detected by side IR sensor else continue following line
     * Example Call: seed_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle)
-                    (Supporting function for start(); Need to call start() for line following)
+                    (Supporting function for stop_seeder(); Need to call stop_seeder() for line following)
   """
   def seed_follow(
         error,
@@ -746,9 +757,9 @@ defmodule FWClientRobotA.LineFollower do
     * Example Call: servo_initialize()
   """
   def servo_initialize do
-    test_servo_a(100)
+    test_servo_b(120)
     Process.sleep(500)
-    test_servo_b(90)
+    test_servo_a(100)
     Process.sleep(500)
     test_servo_c(60)
     Process.sleep(500)
@@ -762,20 +773,22 @@ defmodule FWClientRobotA.LineFollower do
     * Example Call: weeder()
   """
   def weeder do
-    test_servo_a(100)
+    test_servo_b(120)
     Process.sleep(1000)
-    test_servo_c(60)
+    test_servo_a(105)
     Process.sleep(1000)
-    test_servo_b(90)
+    test_servo_c(40)
     Process.sleep(1000)
-    test_servo_b(60)
-    Process.sleep(500)
-    test_servo_c(0)
+    test_servo_b(50)
+    Process.sleep(1000)
+    # close
+    test_servo_c(120)
     Process.sleep(1500)
     test_servo_b(140)
     Process.sleep(1250)
-    test_servo_a(0)
+    test_servo_a(10)
     Process.sleep(1000)
+    # open
     test_servo_c(60)
     Process.sleep(500)
   end
@@ -788,11 +801,13 @@ defmodule FWClientRobotA.LineFollower do
     * Example Call: depo()
   """
   def depo do
+    test_servo_b(120)
+    Process.sleep(1000)
     test_servo_a(100)
     Process.sleep(1000)
-    test_servo_c(0)
+    test_servo_c(120)
     Process.sleep(1000)
-    test_servo_b(80)
+    test_servo_b(60)
     Process.sleep(1000)
     test_servo_a(0)
     Process.sleep(1000)
