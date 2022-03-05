@@ -293,15 +293,16 @@ defmodule FWServerWeb.ArenaLive do
   These values must be in pixels. You may handle these variables in separate callback functions as well.
   """
   def handle_info({"move", data}, socket) do
-    #IO.inspect(data, label: "Data is sent to ArenaLive PubSub move")
-    ###########################
-    ## complete this funcion ##
-    ###########################
-
     {:noreply, socket}
-
   end
 
+  @doc """
+  Function Name:  handle_info({"update", data}, socket)
+  Input:          ({"update", data}, socket)
+  Output:         {:noreply, socket}
+  Logic:          Updates all the info it gets from data: img, bottom, left
+  Example Call:
+  """
   def handle_info({"update", data}, socket) do
     img_name = get_img(data["face"])
     img_name = if data["client"] == "robot_A", do: img_name <> "A.png", else: img_name <> "B.png"
@@ -318,6 +319,13 @@ defmodule FWServerWeb.ArenaLive do
     {:noreply, socket}
   end
 
+  @doc """
+  Function Name:  handle_info({"gray_out", data}, socket)
+  Input:          ({"gray_out", data}, socket)
+  Output:         {:noreply, socket}
+  Logic:          Adds the grayed out plant to the plants_list and removes the red/green plant from it
+  Example Call:
+  """
   def handle_info({"gray_out", data}, socket) do
     socket = gray_out(socket, data)
 
@@ -332,6 +340,15 @@ defmodule FWServerWeb.ArenaLive do
     {:noreply, socket}
   end
 
+  @doc """
+  Function Name:  gray_out(socket, data)
+  Input:          socket -> Socket variable
+                  data -> %{"left" => left, "bottom" => bottom}
+  Output:         socket = assign(socket, :plant_pos, plants_list)
+  Logic:          Converts the left, bottom values into pixel coords of the plant images, if it finds it in the plants_list then
+                  it replaces that with a gray plant image
+  Example Call:
+  """
   def gray_out(socket, data) do
     x = floor(data["left"] / 150) + 1
     y = floor(data["bottom"] / 150) + 1
@@ -354,6 +371,14 @@ defmodule FWServerWeb.ArenaLive do
    socket = assign(socket, :plant_pos, plants_list)
   end
 
+  @doc """
+  Function Name:  handle_info({"work_complete", data}, socket)
+  Input:          "work_complete", data}, socket
+                  data -> %{"sender" => "A"/"B"}
+  Output:         {:noreply, socket}
+  Logic:          Changes the text in the status bar to Work Complete
+  Example Call:
+  """
   def handle_info({"work_complete", data}, socket) do
     socket = if data["sender"] == "A" do
       socket = assign(socket, :robotA_status, "Work Complete")
@@ -363,6 +388,9 @@ defmodule FWServerWeb.ArenaLive do
     {:noreply, socket}
   end
 
+  @doc """
+  Update obstacle on arena live according to the position recieved
+  """
   def handle_info({"update_obs", data}, socket) do
     IO.inspect(data, label: "Data send to update_obs")
     #Each cell is 150x150 pixels
@@ -371,11 +399,17 @@ defmodule FWServerWeb.ArenaLive do
     {:noreply, socket}
   end
 
+  @doc """
+  Update weeding bot status as Weeding
+  """
   def handle_info({"start_weeding", data}, socket) do
     socket = assign(socket, :robotA_status, "Weeding")
     {:noreply, socket}
   end
 
+  @doc """
+  Update weeding bot status as Active/Inactive after it has completed weeding
+  """
   def handle_info({"stop_weeding", data}, socket) do
     map = Agent.get(:stopped, fn map -> map end)
     socket =
@@ -387,11 +421,17 @@ defmodule FWServerWeb.ArenaLive do
     {:noreply, socket}
   end
 
+  @doc """
+  Update seeding bot status as Seeding
+  """
   def handle_info({"start_seeding", data}, socket) do
     socket = assign(socket, :robotB_status, "Seeding")
     {:noreply, socket}
   end
 
+  @doc """
+  Update seeding bot status as Active/Inactive after it has completed seeding
+  """
   def handle_info({"stop_seeding", data}, socket) do
     map = Agent.get(:stopped, fn map -> map end)
     socket =
@@ -416,6 +456,16 @@ defmodule FWServerWeb.ArenaLive do
     ans
   end
 
+  @doc """
+  Function Name:  get_plants/0
+  Input:          None
+  Output:         {map, seeding, weeding}
+  Logic:          1. Parses CSV file to get plant positions
+                  2. Separates them into seeding and weeding Lists
+                  3. Adds red and green plants to map at the appropriate locations
+                  4. Returns the map, seeding and weeding for socket assignment and Agent updation
+  Example Call:
+  """
   def get_plants() do
 
     csv = "../../../Plant_Positions.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take_every(1)
@@ -424,8 +474,9 @@ defmodule FWServerWeb.ArenaLive do
     |> Enum.map(fn {:ok, [a, b]} -> [a, b] end)
     |> Enum.reduce(fn [a, b], acc -> acc ++ [a, b] end )
 
-    # IO.inspect(csv)
+    # All even locations are for seeding
     seeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 0 do x end end) |> Enum.reject(fn x -> x == nil end)# 0, 2, 4
+    # All odd locations are for weeding
     weeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 1 do x end end) |> Enum.reject(fn x -> x == nil end)# 1, 3, 5
 
     IO.inspect(seeding, label: "Seeding")
@@ -434,7 +485,6 @@ defmodule FWServerWeb.ArenaLive do
     # Red for Seeding
     map = Enum.reduce(seeding, [], fn loc, acc ->
       {x, y} = convert_to_coord(loc)
-      # IO.puts("Loc: #{loc}")
       left = 150 * (x-1) + 75
       bottom = 150 * (y-1) + 75
       acc ++ [{left, bottom, "red_plant.png"}]
@@ -443,7 +493,6 @@ defmodule FWServerWeb.ArenaLive do
     # Green for Weeding
     map = Enum.reduce(weeding, map, fn loc, acc ->
       {x, y} = convert_to_coord(loc)
-      # IO.puts("Loc: #{loc}")
       left = 150 * (x-1) + 75
       bottom = 150 * (y-1) + 75
       acc ++ [{left, bottom, "green_plant.png"}]
@@ -451,7 +500,15 @@ defmodule FWServerWeb.ArenaLive do
     {map, seeding, weeding}
   end
 
-  # Note change to 300 in final run
+  @doc """
+  Function Name:  read_stop_times/0
+  Input:          None
+  Output:         None
+  Logic:          1. Reads stop times from the CSV
+                  2. Formats them appropriately
+                  3. Stores the list of stop times in the Agent
+  Example Call:
+  """
   def read_stop_times() do
     csv = "../../../Robots_handle.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take_every(1)
     |> Enum.filter(fn {:ok, [a, b, c, d]} -> (b != "Robot") end)
@@ -461,6 +518,9 @@ defmodule FWServerWeb.ArenaLive do
     Agent.update(:stop_times, fn list -> csv end)
   end
 
+  @doc """
+  Convert location to co-ordinate
+  """
   def convert_to_coord(loc) do
     loc = if !is_integer(loc), do: String.to_integer(loc), else: loc
     loc = loc - 1
