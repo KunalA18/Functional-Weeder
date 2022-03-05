@@ -60,9 +60,6 @@ defmodule FWClientRobotB.PhoenixSocketClient do
   """
   def send_robot_status(channel, %FWClientRobotB.Position{x: x, y: y, facing: facing} = _robot) do
 
-    # goals_string = convert_to_numbers(goal_locs)
-    # IO.inspect(goals_string, label: "Goal string to be sent")
-
     message = %{client: "robot_B", x: x, y: y, face: facing} #formats the message
 
     #New format for task 5
@@ -75,10 +72,6 @@ defmodule FWClientRobotB.PhoenixSocketClient do
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
 
     {:obstacle_presence, obstaclePresence}
-
-    ###########################
-    ## complete this funcion ##
-    ###########################
   end
 
   def work_complete(channel) do
@@ -157,8 +150,6 @@ defmodule FWClientRobotB.PhoenixSocketClient do
 
   def coords_store_get(channel) do
     {:ok, coord_map} = PhoenixClient.Channel.push(channel, "coords_store_get", %{A: nil, B: "B"})
-    #Add further processing according to requirements
-    # IO.inspect(coord_map, label: "Co-ord Map recieved from Server")
     new_coord_map = {coord_map["face"] |> String.to_atom, coord_map["x"], coord_map["y"] |> String.to_atom}
   end
 
@@ -169,21 +160,16 @@ defmodule FWClientRobotB.PhoenixSocketClient do
 
   def goal_choice_get(channel) do
     {:ok, choice_map} = PhoenixClient.Channel.push(channel, "goal_choice_get", %{A: "B", B: nil})
-    #Add further processing according to requirements
-    # IO.inspect(choice_map, label: "Choice Map recieved from Server")
     choice_map
   end
 
   def turns_get(channel) do
     {:ok, turns_map} = PhoenixClient.Channel.push(channel, "turns_get", %{})
-    #Add further processing according to requirements
-    # IO.inspect(turns_map, label: "Turn Map recieved from Server")
     turns_map
   end
 
   def goal_store_get(channel) do
     {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goal_store_get", %{})
-    #IO.inspect(goal_map["list"], label: "Goal Store Output")
     if(goal_list["list"] != nil) do
       Enum.map(goal_list["list"], fn s -> String.to_atom(s) end)
     else

@@ -12,6 +12,15 @@ defmodule FWClientRobotA.PhoenixSocketClient do
 
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5, :f => 6}
 
+  # Function Description
+  @doc """
+  Function Name:
+  Input:
+  Output:
+  Logic:
+  Example Call:
+  """
+
   @doc """
   Connect to the Phoenix Server URL (defined in config.exs) via socket.
   Once ensured that socket is connected, join the channel on the server with topic "robot:status".
@@ -41,6 +50,13 @@ defmodule FWClientRobotA.PhoenixSocketClient do
     {:ok, _response, channel}
   end
 
+  @doc """
+  Function Name:  wait_for_socket
+  Input:          socket -> Socket variable
+  Output:         None
+  Logic:          Continuously check socket for connection
+  Example Call:
+  """
   def wait_for_socket(socket) do
     if !Socket.connected?(socket) do
       wait_for_socket(socket)
@@ -60,9 +76,6 @@ defmodule FWClientRobotA.PhoenixSocketClient do
   """
   def send_robot_status(channel, %FWClientRobotA.Position{x: x, y: y, facing: facing} = _robot) do
 
-    # goals_string = convert_to_numbers(goal_locs)
-    # IO.inspect(goals_string, label: "Goal string to be sent")
-
     message = %{client: "robot_A", x: x, y: y, face: facing} #formats the message
 
     #New format for task 5
@@ -75,10 +88,6 @@ defmodule FWClientRobotA.PhoenixSocketClient do
     {:ok, obstaclePresence} = PhoenixClient.Channel.push(channel, "new_msg", message)
 
     {:obstacle_presence, obstaclePresence}
-
-    ###########################
-    ## complete this funcion ##
-    ###########################
   end
 
   def work_complete(channel) do
@@ -162,8 +171,6 @@ defmodule FWClientRobotA.PhoenixSocketClient do
 
   def coords_store_get(channel) do
     {:ok, coord_map} = PhoenixClient.Channel.push(channel, "coords_store_get", %{A: nil, B: "B"})
-    #Add further processing according to requirements
-    # IO.inspect(coord_map, label: "Co-ord Map recieved from Server")
     new_coord_map = {coord_map["face"] |> String.to_atom, coord_map["x"], coord_map["y"] |> String.to_atom}
   end
 
@@ -174,21 +181,16 @@ defmodule FWClientRobotA.PhoenixSocketClient do
 
   def goal_choice_get(channel) do
     {:ok, choice_map} = PhoenixClient.Channel.push(channel, "goal_choice_get", %{A: "A", B: nil})
-    #Add further processing according to requirements
-    # IO.inspect(choice_map, label: "Choice Map recieved from Server")
     choice_map
   end
 
   def turns_get(channel) do
     {:ok, turns_map} = PhoenixClient.Channel.push(channel, "turns_get", %{})
-    #Add further processing according to requirements
-    # IO.inspect(turns_map, label: "Turn Map recieved from Server")
     turns_map
   end
 
   def goal_store_get(channel) do
     {:ok, goal_list} = PhoenixClient.Channel.push(channel, "goal_store_get", %{})
-    #IO.inspect(goal_map["list"], label: "Goal Store Output")
     if(goal_list["list"] != nil) do
       Enum.map(goal_list["list"], fn s -> String.to_atom(s) end)
     else
