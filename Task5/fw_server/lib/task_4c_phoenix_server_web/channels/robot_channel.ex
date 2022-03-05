@@ -6,10 +6,17 @@ defmodule FWServerWeb.RobotChannel do
   Filename:         robot_channel.ex
   Theme:            Functional-Weeder
   Functions:        Too many to meaningfully list here
-  Agents:           :start_store, :coords_store, :previous_store_A, :previous_store_B, :goal_choice, :turns, :goal_store, :stopped
+  Agents:           :start_store, :coords_store, :previous_store_A, :previous_store_B, :goal_store, :stopped
   """
 
-
+  @doc """
+  Function Name:  start_agents/0
+  Input:          None
+  Output:         None
+  Logic:          Starts all Agents used to store state for the Server, each agent has a separate if condition that checks its existence
+                  before starting
+  Example Call:   start_agents()
+  """
   def start_agents() do
     #Apparently some Agents exist and some don't when B calls this process
     #So seperate conditions for each seems best
@@ -31,21 +38,6 @@ defmodule FWServerWeb.RobotChannel do
     if Process.whereis(:previous_store_B) == nil do
       {:ok, pid_prev_b} = Agent.start(fn -> %{} end)
       Process.register(pid_prev_b, :previous_store_B)
-    end
-
-    if Process.whereis(:goal_choice) == nil do
-      #Only useful for dynamic goal changing
-      #So not really implementing rn
-      {:ok, pid_choice} = Agent.start_link(fn -> %{} end)
-      Process.register(pid_choice, :goal_choice)
-    end
-
-    if Process.whereis(:turns) == nil do
-      {:ok, pid_turns} = Agent.start_link(fn -> %{} end)
-      Process.register(pid_turns, :turns)
-      Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
-      Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
-
     end
 
     if Process.whereis(:goal_store) == nil do
@@ -314,22 +306,7 @@ defmodule FWServerWeb.RobotChannel do
     end
   end
 
-  def handle_in("goal_choice_get", message, socket) do
-    IO.inspect(message, label: "Goal Choice Get message")
-    msg = if message["A"] != nil do
-      Agent.get(:goal_choice, fn map -> Map.get(map, :A) end)
-    else
-      Agent.get(:goal_choice, fn map -> Map.get(map, :B) end)
-    end
-    {:reply, {:ok, msg}, socket}
-  end
-
-  def handle_in("turns_get", message, socket) do
-    t_a = Agent.get(:turns, fn map -> Map.get(map, :A) end)
-    t_b = Agent.get(:turns, fn map -> Map.get(map, :B) end)
-    msg = %{"A" => t_a, "B" => t_b}
-    {:reply, {:ok, msg}, socket}
-  end
+  #
 
   def handle_in("goal_store_get", message, socket) do
     list_goal = Agent.get(:goal_store, fn list -> list end)
@@ -375,46 +352,11 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, :ok, socket}
   end
 
-  def handle_in("goal_choice_update", message, socket) do
-    x = message["x"]
-    y = message["y"]
-    facing = message["face"]
-    IO.inspect(message, label: "Previous Update Message")
-    if message["client"] == "robot_A" do
-      Agent.update(:goal_choice, fn map -> Map.put(map, :A, {x, y, facing}) end)
-    else
-      Agent.update(:goal_choice, fn map -> Map.put(map, :B, {x, y, facing}) end)
-    end
-    {:reply, :ok, socket}
-  end
-
-  def handle_in("turns_update", message, socket) do
-    IO.inspect(message, label: "Received data for turns update")
-
-    if message["A"] == true do
-      Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
-    end
-    if message["A"] == false do
-      Agent.update(:turns, fn map -> Map.put(map, :A, false) end)
-    end
-
-    if message["B"] == true do
-      Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
-    end
-    if message["B"] == false do
-      Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
-    end
-
-    {:reply, :ok, socket}
-  end
-
   def handle_in("goal_store_update", message, socket) do
     IO.inspect(message["list"], label: "Received data for goal store")
     Agent.update(:goal_store, fn list -> list ++ message["list"] end)
     {:reply, :ok, socket}
   end
-
-
 
   ############
   ## DELETE ##
@@ -463,3 +405,72 @@ defmodule FWServerWeb.RobotChannel do
   end
 
 end
+
+###############
+# UNUSED CODE #
+###############
+
+  # if Process.whereis(:goal_choice) == nil do
+  #   #Only useful for dynamic goal changing
+  #   #So not really implementing rn
+  #   {:ok, pid_choice} = Agent.start_link(fn -> %{} end)
+  #   Process.register(pid_choice, :goal_choice)
+  # end
+
+  # def handle_in("goal_choice_update", message, socket) do
+  #   x = message["x"]
+  #   y = message["y"]
+  #   facing = message["face"]
+  #   IO.inspect(message, label: "Previous Update Message")
+  #   if message["client"] == "robot_A" do
+  #     Agent.update(:goal_choice, fn map -> Map.put(map, :A, {x, y, facing}) end)
+  #   else
+  #     Agent.update(:goal_choice, fn map -> Map.put(map, :B, {x, y, facing}) end)
+  #   end
+  #   {:reply, :ok, socket}
+  # end
+
+  # def handle_in("goal_choice_get", message, socket) do
+  #   IO.inspect(message, label: "Goal Choice Get message")
+  #   msg = if message["A"] != nil do
+  #     Agent.get(:goal_choice, fn map -> Map.get(map, :A) end)
+  #   else
+  #     Agent.get(:goal_choice, fn map -> Map.get(map, :B) end)
+  #   end
+  #   {:reply, {:ok, msg}, socket}
+  # end
+
+  # Turns Agent
+  # def handle_in("turns_get", message, socket) do
+    #   t_a = Agent.get(:turns, fn map -> Map.get(map, :A) end)
+    #   t_b = Agent.get(:turns, fn map -> Map.get(map, :B) end)
+    #   msg = %{"A" => t_a, "B" => t_b}
+    #   {:reply, {:ok, msg}, socket}
+    # end
+  # if Process.whereis(:turns) == nil do
+    #   {:ok, pid_turns} = Agent.start_link(fn -> %{} end)
+    #   Process.register(pid_turns, :turns)
+    #   Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+    #   Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+
+    # end
+
+    # def handle_in("turns_update", message, socket) do
+    #   IO.inspect(message, label: "Received data for turns update")
+
+    #   if message["A"] == true do
+    #     Agent.update(:turns, fn map -> Map.put(map, :A, true) end)
+    #   end
+    #   if message["A"] == false do
+    #     Agent.update(:turns, fn map -> Map.put(map, :A, false) end)
+    #   end
+
+    #   if message["B"] == true do
+    #     Agent.update(:turns, fn map -> Map.put(map, :B, true) end)
+    #   end
+    #   if message["B"] == false do
+    #     Agent.update(:turns, fn map -> Map.put(map, :B, false) end)
+    #   end
+
+    #   {:reply, :ok, socket}
+    # end
