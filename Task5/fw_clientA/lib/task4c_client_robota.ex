@@ -741,41 +741,14 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
+  Function Name:  arrange_by_visited/4
+  Input:          x -> Robot x
+                  y -> Robot y
+                  sq_keys -> List with directions the bot will try to travel in
+                  visited -> List of visited nodes
+  Output:         Arranges sq_keys with the previously visited ones at the end
   Logic:
-  Example Call:
-  """
-  def reorder_by_distance(r_x, r_y, distance_array) do
-    distance_array = Enum.map(distance_array, fn {pos, d} ->
-      s = Atom.to_string(pos)
-      {g_x, g_y} = {String.at(s, 0), String.at(s, 1)}
-      g_x = String.to_integer(g_x)
-      g_y = String.to_atom(g_y)
-      d = distance(g_x, @robot_map_y_atom_to_num[g_y], r_x, @robot_map_y_atom_to_num[r_y])
-      {pos, d}
-
-    end)
-
-    distance_array = distance_array |> List.keysort(1)
-
-    {pos, _} = Enum.at(distance_array, 0)
-    # tup = {:"2a", 1}
-    pos = Atom.to_string(pos)
-    {goal_x, goal_y} = {String.at(pos, 0), String.at(pos, 1)}
-    goal_x = String.to_integer(goal_x)
-    goal_y = String.to_atom(goal_y)
-
-    {distance_array, goal_x, @robot_map_y_atom_to_num[goal_y]}
-  end
-
-  @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
-  Example Call:
+  Example Call:   arrange_by_visited(1, :c, [:north, :east, :south, :west], visited)
   """
   def arrange_by_visited(x, y, sq_keys, visited) do
     # get a list of tuples with the corresponding directions
@@ -812,11 +785,13 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
-  Example Call:
+  Function Name:  check_for_existing
+  Input:          x ->  Current robot x
+                  y ->  Current robot y
+                  visited -> List that stores old nodes visited by the robot
+  Output:         visted -> List
+  Logic:          Checks the visited list for x, y removes it if it exists and adds it to the back of the list
+  Example Call:   check_for_existing(x, y, visited)
   """
   def check_for_existing(x, y, visited) do
     # removes the x,y tuple from the list if it exists in it
@@ -826,11 +801,19 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
-  Example Call:
+  Function Name:  rotate/6
+  Input:          robot -> Robot Struct
+                  should_face -> Direction robot should face (:north)
+                  face_diff -> Numerical difference between the direction it is facing and the one it should face (2)
+                  obs_ahead -> Obstacle presence
+                  goal_locs -> Contains goal locations
+                  channel -> Channel for server communication
+  Output:         Rotates the robot to face the desired directions, returns {robot, obs_ahead}
+  Logic:          1. Check if should_face is equal to facing i.e. the robot is oriented in the desired direction
+                  2. If it is not i.e. the robot still needs to rotate
+                  3. Rotate left when face_diff is -3 or 1 and right otherwise, this lets us choose the quickest way to rotate between directions
+                  4. After rotating left or right, send robot status and recursively call rotate until the robot faces the right direction
+  Example Call:   rotate(robot, :west, 1, false, goal_locs, channel)
   """
   def rotate(
     %FWClientRobotA.Position{facing: facing} = robot,
@@ -861,11 +844,25 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
-  Example Call:
+  Function Name:  move_with_priority/7
+  Input:          robot -> Robot struct (We extract the facing value from this)
+                  sq_keys -> List containing directions the robot should try to move in ordered by priority
+                  obs_ahead -> Indicates obstacle presence
+                  i -> Signals which element of the sq_keys List to consider, increments at the end of each loop of move_with_priority
+                  prev_loop ->
+                  goal_locs -> Goal positions of the bot
+                  channel -> For server communication
+  Output:         Causes the bot to move one unit in a decided direction, returns {robot, obs_ahead}
+  Logic:          1. Extract the direction at i from sq_keys
+                  2. Rotate robot the that direction
+                  3. Check if there is an obstacle in front of the robot
+                  4. Receive the other robot's position from the server
+                  5. Check if the other robot is in front of this one, if yes consider it as an obstacle
+                  6. If there is an obstacle/robot ahead of it try moving to the next direction in the priority list by calling move_with_priority() with i+1
+                  7. If no obstacle is ahead, check once again if a robot has moved ahead of it in this time
+                  8. If there is a robot ahead then don't move
+                  9. If there is no robot then move
+  Example Call:   move_with_priority(robot, sq_keys, obs_ahead, 1, true, goal_locs, channel)
   """
   def move_with_priority(
     %FWClientRobotA.Position{facing: facing} = robot,
@@ -893,8 +890,7 @@ defmodule FWClientRobotA do
     y_b = @robot_map_y_atom_to_num[y_b]
 
     if (x_b == nxt_x and y_b == nxt_y and !obs_ahead) do #or (nxt_x == nxt_x_b and nxt_y == nxt_y_b) do
-      # If B is ahead, wait a turn
-      #If B is ahead and facing us, then treat it as an obstacle
+      #If B is ahead then treat it as an obstacle
       obs_ahead = true
     end
 
@@ -904,7 +900,6 @@ defmodule FWClientRobotA do
     # prev = Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end, 1)
     prev = FWClientRobotA.PhoenixSocketClient.previous_store_get(channel)
     # If the robot is at the same place for two moves in a row
-    # i.e. wait_for_movement() makes no difference
     # basically, the other robot has stopped in front of this one
     # then treat the other robot as an obstacle
     # and try to navigate around it
@@ -924,8 +919,6 @@ defmodule FWClientRobotA do
       i = i + 1
       move_with_priority(robot, sq_keys, obs_ahead, i, true, goal_locs, channel)
     else
-      # wait_for_b(channel)
-
       {x_b, y_b, facing_b} = FWClientRobotA.PhoenixSocketClient.coords_store_get(channel)
       {nxt_x, nxt_y} = calculate_next_position(x, y, facing)
 
@@ -957,11 +950,14 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
-  Example Call:
+  Function Name:  send_robot_status
+  Input:          channel -> For server communication
+                  robot -> Robot Struct
+  Output:         {:obstacle_presence, obs_ahead}
+  Logic:          First the robot sends the status(current position) to the server, it then recieves an obstacle message which it overwrites
+                  with the input it receives from the sensor, it then gets the status of the robot from the server i.e. whether it is stopped or not
+                  if it is stopped then pingg the server every second until the robot starts
+  Example Call:   send_robot_status(channel, robot)
   """
   def send_robot_status(channel, robot) do
     # Here send the status of the robot
@@ -990,11 +986,11 @@ defmodule FWClientRobotA do
   end
 
   @doc """
-  Function Name:
-  Input:
-  Output:
-  Logic:
-  Example Call:
+  Function Name:  is_stopped
+  Input:          channel -> For server communication
+  Output:         None
+  Logic:          Get the status of the robot every second until the robot becomes Active
+  Example Call:   is_stopped(channel)
   """
   def is_stopped(channel) do
     Process.sleep(1000)
@@ -1220,3 +1216,33 @@ end
 #     wait_for_movement(nxt_x, nxt_y)
 #   end
 # end
+
+# @doc """
+#   Function Name:  reorder_by_distance
+#   Input:
+#   Output:
+#   Logic:
+#   Example Call:
+#   """
+  # def reorder_by_distance(r_x, r_y, distance_array) do
+  #   distance_array = Enum.map(distance_array, fn {pos, d} ->
+  #     s = Atom.to_string(pos)
+  #     {g_x, g_y} = {String.at(s, 0), String.at(s, 1)}
+  #     g_x = String.to_integer(g_x)
+  #     g_y = String.to_atom(g_y)
+  #     d = distance(g_x, @robot_map_y_atom_to_num[g_y], r_x, @robot_map_y_atom_to_num[r_y])
+  #     {pos, d}
+
+  #   end)
+
+  #   distance_array = distance_array |> List.keysort(1)
+
+  #   {pos, _} = Enum.at(distance_array, 0)
+  #   # tup = {:"2a", 1}
+  #   pos = Atom.to_string(pos)
+  #   {goal_x, goal_y} = {String.at(pos, 0), String.at(pos, 1)}
+  #   goal_x = String.to_integer(goal_x)
+  #   goal_y = String.to_atom(goal_y)
+
+  #   {distance_array, goal_x, @robot_map_y_atom_to_num[goal_y]}
+  # end

@@ -1,6 +1,14 @@
 defmodule FWServerWeb.ArenaLive do
   use FWServerWeb,:live_view
   require Logger
+  @doc """
+  Team ID:          2339
+  Author List:      Toshan Luktuke
+  Filename:         arena_live.ex
+  Theme:            Functional-Weeder
+  Functions:        Too many to meaningfully list here
+  Agent:            :stop_times, :stopped
+  """
 
   @duration 300
   @doc """
@@ -12,29 +20,34 @@ defmodule FWServerWeb.ArenaLive do
   when new data arrives from the RobotChannel module.
   """
   def mount(_params, _session, socket) do
-
+    # Subscribe to the robot:update channel
     FWServerWeb.Endpoint.subscribe("robot:update")
+    # Subscribe to the timer:update and view:update PubSubs
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "timer:update")
     :ok = Phoenix.PubSub.subscribe(Task4CPhoenixServer.PubSub, "view:update")
 
+    # Start the Agent which will store stop times and invoke the function to read the CSV
     if Process.whereis(:stop_times) == nil do
       {:ok, pid_stop} = Agent.start_link(fn -> [] end)
       Process.register(pid_stop, :stop_times)
       read_stop_times()
     end
+    # Get the list of plants from the csv files
     {plants_list, seeding, weeding} = get_plants()
 
     socket = assign(socket, :img_robotA, "robot_facing_northA.png")
     socket = assign(socket, :bottom_robotA, 0)
     socket = assign(socket, :left_robotA, 0)
-    socket = assign(socket, :robotA_start, "2, a, north")
+    # Start position is input here so that we don't need to change on each reload
+    socket = assign(socket, :robotA_start, "6, d, west")
     socket = assign(socket, :robotA_goals, weeding)
     socket = assign(socket, :robotA_status, "Inactive")
 
     socket = assign(socket, :img_robotB, "robot_facing_southB.png")
     socket = assign(socket, :bottom_robotB, 750)
     socket = assign(socket, :left_robotB, 750)
-    socket = assign(socket, :robotB_start, "5, f, south")
+    # Start position is input here so that we don't need to change on each reload
+    socket = assign(socket, :robotB_start, "3, d, south")
     socket = assign(socket, :robotB_goals, seeding)
     socket = assign(socket, :robotB_status, "Inactive")
 
@@ -219,15 +232,8 @@ defmodule FWServerWeb.ArenaLive do
   the STOP button on the dashboard.
   """
   def handle_event("stop_clock", _data, socket) do
-
     FWServerWeb.Endpoint.broadcast("timer:stop", "stop_timer", %{})
-
-    #################################
-    ## edit the function if needed ##
-    #################################
-
     {:noreply, socket}
-
   end
 
   @doc """
@@ -297,9 +303,6 @@ defmodule FWServerWeb.ArenaLive do
   end
 
   def handle_info({"update", data}, socket) do
-    ###########################
-    ## complete this funcion ##
-    ###########################
     img_name = get_img(data["face"])
     img_name = if data["client"] == "robot_A", do: img_name <> "A.png", else: img_name <> "B.png"
     #Assign values according to the robot it is
@@ -307,23 +310,12 @@ defmodule FWServerWeb.ArenaLive do
       socket = assign(socket, :img_robotA, img_name)
       socket = assign(socket, :bottom_robotA, data["bottom"])
       socket = assign(socket, :left_robotA, data["left"])
-      #Need to add goal updation somehow
-      # socket = assign(socket, :robotA_goals, data["goals"])
     else
       socket = assign(socket, :img_robotB, img_name)
       socket = assign(socket, :bottom_robotB, data["bottom"])
       socket = assign(socket, :left_robotB, data["left"])
-      # socket = assign(socket, :robotB_goals, data["goals"])
     end
-    # assigns data to the socket to update the LiveView
-
-    # Gray Out
-    # Search the plant pos mapset the location sent by the robot
-    # If location exists, gray it out
-    # socket = gray_out(socket, data)s
-
     {:noreply, socket}
-
   end
 
   def handle_info({"gray_out", data}, socket) do
@@ -373,10 +365,6 @@ defmodule FWServerWeb.ArenaLive do
 
   def handle_info({"update_obs", data}, socket) do
     IO.inspect(data, label: "Data send to update_obs")
-    #elem(obs,0)
-    #"bottom: #{elem(obs,1)}px; left: #{elem(obs,0)}px"
-    #{left, bottom} px value
-    #socket.assigns.obstacle_pos Syntax to get the MapSet
     #Each cell is 150x150 pixels
     mapset = MapSet.put(socket.assigns.obstacle_pos, data["position"])
     socket = assign(socket, :obstacle_pos, mapset)

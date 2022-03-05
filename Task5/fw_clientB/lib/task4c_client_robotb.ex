@@ -494,29 +494,6 @@ defmodule FWClientRobotB do
     {ans, next_facing[{x,y}]}
   end
 
-  def reorder_by_distance(r_x, r_y, distance_array) do
-    distance_array = Enum.map(distance_array, fn {pos, d} ->
-      s = Atom.to_string(pos)
-      {g_x, g_y} = {String.at(s, 0), String.at(s, 1)}
-      g_x = String.to_integer(g_x)
-      g_y = String.to_atom(g_y)
-      d = distance(g_x, @robot_map_y_atom_to_num[g_y], r_x, @robot_map_y_atom_to_num[r_y])
-      {pos, d}
-
-    end)
-
-    distance_array = distance_array |> List.keysort(1)
-
-    {pos, _} = Enum.at(distance_array, 0)
-    # tup = {:"2a", 1}
-    pos = Atom.to_string(pos)
-    {goal_x, goal_y} = {String.at(pos, 0), String.at(pos, 1)}
-    goal_x = String.to_integer(goal_x)
-    goal_y = String.to_atom(goal_y)
-
-    {distance_array, goal_x, @robot_map_y_atom_to_num[goal_y]}
-  end
-
   def arrange_by_visited(x, y, sq_keys, visited) do
     # get a list of tuples with the corresponding directions
     coords =
@@ -897,3 +874,26 @@ end
 #     wait_for_movement(nxt_x, nxt_y)
 #   end
 # end
+
+  # def reorder_by_distance(r_x, r_y, distance_array) do
+  #   distance_array = Enum.map(distance_array, fn {pos, d} ->
+  #     s = Atom.to_string(pos)
+  #     {g_x, g_y} = {String.at(s, 0), String.at(s, 1)}
+  #     g_x = String.to_integer(g_x)
+  #     g_y = String.to_atom(g_y)
+  #     d = distance(g_x, @robot_map_y_atom_to_num[g_y], r_x, @robot_map_y_atom_to_num[r_y])
+  #     {pos, d}
+
+  #   end)
+
+  #   distance_array = distance_array |> List.keysort(1)
+
+  #   {pos, _} = Enum.at(distance_array, 0)
+  #   # tup = {:"2a", 1}
+  #   pos = Atom.to_string(pos)
+  #   {goal_x, goal_y} = {String.at(pos, 0), String.at(pos, 1)}
+  #   goal_x = String.to_integer(goal_x)
+  #   goal_y = String.to_atom(goal_y)
+
+  #   {distance_array, goal_x, @robot_map_y_atom_to_num[goal_y]}
+  # end
