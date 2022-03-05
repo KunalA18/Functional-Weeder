@@ -3,7 +3,7 @@ defmodule FWClientRobotB do
   @doc """
   Team ID:          2339
   Author List:      Toshan Luktuke, Kunal Agarwal, Sagar Chotalia
-  Filename:         task4c_client_robota.ex
+  Filename:         task4c_client_robotb.ex
   Theme:            Functional-Weeder
   Functions:        Too many to meaningfully list here
   Global Variables: @table_top_x, @table_top_y, @robot_map_y_atom_to_num, @dir_to_num, @robot_map_y_num_to_atom, @physical
