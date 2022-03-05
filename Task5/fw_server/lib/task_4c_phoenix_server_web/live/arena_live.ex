@@ -240,6 +240,10 @@ defmodule FWServerWeb.ArenaLive do
   Callback function to handle incoming data from the Timer module
   broadcasted on the "timer:update" topic.
   Assign the value to variable "timer_tick" for each countdown.
+
+  Every time the timer ticks check the list of robot stop times
+  If any of the stop times match then update the corresponding Agent from robot_channel
+  Similarly update robot A or B as active depending on how the times match
   """
   def handle_info(%{event: "update_timer_tick", payload: timer_data, topic: "timer:update"}, socket) do
 

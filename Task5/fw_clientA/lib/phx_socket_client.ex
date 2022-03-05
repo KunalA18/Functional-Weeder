@@ -317,6 +317,9 @@ defmodule FWClientRobotA.PhoenixSocketClient do
   ### UPDATE ###
   ##############
 
+  @doc """
+  Update functions for all Agents in this file
+  """
   def coords_store_update(channel, {x, y, facing} = _msg) do
     message = %{x: x, y: y, face: facing, client: "robot_A"}
     {:ok, _} = PhoenixClient.Channel.push(channel, "coords_store_update", message)
