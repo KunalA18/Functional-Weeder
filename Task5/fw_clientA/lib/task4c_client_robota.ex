@@ -32,7 +32,6 @@ defmodule FWClientRobotA do
   Example Call:
   """
 
-
   @doc """
   Places the robot to the default position of (1, A, North)
 

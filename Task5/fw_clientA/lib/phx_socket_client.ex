@@ -227,8 +227,9 @@ defmodule FWClientRobotA.PhoenixSocketClient do
   @doc """
   Function Name:  send_seeding_msg
   Input:          channel -> Channel for Server communication
+                  location -> Location of the plant that has been seeded
   Output:         {:ok, _}
-  Logic:
+  Logic:          Pushes a message to the server to signal that seeding has finished
   Example Call:
   """
   def send_seeding_msg(channel, location) do
@@ -253,6 +254,9 @@ defmodule FWClientRobotA.PhoenixSocketClient do
   ###########
   ### GET ###
   ###########
+  @doc """
+  Get functions for all the agents in robot_channel
+  """
   def get_stopped(channel) do
     {:ok, status} = PhoenixClient.Channel.push(channel, "stopped_get", %{"sender" => "A"})
     {:ok, status["A"]}
@@ -344,6 +348,9 @@ defmodule FWClientRobotA.PhoenixSocketClient do
   ######################################################
   # mapping of y-coordinates
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5, :f => 6}
+  @doc """
+  Take in a list of goal locations and convert all of them to string numbers that show plant position
+  """
   def convert_to_numbers(goal_locs) do
     # Goals: [
     #   ["3", "e"],
