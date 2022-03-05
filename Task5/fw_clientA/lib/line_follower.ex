@@ -11,7 +11,7 @@ defmodule FWClientRobotA.LineFollower do
                       @higher_duty_cycle, @turn, @slight_turn, @kp, @ki, @kd
   """
   require Logger
-  use Bitwise
+  +use Bitwise
   alias Circuits.GPIO
 
   @sensor_pins [cs: 5, clock: 25, address: 24, dataout: 23]
