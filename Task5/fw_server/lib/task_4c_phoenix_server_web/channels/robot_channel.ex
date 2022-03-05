@@ -25,26 +25,23 @@ defmodule FWServerWeb.RobotChannel do
       Process.register(agent, :start_store)
     end
 
+    # Used to store coords of each robot every time it moves, used to then detect whether the other robot is ahead of one
     if Process.whereis(:coords_store) == nil do
       {:ok, pid} = Agent.start_link(fn -> %{} end)
       Process.register(pid, :coords_store)
     end
-
+    # Stores the previous location of A
     if Process.whereis(:previous_store_A) == nil do
       {:ok, pid_prev_a} = Agent.start_link(fn -> %{} end)
       Process.register(pid_prev_a, :previous_store_A)
     end
-
+    # Stores the previous location of B
     if Process.whereis(:previous_store_B) == nil do
       {:ok, pid_prev_b} = Agent.start(fn -> %{} end)
       Process.register(pid_prev_b, :previous_store_B)
     end
-
-    if Process.whereis(:goal_store) == nil do
-      {:ok, pid_goal} = Agent.start_link(fn -> [] end)
-      Process.register(pid_goal, :goal_store)
-    end
-
+    # It's updated every time a robot is stopped.
+    # It's true when a robot is stopped E.g. "A" => true wehn robot is Inactive and "A" => false when the robot is Active
     if Process.whereis(:stopped) == nil do
       {:ok, pid_stopped} = Agent.start_link(fn -> %{"A" => false, "B" => false} end)
       Process.register(pid_stopped, :stopped)
@@ -63,7 +60,7 @@ defmodule FWServerWeb.RobotChannel do
 
     #Agents to store the info supplied by clients which is used for robot communication
     start_agents()
-
+    # Subscribe to time endpoint
     FWServerWeb.Endpoint.subscribe("timer:update")
     socket = assign(socket, :timer_tick, 300)
 
@@ -119,21 +116,50 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, {:ok, is_obs_ahead}, socket}
   end
 
+
+  @doc """
+  Function Name:  handle_in("start_weeding", message, socket)
+  Input:          message -> Map containing %{"sender" => "A"}
+  Output:         {:reply, :ok, socket}
+  Logic:          Get info from the client then publish to the live-arena
+  Example Call:   {:ok, _} = PhoenixClient.Channel.push(channel, "start_weeding", event_message)
+  """
   def handle_in("start_weeding", message, socket) do
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"start_weeding", message})
     {:reply, :ok, socket}
   end
 
+  @doc """
+  Function Name:  handle_in("stop_weeding", message, socket)
+  Input:          message -> Map containing %{"sender" => "A"}
+  Output:         {:reply, :ok, socket}
+  Logic:          Get info from the client then publish to the live-arena
+  Example Call:   {:ok, _} = PhoenixClient.Channel.push(channel, "stop_weeding", event_message)
+  """
   def handle_in("stop_weeding", message, socket) do
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"stop_weeding", message})
     {:reply, :ok, socket}
   end
 
+  @doc """
+  Function Name:  handle_in("start_seeding", message, socket)
+  Input:          message -> Map containing %{"sender" => "A"}
+  Output:         {:reply, :ok, socket}
+  Logic:          Get info from the client then publish to the live-arena
+  Example Call:   {:ok, _} = PhoenixClient.Channel.push(channel, "start_seeding", event_message)
+  """
   def handle_in("start_seeding", message, socket) do
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"start_seeding", message})
     {:reply, :ok, socket}
   end
 
+  @doc """
+  Function Name:  handle_in("stop_seeding", message, socket)
+  Input:          message -> Map containing %{"sender" => "A"}
+  Output:         {:reply, :ok, socket}
+  Logic:          Get info from the client then publish to the live-arena
+  Example Call:   {:ok, _} = PhoenixClient.Channel.push(channel, "stop_seeding", event_message)
+  """
   def handle_in("stop_seeding", message, socket) do
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"stop_seeding", message})
     {:reply, :ok, socket}
@@ -144,22 +170,50 @@ defmodule FWServerWeb.RobotChannel do
     {:noreply, socket}
   end
 
+  @doc """
+  Function Name:  handle_in("event_msg", message = %{"event_id" => 2, "sender" => sender, "value" => value}, socket)
+  Input:          ("event_msg", message = %{"event_id" => 2, "sender" => sender, "value" => value}, socket)
+  Output:         {:reply, {:ok, true}, socket}
+  Logic:          1. Extract values from message
+                  2. Convert these values into a pixel location on the arena
+                  3. Send it to arena_live via a PubSub
+  Example Call:   event_message = %{
+                    "event_id" => 2,
+                    "sender" => "A",
+                    "value" => %{"x" => x, "y" => y, "face" => facing}
+                  }
+
+                {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  """
   def handle_in("event_msg", message = %{"event_id" => 2, "sender" => sender, "value" => value}, socket) do
     message = Map.put(message, "timer", socket.assigns[:timer_tick])
-    x = value["x"]
-    y = value["y"]
-    facing = value["face"]
-    y = @robot_map_y_string_to_num[y] #converts y's string to a number
-    left_value = 150 * (x - 1)
-    bottom_value = 150 * (y - 1)
-    {left, bottom} = get_obs_pixels(left_value, bottom_value, facing)
-    msg_obs = %{"position" => {left, bottom}}
+    x = value["x"] # Get value of x
+    y = value["y"] # Get value of y
+    facing = value["face"] # Get direction of robot
+    y = @robot_map_y_string_to_num[y] # Converts y's string to a number
+    left_value = 150 * (x - 1) # Convert x to pixel location
+    bottom_value = 150 * (y - 1) # Convert y to pixel location
+    {left, bottom} = get_obs_pixels(left_value, bottom_value, facing) # Convert robot location to pixel position
+    msg_obs = %{"position" => {left, bottom}} # Bundles it into a map for message passing
+    # Publishes to arena_live
     Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"update_obs", msg_obs})
-
+    #Broadcast this message for the out-handler of "event_msg"
     FWServerWeb.Endpoint.broadcast_from(self(), "robot:status", "event_msg", message)
     {:reply, {:ok, true}, socket}
   end
 
+  @doc """
+  Function Name:  handle_in("event_msg", message = %{"event_id" => 3, "sender" => sender, "value" => value}, socket)
+  Input:          ("event_msg", message = %{"event_id" => 3, "sender" => sender, "value" => value}, socket)
+  Output:         {:reply, {:ok, true}, socket}
+  Logic:          Gets a message from the client indicating that seeding has been completed and the location of the plant that has been seeded
+                  1. Converts the goal into coords
+                  2. Converts those coords into pixel locations on the arena
+                  3. Bundles them into a message
+                  4. Sends a message of these values to the arena via PubSub
+  Example Call:   event_message = %{"event_id" => 3, "sender" => "A", "value" => location}
+                  {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  """
   def handle_in("event_msg", message = %{"event_id" => 3, "sender" => sender, "value" => value}, socket) do
     message = Map.put(message, "timer", socket.assigns[:timer_tick])
     {x,y} = convert_goal_to_locations(value)
@@ -171,6 +225,17 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, {:ok, true}, socket}
   end
 
+  @doc """
+  Function Name:  handle_in("event_msg", message = %{"event_id" => 4, "sender" => sender, "value" => value}, socket)
+  Input:          ("event_msg", message = %{"event_id" => 4, "sender" => sender, "value" => value}, socket)
+  Output:         {:reply, {:ok, true}, socket}
+  Logic:          1. Convert the value given to coordinates
+                  2. Convert coords to pixel values
+                  3. Bundle it into a message
+                  4. Send message to gray_out subscriber function in arena live to gray out the given plant
+  Example Call:   event_message = %{"event_id" => 4, "sender" => "A", "value" => location}
+                  {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
+  """
   def handle_in("event_msg", message = %{"event_id" => 4, "sender" => sender, "value" => value}, socket) do
     message = Map.put(message, "timer", socket.assigns[:timer_tick])
     {x,y} = convert_goal_to_locations(value)
@@ -182,6 +247,13 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, {:ok, true}, socket}
   end
 
+  @doc """
+  Function Name:  handle_in("event_msg", message = %{"event_id" => 9, "sender" => sender, "value" => value}, socket)
+  Input:          ("event_msg", message = %{"event_id" => 9, "sender" => sender, "value" => value}, socket)
+  Output:         {:reply, {:ok, true}, socket}
+  Logic:          Publishes a work complete message to the arena live
+  Example Call:
+  """
   def handle_in("event_msg", message = %{"event_id" => 9, "sender" => sender, "value" => value}, socket) do
     message = Map.put(message, "timer", socket.assigns[:timer_tick])
     msg_map = %{"sender" => sender}
@@ -190,6 +262,14 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, {:ok, true}, socket}
   end
 
+  @doc """
+  Function Name:  convert_goal_to_locations
+  Input:          loc -> Integer or string location of plant
+  Output:         {x, y} -> Co-ords of the bottom left node relative to the given location
+  Logic:          1. Convert string to integer if it is a string
+                  2. Calculations division by 5 and remainder with 5
+  Example Call:   {x,y} = convert_goal_to_locations(value)
+  """
   def convert_goal_to_locations(loc) do
     loc = if is_bitstring(loc), do: String.to_integer(loc), else: loc
     no =  loc - 1
@@ -206,6 +286,15 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, {:ok, true}, socket}
   end
 
+  @doc """
+  Function Name:  get_obs_pixels
+  Input:          left_value -> Left value of the robot's position in pixels
+                  bottom_value -> Bottom value of the robot's position in pixels
+                  facing -> String value of the direction the robot faces
+  Output:         {left_value, bottom_value}
+  Logic:          Depending on the direction the robot is facing add 75 to bottom value or left value
+  Example Call:   {left, bottom} = get_obs_pixels(left_value, bottom_value, facing)
+  """
   def get_obs_pixels(left_value, bottom_value, facing) do
     bottom_value = if facing == "north" do
       bottom_value = bottom_value + 75
@@ -238,6 +327,13 @@ defmodule FWServerWeb.RobotChannel do
   ## define callback functions as needed ##
   #########################################
 
+  @doc """
+  Function Name:  handle_in("goals_msg", message, socket)
+  Input:          "goals_msg", message, socket)
+  Output:         {:reply, {:ok, seeding}, socket}/{:reply, {:ok, weeding}, socket}
+  Logic:          Parse CSV file and send back seeding or weeding positions depending on the robot requesting them
+  Example Call:
+  """
   def handle_in("goals_msg", message, socket) do
     csv = "../../../Plant_Positions.csv" |> Path.expand(__DIR__) |> File.stream! |> CSV.decode |> Enum.take_every(1)
     |> Enum.filter(fn {:ok, [a, _]} -> (a != "Configuration for Plants") end)
@@ -257,6 +353,13 @@ defmodule FWServerWeb.RobotChannel do
     end
   end
 
+  @doc """
+  Function Name:  handle_in("start_msg", message, socket)
+  Input:          "start_msg", message, socket)
+  Output:         {:reply, {:ok, msg}, socket}
+  Logic:          Get start string from Agent, parse it and bundle it to send back to the requester
+  Example Call:
+  """
   def handle_in("start_msg", message, socket) do
 
     msg = Agent.get(:start_store, fn map -> map end)
@@ -275,8 +378,6 @@ defmodule FWServerWeb.RobotChannel do
   #########
 
   def handle_in("coords_store_get", message, socket) do
-    IO.inspect(message, label: "Co-ords Store Get message")
-
     if message["A"] == "A" do
       res = Agent.get(:coords_store, fn map -> Map.get(map, :A) end)
       {x, y, facing} = if res != nil, do: res, else: {1, "a", "north"}
@@ -292,7 +393,6 @@ defmodule FWServerWeb.RobotChannel do
   end
 
   def handle_in("previous_store_get", message, socket) do
-    IO.inspect(message, label: "Previous Store Get message")
     if message["A"] == "A" do
       res = Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end)
       {x, y, facing} = if res != nil, do: res, else: {1, "a", "north"}
@@ -304,13 +404,6 @@ defmodule FWServerWeb.RobotChannel do
       message = %{x: x, y: y, face: facing}
       {:reply, {:ok, message}, socket}
     end
-  end
-
-  #
-
-  def handle_in("goal_store_get", message, socket) do
-    list_goal = Agent.get(:goal_store, fn list -> list end)
-    {:reply, {:ok, %{list: list_goal}}, socket}
   end
 
   def handle_in("stopped_get", message, socket) do
@@ -352,21 +445,6 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, :ok, socket}
   end
 
-  def handle_in("goal_store_update", message, socket) do
-    IO.inspect(message["list"], label: "Received data for goal store")
-    Agent.update(:goal_store, fn list -> list ++ message["list"] end)
-    {:reply, :ok, socket}
-  end
-
-  ############
-  ## DELETE ##
-  ############
-  def handle_in("goal_store_delete", message, socket) do
-    # IO.inspect(message["list"], label: "Received data for goal store")
-    Agent.update(:goal_store, &List.delete(&1, message["key"]))
-    {:reply, :ok, socket}
-  end
-
   def handle_info({"start", data}, socket) do
 
     #IO.inspect(data, label: "Data is sent to Channel PubSub")
@@ -380,16 +458,10 @@ defmodule FWServerWeb.RobotChannel do
   end
 
   def handle_info({"stop_event", data}, socket) do
-
-    #IO.inspect(data, label: "Data is sent to Channel PubSub")
     msg = %{"event_id" => 6, "sender" => "Server", "value" => data}
     broadcast!(socket, "event_msg", msg)
-    ###########################
-    ## complete this funcion ##
-    ###########################
 
     {:noreply, socket}
-
   end
 
   def handle_info({"stop_robot", data}, socket) do
@@ -474,3 +546,29 @@ end
 
     #   {:reply, :ok, socket}
     # end
+
+    # Stores the goals
+    # if Process.whereis(:goal_store) == nil do
+    #   {:ok, pid_goal} = Agent.start_link(fn -> [] end)
+    #   Process.register(pid_goal, :goal_store)
+    # end
+
+    # def handle_in("goal_store_get", message, socket) do
+    #   list_goal = Agent.get(:goal_store, fn list -> list end)
+    #   {:reply, {:ok, %{list: list_goal}}, socket}
+    # end
+
+    # def handle_in("goal_store_update", message, socket) do
+    #   IO.inspect(message["list"], label: "Received data for goal store")
+    #   Agent.update(:goal_store, fn list -> list ++ message["list"] end)
+    #   {:reply, :ok, socket}
+    # end
+
+  ############
+  ## DELETE ##
+  ############
+  # def handle_in("goal_store_delete", message, socket) do
+  #   # IO.inspect(message["list"], label: "Received data for goal store")
+  #   Agent.update(:goal_store, &List.delete(&1, message["key"]))
+  #   {:reply, :ok, socket}
+  # end
