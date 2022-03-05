@@ -1,6 +1,14 @@
 defmodule FWClientRobotA.PhoenixSocketClient do
 
   alias PhoenixClient.{Socket, Channel, Message}
+  @doc """
+  Team ID:          2339
+  Author List:      Toshan Luktuke
+  Filename:         phx_socket_client.ex
+  Theme:            Functional-Weeder
+  Functions:        Too many to meaningfully list here
+  Global Variables: @robot_map_y_atom_to_num
+  """
 
   @robot_map_y_atom_to_num %{:a => 1, :b => 2, :c => 3, :d => 4, :e => 5, :f => 6}
 

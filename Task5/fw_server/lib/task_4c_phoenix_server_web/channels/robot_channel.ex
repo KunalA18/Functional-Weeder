@@ -1,5 +1,14 @@
 defmodule FWServerWeb.RobotChannel do
   use Phoenix.Channel
+  @doc """
+  Team ID:          2339
+  Author List:      Toshan Luktuke
+  Filename:         robot_channel.ex
+  Theme:            Functional-Weeder
+  Functions:        Too many to meaningfully list here
+  Agents:           :start_store, :coords_store, :previous_store_A, :previous_store_B, :goal_choice, :turns, :goal_store, :stopped
+  """
+
 
   def start_agents() do
     #Apparently some Agents exist and some don't when B calls this process
