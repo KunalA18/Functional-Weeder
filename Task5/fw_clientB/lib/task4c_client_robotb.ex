@@ -494,8 +494,6 @@ defmodule FWClientRobotB do
     {ans, next_facing[{x,y}]}
   end
 
-
-
   def arrange_by_visited(x, y, sq_keys, visited) do
     # get a list of tuples with the corresponding directions
     coords =
