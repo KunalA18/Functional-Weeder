@@ -139,6 +139,7 @@ defmodule FWClientRobotA.LineFollower do
     {main_node, same_node} =
       if same_node == false && get_high_no(map_sens_list) >= 3 do
         same_node = true
+        # increment counter when node is detected
         main_node = main_node + 1
         IO.inspect(map_sens_list)
         {main_node, same_node}
@@ -159,6 +160,7 @@ defmodule FWClientRobotA.LineFollower do
     left_duty_cycle = round(@optimum_duty_cycle - correction)
     right_duty_cycle = round(@optimum_duty_cycle + correction)
 
+    # bounding duty cycle values
     left_duty_cycle =
       if left_duty_cycle > @higher_duty_cycle do
         left_duty_cycle = @higher_duty_cycle
@@ -192,12 +194,13 @@ defmodule FWClientRobotA.LineFollower do
     # Stopping the robot when node is detected else recursively call the line_follow function to continue forward motion
     main_node =
       if main_node == 1 do
+        # Giving stop action to motors
         motor_action(motor_ref, @stop)
         my_motion(0, 0)
-        # Process.sleep(350)
         main_node = 0
         main_node
       else
+        # Giving forward action to motors
         motor_action(motor_ref, @forward)
         my_motion(left_duty_cycle, right_duty_cycle)
 
@@ -278,6 +281,7 @@ defmodule FWClientRobotA.LineFollower do
         pos = 0
       end
 
+    # error set to 2.5 (tested value) if all_black_flag ==1 else error = pos
     error =
       if all_black_flag == 1 do
         error =
@@ -395,6 +399,7 @@ defmodule FWClientRobotA.LineFollower do
 
     my_motion(speed, speed - 10)
 
+    # Flag for the bot to skip the detection of current white line while turning
     right_detect =
       if Enum.at(map_sens_list, 1) < 900 && Enum.at(map_sens_list, 2) < 900 &&
            Enum.at(map_sens_list, 3) < 900 &&
@@ -463,6 +468,7 @@ defmodule FWClientRobotA.LineFollower do
 
     my_motion(speed, speed)
 
+    # Flag for the bot to skip the detection of current white line while turning
     left_detect =
       if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
            Enum.at(map_sens_list, 4) < 900 do
@@ -475,7 +481,7 @@ defmodule FWClientRobotA.LineFollower do
     if Enum.at(map_sens_list, 3) > 900 && left_detect == true do
       motor_action(motor_ref, @stop)
       my_motion(0, 0)
-
+      # calling slide_right() if robot overshoots
       if Enum.at(map_sens_list, 2) < 900 && Enum.at(map_sens_list, 3) < 900 &&
            Enum.at(map_sens_list, 4) < 900 do
         IO.puts("Sliding Right")
@@ -559,7 +565,7 @@ defmodule FWClientRobotA.LineFollower do
     * Output: Turns the robot a slight right
     * Logic: 1) Increase speed of robot if old_map_list == map_sens_list (if its on the same position)
              2) Give duty cycles to my_motion()
-             4) Stop the robot if white line is reached after turn else continue turning.
+             3) Stop the robot if white line is reached after turn else continue turning.
     * Example Call: drift_right(left_detect, motor_ref)
                     (Supporting function for slide_right(); Need to call slide_right() for slight Right turn)
   """
@@ -779,16 +785,16 @@ defmodule FWClientRobotA.LineFollower do
     Process.sleep(1000)
     test_servo_c(40)
     Process.sleep(1000)
+    # close
     test_servo_b(50)
     Process.sleep(1000)
-    # close
     test_servo_c(120)
     Process.sleep(1500)
     test_servo_b(140)
     Process.sleep(1250)
+    # open
     test_servo_a(10)
     Process.sleep(1000)
-    # open
     test_servo_c(60)
     Process.sleep(500)
   end
