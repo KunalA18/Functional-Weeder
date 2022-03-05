@@ -105,7 +105,8 @@ defmodule FWClientRobotA.LineFollower do
              5) Assigned duty cycles (speeds) to left and right motors after error correction
              6) bounded left and right duty cycles
              7) Stop the robot if node is detected else continue following line
-    * Example Call: (Supporting function for start(); Need to call start() for line following)
+    * Example Call: line_follow(error, prev_error, cumulative_error, left_duty_cycle, right_duty_cycle, main_node, same_node)
+                    (Supporting function for start(); Need to call start() for line following)
   """
   def line_follow(
         error,
@@ -207,9 +208,10 @@ defmodule FWClientRobotA.LineFollower do
   @doc """
     * Function Name: get_high_no
     * Input: map_sens_list
-    * Output: Moves the robot straight till a node is detected
-    * Logic: Initialized variables to be used globally and passed them in function call of line_follow()
-    * Example Call: Supporting function for start()
+    * Output: Count of LSA readings > 700
+    * Logic: traversing through list and incrementing counter if reading>700
+    * Example Call: get_high_no(map_sens_list)
+                   (Supporting function for start(); Need to call start() for line following)
   """
   def get_high_no(map_sens_list) do
     Enum.reduce(map_sens_list, 0, fn v, acc ->
@@ -225,7 +227,17 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  Function to Calculate error based on LSA readings for Line following
+    * Function Name: calculate_error
+    * Input: map_sens_list, error, prev_error
+    * Output: error and prev_error
+    * Logic: 1) Set all_black_flag = 1 for all black condition, i.e. when none of the sensors are on white line
+             2) calculate weighted_sum_list by multiplying Lsa values with defined weights
+             3) Calculate sum and weighted_sum by adding respective list
+             4) Calculate pos i.e. weighted_sum/sum
+             5) assign error = pos when all_black_flag is 0
+    * Example Call: calculate_error(map_sens_list, error, prev_error)
+                   (Supporting function for start(); Need to call start() for line following)
+
   """
   def calculate_error(map_sens_list, error, prev_error) do
     all_black_flag = 1
@@ -273,7 +285,15 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-  Function to calculate correction value for duty cycles after PID tuning
+    * Function Name: calculate_correction()
+    * Input: error, prev_error, cumulative_error
+    * Output: error, prev_error, cumulative_error, correction
+    * Logic: 1) update the calculated error by multiplying it with 10, calculate difference in current and previous errors
+                and error to cumulative error
+             2) Calculate correction value after PID tuning it with PID constants
+             3) assign prev_error = error
+    * Example Call: calculate_correction(error, prev_error, cumulative_error)
+                    (Supporting function for start(); Need to call start() for line following)
   """
   def calculate_correction(error, prev_error, cumulative_error) do
     error = error * 10
@@ -304,8 +324,14 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-   Assigning duty_cycles (speed) to both motors via pwm pins
+  * Function Name: my_motion
+  * Input: left_duty_cycle, right_duty_cycle
+  * Output: Assigns duty_cycles to both motors
+  * Logic: Assigns left_duty_cycle and right_duty_cycles to respective PWM pins
+  * Example Call: my_motion(left_duty_cycle, right_duty_cycle)
+                  (Supporting function for start(); Need to call start() for line following)
   """
+
   def my_motion(left_duty_cycle, right_duty_cycle) do
     IO.inspect(left_duty_cycle, label: "left_motor_speed")
     IO.inspect(right_duty_cycle, label: "right_motor_speed")
@@ -316,7 +342,11 @@ defmodule FWClientRobotA.LineFollower do
   end
 
   @doc """
-   Function for turning the bot right
+    * Function Name: turn_right
+    * Input: none
+    * Output: move_right(right_detect, motor_ref) function call
+    * Logic: Initialized variables to be used globally for move_right()
+    * Example Call: turn_right()
   """
   def turn_right do
     right_detect = false
