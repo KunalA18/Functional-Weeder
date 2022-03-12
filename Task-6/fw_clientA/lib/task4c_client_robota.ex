@@ -22,6 +22,7 @@ defmodule FWClientRobotA do
   @robot_map_y_num_to_atom %{1 => :a, 2 => :b, 3 => :c, 4 => :d, 5 => :e, 6 => :f}
   # If set to true, all LineFollower functions will work
   @physical false
+  @obstacle false
 
   # Function Description
   @doc """
@@ -961,7 +962,7 @@ defmodule FWClientRobotA do
     # Check server to see if robot has stopped
     # If obstacle detected, send message to the server
     {:obstacle_presence, obs_ahead} = FWClientRobotA.PhoenixSocketClient.send_robot_status(channel, robot)
-    if @physical do
+    if @physical and @obstacle do
       obs_ahead = FWClientRobotA.LineFollower.detect_obstacle()
     end
 

@@ -6,7 +6,7 @@ defmodule FWServerWeb.RobotChannel do
   Filename:         robot_channel.ex
   Theme:            Functional-Weeder
   Functions:        Too many to meaningfully list here
-  Agents:           :start_store, :coords_store, :previous_store_A, :previous_store_B, :goal_store, :stopped
+  Agents:           :start_store, :coords_store, :stopped
   """
 
   @doc """
@@ -382,8 +382,6 @@ defmodule FWServerWeb.RobotChannel do
     end
 
   end
-
-
 
   def handle_in("stopped_get", message, socket) do
     status = if Process.whereis(:stopped) != nil do
