@@ -593,6 +593,7 @@ defmodule FWClientRobotB do
 
         end
         Process.sleep(3000)
+        is_stopped(channel)
         robot = move(robot)
         IO.inspect(report(robot),label: "Seeding Done")
         FWClientRobotB.PhoenixSocketClient.send_seeding_msg(channel, String.to_integer(weeded))

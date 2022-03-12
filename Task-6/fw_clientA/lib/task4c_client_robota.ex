@@ -688,6 +688,7 @@ defmodule FWClientRobotA do
 
         end
         Process.sleep(1000)
+        is_stopped(channel)
         robot = move(robot)
         IO.inspect(report(robot),label: "Weeding Done")
         FWClientRobotA.PhoenixSocketClient.send_weeding_msg(channel, String.to_integer(weeded))
