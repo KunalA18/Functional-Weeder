@@ -251,7 +251,7 @@ defmodule FWServerWeb.ArenaLive do
     socket = assign(socket, :timer_tick, timer_data.time)
 
     stop_list = Agent.get(:stop_times, fn list -> list end)
-    kill_list = Enum.find(stop_list, fn [sr, robot, kill_time, restart_time] -> kill_time == timer_data.time end)
+    kill_list = Enum.find(stop_list, fn [sr, robot, kill_time, restart_time] -> kill_time >= timer_data.time - 3 and kill_time <= timer_data.time end)
 
     socket = if kill_list != nil do
       robot = Enum.at(kill_list, 1)
@@ -260,9 +260,17 @@ defmodule FWServerWeb.ArenaLive do
       Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "stop_event", {"stop_robot", stop_list})
 
       if robot == "A" do
-        assign(socket, :robotA_status, "Inactive")
+        if Enum.at(kill_list, 2) == timer_data.time do
+          assign(socket, :robotA_status, "Inactive")
+        else
+          socket
+        end
       else
-        assign(socket, :robotB_status, "Inactive")
+        if Enum.at(kill_list, 2) == timer_data.time do
+          assign(socket, :robotB_status, "Inactive")
+        else
+          socket
+        end
       end
     else
       socket

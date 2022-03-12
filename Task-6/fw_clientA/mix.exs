@@ -24,8 +24,8 @@ defmodule FWClientRobotA.MixProject do
     [
       {:ex_doc, only: :dev, runtime: false},
       {:phoenix_client, "~> 0.3"},
-      {:circuits_gpio, "~> 0.4"},
-      {:pigpiox, "~> 0.1.2"},
+      #{:circuits_gpio, "~> 0.4"},
+      #{:pigpiox, "~> 0.1.2"},
       {:jason, "~> 1.1"}
 
       # {:dep_from_hexpm, "~> 0.3.0"},

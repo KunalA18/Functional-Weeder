@@ -21,7 +21,7 @@ defmodule FWClientRobotA do
   # maps y numbers to atoms
   @robot_map_y_num_to_atom %{1 => :a, 2 => :b, 3 => :c, 4 => :d, 5 => :e, 6 => :f}
   # If set to true, all LineFollower functions will work
-  @physical true
+  @physical false
 
   # Function Description
   @doc """
