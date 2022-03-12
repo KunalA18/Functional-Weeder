@@ -30,16 +30,7 @@ defmodule FWServerWeb.RobotChannel do
       {:ok, pid} = Agent.start_link(fn -> %{} end)
       Process.register(pid, :coords_store)
     end
-    # Stores the previous location of A
-    if Process.whereis(:previous_store_A) == nil do
-      {:ok, pid_prev_a} = Agent.start_link(fn -> %{} end)
-      Process.register(pid_prev_a, :previous_store_A)
-    end
-    # Stores the previous location of B
-    if Process.whereis(:previous_store_B) == nil do
-      {:ok, pid_prev_b} = Agent.start(fn -> %{} end)
-      Process.register(pid_prev_b, :previous_store_B)
-    end
+
     # It's updated every time a robot is stopped.
     # It's true when a robot is stopped E.g. "A" => true wehn robot is Inactive and "A" => false when the robot is Active
     if Process.whereis(:stopped) == nil do
@@ -392,19 +383,7 @@ defmodule FWServerWeb.RobotChannel do
 
   end
 
-  def handle_in("previous_store_get", message, socket) do
-    if message["A"] == "A" do
-      res = Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end)
-      {x, y, facing} = if res != nil, do: res, else: {1, "a", "north"}
-      message = %{x: x, y: y, face: facing}
-      {:reply, {:ok, message}, socket}
-    else
-      res = Agent.get(:previous_store_B, fn map -> Map.get(map, :prev) end)
-      {x, y, facing} = if res != nil, do: res, else: {6, "f", "south"}
-      message = %{x: x, y: y, face: facing}
-      {:reply, {:ok, message}, socket}
-    end
-  end
+
 
   def handle_in("stopped_get", message, socket) do
     status = if Process.whereis(:stopped) != nil do
@@ -428,19 +407,6 @@ defmodule FWServerWeb.RobotChannel do
       Agent.update(:coords_store, fn map -> Map.put(map, :A, {x, y, facing}) end)
     else
       Agent.update(:coords_store, fn map -> Map.put(map, :B, {x, y, facing}) end)
-    end
-    {:reply, :ok, socket}
-  end
-
-  def handle_in("previous_store_update", message, socket) do
-    x = message["x"]
-    y = message["y"]
-    facing = message["face"]
-    IO.inspect(message, label: "Previous Update Message")
-    if message["client"] == "robot_A" do
-      Agent.update(:previous_store_A, fn map -> Map.put(map, :prev, {x, y, facing}) end)
-    else
-      Agent.update(:previous_store_B, fn map -> Map.put(map, :prev, {x, y, facing}) end)
     end
     {:reply, :ok, socket}
   end
@@ -481,6 +447,46 @@ end
 ###############
 # UNUSED CODE #
 ###############
+
+  # # Stores the previous location of B
+  # if Process.whereis(:previous_store_B) == nil do
+  #   {:ok, pid_prev_b} = Agent.start(fn -> %{} end)
+  #   Process.register(pid_prev_b, :previous_store_B)
+  # end
+
+
+  # def handle_in("previous_store_update", message, socket) do
+  #   x = message["x"]
+  #   y = message["y"]
+  #   facing = message["face"]
+  #   IO.inspect(message, label: "Previous Update Message")
+  #   if message["client"] == "robot_A" do
+  #     Agent.update(:previous_store_A, fn map -> Map.put(map, :prev, {x, y, facing}) end)
+  #   else
+  #     Agent.update(:previous_store_B, fn map -> Map.put(map, :prev, {x, y, facing}) end)
+  #   end
+  #   {:reply, :ok, socket}
+  # end
+
+  # def handle_in("previous_store_get", message, socket) do
+  #   if message["A"] == "A" do
+  #     res = Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end)
+  #     {x, y, facing} = if res != nil, do: res, else: {1, "a", "north"}
+  #     message = %{x: x, y: y, face: facing}
+  #     {:reply, {:ok, message}, socket}
+  #   else
+  #     res = Agent.get(:previous_store_B, fn map -> Map.get(map, :prev) end)
+  #     {x, y, facing} = if res != nil, do: res, else: {6, "f", "south"}
+  #     message = %{x: x, y: y, face: facing}
+  #     {:reply, {:ok, message}, socket}
+  #   end
+  # end
+
+    # Stores the previous location of A
+    # if Process.whereis(:previous_store_A) == nil do
+    #   {:ok, pid_prev_a} = Agent.start_link(fn -> %{} end)
+    #   Process.register(pid_prev_a, :previous_store_A)
+    # end
 
   # if Process.whereis(:goal_choice) == nil do
   #   #Only useful for dynamic goal changing

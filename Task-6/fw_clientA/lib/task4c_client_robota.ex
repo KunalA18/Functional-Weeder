@@ -929,7 +929,7 @@ defmodule FWClientRobotA do
           false
         end
 
-      FWClientRobotA.PhoenixSocketClient.previous_store_update(channel, report(robot))
+      # FWClientRobotA.PhoenixSocketClient.previous_store_update(channel, report(robot))
 
       robot =
         if !robot_ahead do

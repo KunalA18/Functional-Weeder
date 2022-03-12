@@ -801,23 +801,23 @@ defmodule FWClientRobotB do
 
     # Get previous location of this robot
     # prev = Agent.get(:previous_store_A, fn map -> Map.get(map, :prev) end, 1)
-    prev = FWClientRobotB.PhoenixSocketClient.previous_store_get(channel)
+    # prev = FWClientRobotB.PhoenixSocketClient.previous_store_get(channel)
     # If the robot is at the same place for two moves in a row
     # i.e. wait_for_movement() makes no difference
     # basically, the other robot has stopped in front of this one
     # then treat the other robot as an obstacle
     # and try to navigate around it
-    obs_ahead =
-      if prev != nil and !prev_loop do
-        {prev_x, prev_y, prev_facing} = prev
-        if prev_x == x and prev_y == y do
-          true
-        else
-          obs_ahead
-        end
-      else
-        obs_ahead
-      end
+    # obs_ahead =
+    #   if prev != nil and !prev_loop do
+    #     {prev_x, prev_y, prev_facing} = prev
+    #     if prev_x == x and prev_y == y do
+    #       true
+    #     else
+    #       obs_ahead
+    #     end
+    #   else
+    #     obs_ahead
+    #   end
 
     if obs_ahead do
       i = i + 1
@@ -835,7 +835,7 @@ defmodule FWClientRobotB do
           false
         end
 
-      FWClientRobotB.PhoenixSocketClient.previous_store_update(channel, report(robot))
+      # FWClientRobotB.PhoenixSocketClient.previous_store_update(channel, report(robot))
 
       robot =
         if !robot_ahead do
