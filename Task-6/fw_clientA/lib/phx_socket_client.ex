@@ -237,6 +237,13 @@ defmodule FWClientRobotA.PhoenixSocketClient do
     {:ok, _} = PhoenixClient.Channel.push(channel, "event_msg", event_message)
   end
 
+  def get_lookahead_stopped(channel) do
+    event_message = %{"sender" => "A"}
+    {:ok, status} = PhoenixClient.Channel.push(channel, "lookahead_msg", event_message)
+    # IO.inspect(stopped, label: "Is this bot stopped?")
+    {:ok, status["A"]}
+  end
+
   @doc """
   Description:    Takes in x (integer) and y(atom) to convert them into the corresponding square location
   Function Name:  convert_to_location

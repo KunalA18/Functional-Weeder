@@ -671,6 +671,7 @@ defmodule FWClientRobotA do
         {robot, distance_array, true}
       else
         # Go to next clockwise node
+        is_stoppedweeding(channel)
         FWClientRobotA.PhoenixSocketClient.start_weeding(channel)
         x = Agent.get(:seeding, fn x -> x end)
 
@@ -996,8 +997,19 @@ defmodule FWClientRobotA do
   def is_stopped(channel) do
     Process.sleep(1000)
     {:ok, status} = FWClientRobotA.PhoenixSocketClient.get_stopped(channel)
+    IO.inspect(status, label: "General Status")
+
     if status do
       is_stopped(channel)
+    end
+  end
+
+  def is_stoppedweeding(channel) do
+    Process.sleep(1000)
+    {:ok, status} = FWClientRobotA.PhoenixSocketClient.get_lookahead_stopped(channel)
+    IO.inspect(status, label: "Status before weeding")
+    if status do
+      is_stoppedweeding(channel)
     end
   end
 

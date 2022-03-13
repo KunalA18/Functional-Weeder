@@ -392,6 +392,16 @@ defmodule FWServerWeb.RobotChannel do
     {:reply, {:ok, status}, socket}
   end
 
+  def handle_in("lookahead_msg", message, socket) do
+    Phoenix.PubSub.broadcast!(Task4CPhoenixServer.PubSub, "view:update", {"lookahead_msg", nil})
+    status = if Process.whereis(:stopped) != nil do
+      Agent.get(:stopped, fn map -> map end)
+    else
+      %{"A" => false, "B" => false}
+    end
+    {:reply, {:ok, status}, socket}
+  end
+
   ############
   ## UPDATE ##
   ############
