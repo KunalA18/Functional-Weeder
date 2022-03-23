@@ -337,6 +337,9 @@ defmodule FWServerWeb.RobotChannel do
     weeding = csv |> Enum.with_index |> Enum.map(fn {x, i} -> if rem(i, 2) == 1 do x end end)
       |> Enum.reject(fn x -> x == nil end)# 1, 3, 5
 
+      seeding = ["4", "12", "17", "19", "22"]
+      weeding = ["3", "7", "13", "23"]
+
     if message["sender"] == "A" do
       {:reply, {:ok, weeding}, socket}
     else

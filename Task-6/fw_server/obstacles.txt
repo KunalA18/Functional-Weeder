@@ -1,5 +1,5 @@
-2, b, east | 3, b, west
+2, d, north | 2, e, south
+3, c, east | 4, c, west
+4, b, east | 5, b, west
+3, f, east | 4, f, west
 5, d, north | 5, e, south
-3, e, east | 4, e, west
-2, a, north | 2, b, south
-2, a, east | 3, a, west

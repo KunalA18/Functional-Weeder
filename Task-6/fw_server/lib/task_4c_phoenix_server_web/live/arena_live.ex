@@ -39,7 +39,7 @@ defmodule FWServerWeb.ArenaLive do
     socket = assign(socket, :bottom_robotA, 0)
     socket = assign(socket, :left_robotA, 0)
     # Start position is input here so that we don't need to change on each reload
-    socket = assign(socket, :robotA_start, "6, d, west")
+    socket = assign(socket, :robotA_start, "3, a, north")
     socket = assign(socket, :robotA_goals, weeding)
     socket = assign(socket, :robotA_status, "Inactive")
 
@@ -47,7 +47,7 @@ defmodule FWServerWeb.ArenaLive do
     socket = assign(socket, :bottom_robotB, 750)
     socket = assign(socket, :left_robotB, 750)
     # Start position is input here so that we don't need to change on each reload
-    socket = assign(socket, :robotB_start, "3, d, south")
+    socket = assign(socket, :robotB_start, "3, f, south")
     socket = assign(socket, :robotB_goals, seeding)
     socket = assign(socket, :robotB_status, "Inactive")
 
@@ -517,6 +517,8 @@ defmodule FWServerWeb.ArenaLive do
 
     IO.inspect(seeding, label: "Seeding")
     IO.inspect(weeding, label: "Weeding")
+    seeding = [4, 12, 17, 19, 22]
+    weeding = [3, 7, 13, 23]
 
     # Red for Seeding
     map = Enum.reduce(seeding, [], fn loc, acc ->
